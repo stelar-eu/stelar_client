@@ -73,6 +73,9 @@ class Client:
         Raises:
             ValueError: If either the username or password is empty.
             RuntimeError: If authentication fails due to incorrect credentials or server issues.
+
+        Returns: 
+            True: If the authentication was successful
         """
         auth_endpoint = "/auth/token/issue"
 
@@ -93,6 +96,8 @@ class Client:
                 self.knowledgegraph.token = self._token
                 self.admin.token = self._token
                 self.catalog.token = self._token
+
+                return True
 
             else: 
                 raise RuntimeError("Could not authenticate user. Check the provided credentials and verify the availability of the STELAR API.")
