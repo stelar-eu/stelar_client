@@ -45,7 +45,7 @@ class Client:
         # 
         # Client can be also initialized without any credentials if used for specific methods provided
         if token:
-            self.token = token
+            self._token = token
         elif username and password and (token is None):
             #Authenticating provides a set of tokens (an access and a refresh one used to keep the Client valid for longer periods of time)
             self.authenticate(username, password)
@@ -89,15 +89,15 @@ class Client:
                 self.token = token_json['access_token']
 
                 #At this point we should refresh the token the SubAPIs are holding right now. 
-                self.workflows.token(self.token)
-                self.knowledgegraph.token(self.token)
-                self.admin.token(self.token)
-                self.catalog.token(self.token)
+                self.workflows.token = self._token
+                self.knowledgegraph.token = self._token
+                self.admin.token = self._token
+                self.catalog.token = self._token
 
             else: 
                 raise RuntimeError("Could not authenticate user. Check the provided credentials and verify the availability of the STELAR API.")
         else: 
-            raise ValueError("Credentials was fully or partially empty!")
+            raise ValueError("Credentials were fully or partially empty!")
 
 
     @staticmethod
@@ -162,3 +162,8 @@ class Client:
         if not value:
             raise ValueError("Token cannot be empty.")
         self._token = value
+        # Update subAPIs too.
+        self.workflows.token = value
+        self.admin.token = value
+        self.catalog.token = value
+        self.knowledgegraph.token = value

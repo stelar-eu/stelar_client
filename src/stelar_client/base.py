@@ -5,11 +5,17 @@ class BaseAPI:
 
     def __init__(self, api_url, token=None):
         self.api_url = api_url
-        self.token = token
+        self._token = token
 
+    @property
+    def token(self):
+        """Getter for the token property."""
+        return self._token
+    
     @token.setter
     def token(self, token):
-        self.token = token
+        self._token = token
+
 
     def request(self, method, endpoint, params=None, data=None, headers=None, json=None):
         """
@@ -43,8 +49,8 @@ class BaseAPI:
             "Content-Type": "application/json",
         }
 
-        if self.token:
-            default_headers["Authorization"] = f"Bearer {self.token}"
+        if self._token:
+            default_headers["Authorization"] = f"Bearer {self._token}"
 
         if headers:
             default_headers.update(headers)
