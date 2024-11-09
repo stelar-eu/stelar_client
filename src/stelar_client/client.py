@@ -49,6 +49,8 @@ class Client:
         elif username and password and (token is None):
             #Authenticating provides a set of tokens (an access and a refresh one used to keep the Client valid for longer periods of time)
             self.authenticate(username, password)
+        else:
+            self._token = None
         
         ##  Instatiate the subAPIs as member variables of the client  ######
         self.workflows = WorkflowsAPI(self.api_url, token=self.token)
