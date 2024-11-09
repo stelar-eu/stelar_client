@@ -8,6 +8,13 @@ access the API.
 from urllib.parse import urljoin, urlparse
 import requests
 
+
+# Import subAPIs modules
+from workflows import WorkflowsAPI
+from catalog import CatalogAPI
+from knowgraph import KnowledgeGraphAPI
+from admin import AdminAPI
+
 class Client:
     """An SDK (client) for the STELAR API.
 
@@ -17,13 +24,13 @@ class Client:
         version (str, optional): The API version to use ('v1' or 'v2'). Defaults to 'v1'.
     """
     
-    def __init__(self, base_url, token, version="v1"):
+    def __init__(self, base_url, token=None, username=None, password=None, version="v1"):
         # Validate base_url
-        if not self._is_valid_url(base_url):
+        if not self.__is_valid_url(base_url):
             raise ValueError(f"Invalid base URL: {base_url}")
         
         # Normalize base_url
-        self.base_url = self._normalize_base_url(base_url)
+        self.base_url = self.__normalize_base_url(base_url)
         
         # Append version path (e.g., /api/v1 or /api/v2)
         self.version = version.lower()
@@ -31,10 +38,70 @@ class Client:
             raise ValueError(f"Invalid version '{self.version}'. Only 'v1' or 'v2' are supported.")
         
         self.base_url = self.base_url + f"/api/{self.version}"
-        self.token = token
+
+        # If user provides token explicitely then use this token 
+        # else if username and password was provided then initialize 
+        # the subAPIs using this token for the user. 
+        # 
+        # Client can be also initialized without any credentials if used for specific methods provided
+        if token:
+            self.token = token
+        elif username and password and (token is None):
+            #Authenticating provides a set of tokens (an access and a refresh one used to keep the Client valid for longer periods of time)
+            self.authenticate(username, password)
+        
+        ##  Instatiate the subAPIs as member variables of the client  ######
+        self.workflows = WorkflowsAPI(self.api_url, token=self.token)
+        self.catalog = CatalogAPI(self.api_url, token=self.token)
+        self.knowledgegraph = KnowledgeGraphAPI(self.api_url, token=self.token)
+        self.admin = AdminAPI(self.api_url, token=self.token)
+        ####################################################################
+
+
+    def authenticate(self, username, password):
+        """
+        Authenticates the user and retrieves access and refresh tokens.
+
+        This method sends a POST request to the authentication endpoint using the provided
+        username and password. Upon successful authentication, the method updates the token
+        property and refreshes the token for all subAPI instances.
+
+        Args:
+            username (str): The username of the user.
+            password (str): The password of the user.
+
+        Raises:
+            ValueError: If either the username or password is empty.
+            RuntimeError: If authentication fails due to incorrect credentials or server issues.
+        """
+        auth_endpoint = "/auth/token/issue"
+
+        if username and password:
+            auth_data = {
+                "username": username,
+                "password": password
+            }
+            token_response = requests.post(url=auth_endpoint, data=auth_data, headers={"Content-Type": "application/json"})
+            status_code = token_response.status_code
+            token_json = token_response.json()
+            
+            if token_json and token_json['access_token'] and token_json['refresh_token'] and token_json['success'] == 'true' and status_code == 200:
+                self.token = token_json['access_token']
+
+                #At this point we should refresh the token the SubAPIs are holding right now. 
+                self.workflows.token(self.token)
+                self.knowledgegraph.token(self.token)
+                self.admin.token(self.token)
+                self.catalog.token(self.token)
+
+            else: 
+                raise RuntimeError("Could not authenticate user. Check the provided credentials and verify the availability of the STELAR API.")
+        else: 
+            raise ValueError("Credentials was fully or partially empty!")
+
 
     @staticmethod
-    def _is_valid_url(url):
+    def __is_valid_url(url):
         """
         Validates the given URL.
 
@@ -48,7 +115,7 @@ class Client:
         return all([parsed.scheme, parsed.netloc])
 
     @staticmethod
-    def _normalize_base_url(base_url):
+    def __normalize_base_url(base_url):
         """
         Normalizes the base URL based on the following rules:
         - If base_url ends with '/stelar', do nothing.
@@ -68,67 +135,6 @@ class Client:
         else:
             return urljoin(base_url + '/', 'stelar')
         
-
-    def request(self, method, endpoint, params=None, data=None, headers=None, json=None):
-        """
-        Sends a request to the STELAR API.
-
-        Args:
-            method (str): The HTTP method ('GET', 'POST', 'PUT', 'DELETE').
-            endpoint (str): The API endpoint (relative to `base_url`). Can include query parameters.
-            params (dict, optional): URL query parameters.
-            data (dict, optional): Form data to be sent in the body.
-            headers (dict, optional): Additional request headers.
-            json (dict, optional): JSON data to be sent in the body.
-
-        Returns:
-            requests.Response: The response object from the API.
-        """
-        # Combine base_url with the endpoint
-        endpoint = endpoint.lstrip('/')
-        url = urljoin(self.api_url+"/", endpoint)
-
-        # Handle query parameters in the endpoint or passed as 'params'
-        if "?" in endpoint and params:
-            raise ValueError("Specify query parameters either in the endpoint or in 'params', not both.")
-        
-        # If the URL does not contain a query, add parameters from 'params'
-        if params:
-            from urllib.parse import urlencode
-            url = f"{url}?{urlencode(params)}"
-        
-        # Prepare headers, defaulting to Authorization and Content-Type
-        default_headers = {
-            "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json",
-        }
-        if headers:
-            default_headers.update(headers)
-
-        # Validate data/json and handle accordingly
-        if method.upper() == "GET":
-            # GET requests should not have a body (data or json)
-            if data or json:
-                raise ValueError("GET requests cannot include body data.")
-        else:
-            # POST, PUT, DELETE, etc., should use either data or json but not both
-            if data and json:
-                raise ValueError("Specify either 'data' or 'json', not both.")
-
-        # Make the request using the provided method, url, params, data, json, and headers
-        response = requests.request(
-            method=method,
-            url=url,
-            params=None,  # params are already incorporated into the URL
-            data=data,    # if provided, this will be form data
-            json=json,    # if provided, this will be JSON payload
-            headers=default_headers,
-            verify=True
-        )
-
-        # Raise an exception for HTTP errors (4xx, 5xx responses)
-        response.raise_for_status()
-        return response
 
     @property
     def api_url(self):
@@ -156,5 +162,3 @@ class Client:
         if not value:
             raise ValueError("Token cannot be empty.")
         self._token = value
-
-   
