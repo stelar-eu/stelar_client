@@ -7,7 +7,7 @@ access the API.
 
 from urllib.parse import urljoin, urlparse
 import requests
-
+from endpoints import APIEndpointsV1
 
 # Import subAPIs modules
 from workflows import WorkflowsAPI
@@ -79,14 +79,14 @@ class Client:
         Returns: 
             True: If the authentication was successful
         """
-        auth_endpoint = "/auth/token/issue"
+       
 
         if username and password:
             auth_data = {
                 "username": username,
                 "password": password
             }
-            token_response = requests.post(url=auth_endpoint, data=auth_data, headers={"Content-Type": "application/json"})
+            token_response = requests.post(url=APIEndpointsV1.TOKEN_ISSUE, data=auth_data, headers={"Content-Type": "application/json"})
             status_code = token_response.status_code
             token_json = token_response.json()
             
