@@ -14,6 +14,12 @@ __pycache__/*
 */.ipynb_checkpoints/*
 .DS_Store
 
+pypi-token
+
+/myenv
+*/__pycache__
+src/stelar_client/__pycache__
+
 # Project files
 .ropeproject
 .project
