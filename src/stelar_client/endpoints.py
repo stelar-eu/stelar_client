@@ -21,7 +21,7 @@ class APIEndpointsV1:
         TOKEN_REFRESH (string): The endpoint for issuing an OAuth2.0 token based on a refresh token already available.
   
     """
-    TOKEN_ISSUE = "/auth/token/issue"
-    TOKEN_VERIFY = "/auth/token/verify"
-    TOKEN_REFRESH = "/auth/token/refresh"
-    
+    # Used under different HTTP schemes (POST for ISSUE, PUT for REFRESH)
+    TOKEN_ISSUE = "/users/token"        # POST
+    TOKEN_REFRESH = "/users/token"      # PUT
+    TOKEN_VERIFY = "/users/token"       # GET

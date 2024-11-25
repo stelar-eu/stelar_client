@@ -51,13 +51,18 @@ class Client:
             self.authenticate(username, password)
         else:
             self._token = None
-        
+
+        #Initiliaze the operators with the newly acquired token
+        self.__initialize_operators()
+
+        ####################################################################
+
+    def __initialize_operators(self):
         ##  Instatiate the subAPIs as member variables of the client  ######
         self.workflows = WorkflowsAPI(self.api_url, token=self.token)
         self.catalog = CatalogAPI(self.api_url, token=self.token)
         self.knowledgegraph = KnowledgeGraphAPI(self.api_url, token=self.token)
-        self.admin = AdminAPI(self.api_url, token=self.token)
-        ####################################################################
+        self.admin = AdminAPI(self.api_url, token=self.token)  
 
 
     def authenticate(self, username, password):
@@ -86,18 +91,14 @@ class Client:
                 "username": username,
                 "password": password
             }
-            token_response = requests.post(url=APIEndpointsV1.TOKEN_ISSUE, data=auth_data, headers={"Content-Type": "application/json"})
+            token_response = requests.post(url=self.base_url+APIEndpointsV1.TOKEN_ISSUE, json=auth_data, headers={"Content-Type": "application/json"})
             status_code = token_response.status_code
-            token_json = token_response.json()
+            token_json = token_response.json().get('result', None)
+            success = token_response.json().get('success')
             
-            if token_json and token_json['access_token'] and token_json['refresh_token'] and token_json['success'] == 'true' and status_code == 200:
-                self.token = token_json['access_token']
-
-                #At this point we should refresh the token the SubAPIs are holding right now. 
-                self.workflows.token = self._token
-                self.knowledgegraph.token = self._token
-                self.admin.token = self._token
-                self.catalog.token = self._token
+            if token_json and token_json['token'] and token_json['refresh_token'] and success and status_code == 200:
+                self._token = token_json['token']
+                self._refresh_token = token_json['refresh_token']
 
                 return True
 
