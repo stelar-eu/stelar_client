@@ -19,9 +19,16 @@ class APIEndpointsV1:
         TOKEN_ISSUE (string): The endpoint for issuing an OAuth2.0 token
         TOKEN_VERIFY (string): The endpoint for verifying the status of an OAuth2.0 token
         TOKEN_REFRESH (string): The endpoint for issuing an OAuth2.0 token based on a refresh token already available.
+
+        GET_USER (string): The endpoint for fetching information about a specific used by ID. 
+        GET_USERS (string): The endpoint for fetching information about all users in the KLMS.
   
     """
     # Used under different HTTP schemes (POST for ISSUE, PUT for REFRESH)
     TOKEN_ISSUE = "/users/token"        # POST
     TOKEN_REFRESH = "/users/token"      # PUT
     TOKEN_VERIFY = "/users/token"       # GET
+
+
+    GET_USER = "/users/"
+    GET_USERS = "/users"
