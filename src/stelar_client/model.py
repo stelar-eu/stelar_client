@@ -8,11 +8,27 @@ from typing import List, Dict
 class Resource:
     """
     A class representing a STELAR resource with metadata and additional details.
-    Objects of this class are used for holding metadata information of a STELAR resource entity
-    during the usage of the client in a local runtime.
+
+    This class is designed to hold metadata for a STELAR resource entity, making it easier
+    to manage and manipulate resource information within the client application runtime.
+
+    Attributes:
+        id (str): The unique identifier for the resource.
+        url (str): The URL where the resource is located.
+        format (str): The format of the resource (e.g., "CSV", "JSON").
+        name (str): The name of the resource.
     """
 
+
     def __init__(self, url: str, format: str, name: str) -> None:
+        """
+    Initialize a Resource instance with essential fields.
+
+    Args:
+        url (str): The URL where the resource is located.
+        format (str): The format of the resource.
+        name (str): The name of the resource.
+    """
         self.id = None
         self.url = url
         self.format = format
@@ -21,17 +37,45 @@ class Resource:
 
 
     def __str__(self):
+        """
+        Provide a human-readable string representation of the Resource instance.
+
+        Returns:
+            str: A string describing the resource's key attributes.
+        """
         return f"Resource ID: {self.id} | Name: {self.name} | URL: {self.url} | Format : {self.format}"
     
     @classmethod
     def from_dict(cls, data: dict):
+        """
+        A class method to construct a Resource instance from a dictionary.
+
+        Args:
+            data (dict): The dictionary containing resource metadata.
+
+        Returns:
+            Resource: A fully constructed Resource instance.
+        """
         return cls(
             url=data.get('url'),
             format=data.get('format'),
             name=data.get('name'),
         )._populate_additional_fields(data)
     
+
     def _populate_additional_fields(self, data: dict):
+        """
+        A helper method to populate additional fields from the dictionary.
+
+        This is used internally by the `from_dict` method to set optional fields
+        that aren't part of the main constructor.
+
+        Args:
+            data (dict): The dictionary containing resource metadata.
+
+        Returns:
+            Resource: The updated Resource instance (self).
+        """
         self.id = data.get('id')
         self.relation = data.get('relation')
         self.package_id = data.get('package_id')
@@ -39,7 +83,6 @@ class Resource:
         self.creation_date = data.get('created')
         self.description = data.get('description')
         return self
-
 
 
 class Dataset:
@@ -51,23 +94,18 @@ class Dataset:
     @classmethod
     def from_dict(cls, data: dict):
         """
-        A class method for constructing a Dataset holder when fetching metadata from the STELAR API.
-        This constructor is mainly used by the operators of the STELAR Client to achieve consistency
-        and availability of the metadata held in a local Dataset object during all operations related
-        to transacting the information between the local runtime and the STELAR API.
+        A class method for constructing a Dataset object from a dictionary of metadata.
 
-        Args:he name of the dataset.
-            tags (list): A list of tags (str) associated with the dataset.
-            title (str): The title of the dataset.
-            notes (str): A description or notes about the dataset.
-            modified_date (str): The last modified date of the dataset.
-            creation_date (str): The creation date of the dataset.
-            num_tags (int): The number of tags associated with the dataset.
-            num_resources (int): The number of resources in the dataset.
-            creation_user_id (str): The ID of the user who created the dataset.
-            url (str): The URL associated with the dataset.
-            extras List[Dict]: Additional metadata for the dataset.(spatial, theme, language etc.)
-            resources (List[Resources]): A list of Resource objects related to the dataset.
+        This method is used to parse JSON data received from the STELAR API and
+        construct a Dataset object that maintains consistency and integrity of metadata
+        in a local runtime environment.
+
+        Args:
+            data (dict): The dictionary containing dataset metadata fetched from the API.
+                        It includes fields such as tags, extras, resources, and other dataset properties.
+
+        Returns:
+            Dataset: An instance of the Dataset class populated with the parsed metadata.
         """
         tags = [tag.get("name") for tag in data.get("tags", [])]
         extras = {extra.get("key"): extra.get("value") for extra in data.get("extras", [])}
@@ -82,6 +120,17 @@ class Dataset:
         )._populate_additional_fields(data)
 
     def _populate_additional_fields(self, data: dict):
+        """
+        A helper method to populate additional fields of the Dataset object.
+        This is used internally after the primary construction to set fields
+        not directly passed in the constructor.
+
+        Args:
+            data (dict): The raw dictionary representing the dataset metadata from the API.
+
+        Returns:
+            Dataset: The updated Dataset instance (self).
+        """
         self.id = data.get('id')
         self.name = data.get('name')
         self.modified_date = data.get('metadata_modified')
@@ -94,7 +143,7 @@ class Dataset:
     
     def __init__(self, title: str, notes: str, tags: List[str], extras: Dict = None, profile: Resource = None, resources: List[Resource] = None):
         """
-        Initializes an instance of the Dataset class.
+        Initializes an object of the Dataset class.
 
         Args:
             title (str): The title of the dataset.
