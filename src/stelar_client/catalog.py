@@ -7,8 +7,14 @@ from urllib.parse import urljoin, urlencode
 class CatalogAPI(BaseAPI):
     """
     CatalogAPI is an operator used as part of the STELAR Python Client. The operator implements 
-    catalog handling methods that utilize a subset of the available STELAR API Endpoints that are related
-    to catalog management operations (Publishing, Searching etc.)
+    catalog handling methods that utilizes a subset of the available STELAR API Endpoints that are related
+    to catalog management operations (Publishing, Searching etc.). It offers methods as:
+
+    - get_dataset(id (str)) -> Dataset
+    - get_datasets_dict() -> Dict(Datasets) 
+    - get_datasets_list() -> List(Datasets)
+    - get_resources_dict(dataset_id) -> Dict(Resource)
+    - get_resources_list(dataset_id) -> List(Resource)
     """
     
     def get_dataset(self, id: str) -> Dataset:
