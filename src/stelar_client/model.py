@@ -22,22 +22,23 @@ class Resource:
 
     def __str__(self):
         return f"Resource ID: {self.id} | Name: {self.name} | URL: {self.url} | Format : {self.format}"
-
+    
     @classmethod
-    def fetching_constructor(cls, url: str, package_id: str, modified_date: str,
-                             creation_date: str, format: str, description: str, id: str, 
-                             name: str = None, relation: str = None):
-        resource = cls(url=url, format=format, name=name)
-        resource.id = id
-        resource.relation = relation
-        resource.package_id = package_id
-        resource.modified_date = modified_date
-        resource.creation_date = creation_date
-        resource.description = description
-        
-        return resource
-
-
+    def from_dict(cls, data: dict):
+        return cls(
+            url=data.get('url'),
+            format=data.get('format'),
+            name=data.get('name'),
+        )._populate_additional_fields(data)
+    
+    def _populate_additional_fields(self, data: dict):
+        self.id = data.get('id')
+        self.relation = data.get('relation')
+        self.package_id = data.get('package_id')
+        self.modified_date = data.get('metadata_modified')
+        self.creation_date = data.get('created')
+        self.description = data.get('description')
+        return self
 
 
 
@@ -48,19 +49,14 @@ class Dataset:
     during the usage of the client in a local runtime.
     """
     @classmethod
-    def fetching_constructor(cls, id: str, name: str, tags: List[str], title: str, notes: str, 
-                             modified_date: str, creation_date: str, num_tags: int, 
-                             num_resources: int, creation_user_id: str, url: str = None, 
-                             extras: List[Dict]=None, resources: List[Resource]=None):        
+    def from_dict(cls, data: dict):
         """
         A class method for constructing a Dataset holder when fetching metadata from the STELAR API.
         This constructor is mainly used by the operators of the STELAR Client to achieve consistency
         and availability of the metadata held in a local Dataset object during all operations related
         to transacting the information between the local runtime and the STELAR API.
 
-        Args:
-            id (str): The unique identifier of the dataset.
-            name (str): The name of the dataset.
+        Args:he name of the dataset.
             tags (list): A list of tags (str) associated with the dataset.
             title (str): The title of the dataset.
             notes (str): A description or notes about the dataset.
@@ -73,20 +69,29 @@ class Dataset:
             extras List[Dict]: Additional metadata for the dataset.(spatial, theme, language etc.)
             resources (List[Resources]): A list of Resource objects related to the dataset.
         """
+        tags = [tag.get("name") for tag in data.get("tags", [])]
+        extras = {extra.get("key"): extra.get("value") for extra in data.get("extras", [])}
+        resources = [Resource.from_dict(resource) for resource in data.get("resources", [])]
 
-        dataset = cls(title=title, notes=notes, tags=tags, extras=extras, resources=resources)
-        dataset.id = id
-        dataset.name = name
-        dataset.modified_date = modified_date
-        dataset.creation_date = creation_date
-        dataset.num_tags = num_tags
-        dataset.num_resources = num_resources
-        dataset.creation_user_id = creation_user_id
-        dataset.url = url
-        dataset.extras = extras
-        
-        return dataset
+        return cls(
+            title=data.get('title'),
+            notes=data.get('notes'),
+            tags=tags,
+            extras=extras,
+            resources=resources,
+        )._populate_additional_fields(data)
 
+    def _populate_additional_fields(self, data: dict):
+        self.id = data.get('id')
+        self.name = data.get('name')
+        self.modified_date = data.get('metadata_modified')
+        self.creation_date = data.get('metadata_created')
+        self.num_tags = data.get('num_tags')
+        self.num_resources = data.get('num_resources')
+        self.creation_user_id = data.get('author')
+        self.url = data.get('url')
+        return self
+    
     def __init__(self, title: str, notes: str, tags: List[str], extras: Dict = None, profile: Resource = None, resources: List[Resource] = None):
         """
         Initializes an instance of the Dataset class.
@@ -115,6 +120,8 @@ class Dataset:
         if self.resources :
             for resource in self.resources:
                 dataset_info = dataset_info + "\t" + str(resource) + "\n"
+        else:
+            dataset_info = dataset_info + "\tNo Resources Associated"
         return dataset_info
 
 
