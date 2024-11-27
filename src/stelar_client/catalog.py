@@ -6,8 +6,8 @@ from urllib.parse import urljoin, urlencode
 
 class CatalogAPI(BaseAPI):
     """
-    CatalogAPI is an operator used as part of the STELAR Python Client that implements 
-    python methods that use a subset of the available STELAR API Endpoints that are related
+    CatalogAPI is an operator used as part of the STELAR Python Client. The operator implements 
+    catalog handling methods that utilize a subset of the available STELAR API Endpoints that are related
     to catalog management operations (Publishing, Searching etc.)
     """
     
