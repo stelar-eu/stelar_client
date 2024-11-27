@@ -34,8 +34,8 @@ class Client:
         
         # Append version path (e.g., /api/v1 or /api/v2)
         self.version = version.lower()
-        if self.version not in ["v1"]:
-            raise ValueError(f"Invalid version '{self.version}'. Only 'v1' is supported.")
+        if self.version not in ["v1", "v2"]:
+            raise ValueError(f"Invalid version '{self.version}'. Only 'v1' or 'v2' are supported.")
         
         self.base_url = self.base_url + f"/api/{self.version}"
 
