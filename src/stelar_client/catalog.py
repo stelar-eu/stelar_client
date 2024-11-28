@@ -1,6 +1,6 @@
 from base import BaseAPI
 from endpoints import APIEndpointsV1
-from model import Dataset, Resource, MissingParametersError, EntityNotFoundError
+from model import Dataset, Resource, MissingParametersError,STELARUnknownError,DuplicateEntryError, EntityNotFoundError
 from requests.exceptions import HTTPError
 from urllib.parse import urljoin, urlencode
 
@@ -43,3 +43,104 @@ class CatalogAPI(BaseAPI):
                 raise MissingParametersError(f"Bad Request")
             elif he.response.status_code == 404:
                 raise EntityNotFoundError(f"Entiy Not Found: {id}")
+    
+    def create_dataset(self, dataset: Dataset):
+
+        if not dataset:
+            return None
+        try:
+            publish_input = dataset.to_dict()
+            dataset_response = self.request("POST",APIEndpointsV1.POST_DATASETS,json=publish_input)
+            if dataset_response.status_code == 200:
+                djson = dataset_response.json()['result']['dataset']
+                dataset.update_from_dict(djson)
+
+        except HTTPError as he:
+            if he.response.status_code == 400:
+                raise MissingParametersError("Bad Request")
+            elif he.response.status_code == 409:
+                raise DuplicateEntryError("Dataset Already Exists")
+            else:
+                raise STELARUnknownError("Unknown Error")
+            
+    def get_datasets(self):
+        try:
+            dataset_response = self.request("GET",APIEndpointsV1.GET_DATASETS_LIST)
+            if dataset_response.status_code == 200:
+                datasets_list = dataset_response.json()['result']['datasets']
+                dataset_object_list = [self.get_dataset(dataset) for dataset in datasets_list]
+                return dataset_object_list
+        except HTTPError as he:
+            raise STELARUnknownError("STELAR unknown Error")
+        
+        
+    def patch_datasets(self,dataset: Dataset):
+        if not dataset:
+            return None
+        try:
+            dataset_to_patch = dataset.id
+        except:
+            pass
+
+    #################################################
+    ################### RESOURCES ###################
+    #################################################
+
+    def publish_dataset_resource(self,dataset: Dataset,resource: Resource):
+        if not dataset or not resource:
+            return None
+        try:
+            new_resource = resource.to_dict()
+            id = dataset.id
+            
+            resource_response = self.request("POST",APIEndpointsV1.POST_DATASET_RESOURCE.replace("?",f"{id}"),json=new_resource)
+            if resource_response.status_code == 200:
+                resource_json = resource_response.json()['result']['resource']
+                resource.update_from_dict(resource_json)
+
+                dataset.resources.append(resource)
+
+        except HTTPError as he:
+            if he.response.status_code == 404:
+                raise EntityNotFoundError(f"Entity not found: {id}")
+            else:
+                raise STELARUnknownError("STELAR unknown error")
+            
+    def get_dataset_resources(self,id: str,filter: str = None):
+        if not id:
+            return None
+        
+        if not filter:
+            try:
+
+                resource_response = self.request("GET",APIEndpointsV1.GET_DATASET_RESOURCES.replace("?",f"{id}"))
+                if resource_response.status_code == 200:
+                    resources_list = resource_response.json()['result']['resources']
+                    resources_object_list = [Resource.from_dict(resource) for resource in resources_list]
+                    return resources_object_list
+                
+            except HTTPError as he:
+                if he.response.status_code == 404:
+                    raise EntityNotFoundError(f"Entity not found: {id}")
+                else:
+                    raise STELARUnknownError("STELAR unknown error")
+        else:
+            try:
+                resource_response = self.request("GET",APIEndpointsV1.GET_DATASET_RESOURCES_FILTER.replace("?",f"{id}")+filter)
+                if resource_response.status_code == 200:
+                    resources_list = resource_response.json()['result']['resources']
+                    resources_object_list = [Resource.from_dict(resource) for resource in resources_list]
+                    return resources_object_list
+                
+            except HTTPError as he:
+                if he.response.status_code == 404:
+                    raise EntityNotFoundError(f"Entity not found: {id}")
+                else:
+                    raise STELARUnknownError("STELAR unknown error")
+
+
+
+            
+        
+
+

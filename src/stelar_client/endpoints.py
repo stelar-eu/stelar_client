@@ -38,3 +38,12 @@ class APIEndpointsV1:
 
     GET_DATASET = "/datasets/"
     GET_DATASETS = "/datasets"
+    GET_DATASETS_LIST = "/datasets/list"
+
+    POST_DATASETS = "/datasets"
+
+    POST_DATASET_RESOURCE = "/datasets/?/resource"
+
+    GET_DATASET_RESOURCES = "/datasets/?/resources"
+    GET_DATASET_RESOURCES_FILTER = "/datasets/?/resources/"
+    
