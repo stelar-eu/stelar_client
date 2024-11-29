@@ -121,3 +121,72 @@ def get_object(object_path: str, file_path: str):
             "message": str(e),
             "traceback": traceback.format_exc()
         }
+
+
+def stream_object(object_path: str, chunk_size: int = 32 * 1024):
+    """
+    Streams an object from MinIO in chunks.
+    Args:
+        object_path (str): The full path to the bucket and object in the format "bucket_name/object_name".
+        chunk_size (int): Size of each chunk to read, default is 32KB.
+    Yields:
+        bytes: A chunk of the object's data.
+    """
+    if not mclient:
+        return {"error": "MinIO client is not initialized."}
+
+    try:
+        bucket_name, object_name = object_path.split('/', 1)
+        response = mclient.get_object(bucket_name, object_name)
+        for chunk in response.stream(chunk_size):
+            yield chunk
+        response.close()
+        response.release_conn()
+    except (S3Error, InvalidResponseError) as e:
+        yield {
+            "error": "Could not stream the object from MinIO",
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }
+    except Exception as e:
+        yield {
+            "error": "An unexpected error occurred while streaming the object",
+            "message": str(e),
+            "traceback": traceback.format_exc()  
+        }
+    
+    
+def stat_object(object_path: str):
+    """
+    Retrieves metadata of an object from MinIO, such as size and other attributes.
+    Args:
+        object_path (str): The full path to the bucket and object in the format "bucket_name/object_name".
+    Returns:
+        dict: Metadata of the object or an error dictionary if the operation fails.
+    """
+    if not mclient:
+        return {"error": "MinIO client is not initialized."}
+
+    try:
+        bucket_name, object_name = object_path.split('/', 1)
+        stat = mclient.stat_object(bucket_name, object_name)
+        return {
+            "bucket_name": bucket_name,
+            "object_name": object_name,
+            "size": stat.size,
+            "etag": stat.etag,
+            "last_modified": stat.last_modified,
+            "content_type": stat.content_type,
+        }
+    except (S3Error, InvalidResponseError) as e:
+        return {
+            "error": "Could not retrieve object stats from MinIO",
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }
+    except Exception as e:
+        return {
+            "error": "An unexpected error occurred while retrieving object stats",
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }
