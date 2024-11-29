@@ -1,10 +1,5 @@
-import requests
-from urllib.parse import urljoin, urlencode
 from typing import List, Dict
-import json
-
-
-
+from IPython.core.display import HTML
 
 class Resource:
     """
@@ -99,7 +94,24 @@ class Resource:
 
         # Update the additional fields
         self._populate_additional_fields(data)
+
         
+    def _repr_html_(self):
+        """
+        Provide an HTML representation of the Resource instance for Jupyter display.
+        """
+        html = f"""
+        <table border="1" style="border-collapse: collapse; width: 50%; text-align: left;">
+            <tr><th>Attribute</th><th>Value</th></tr>
+            <tr><td>ID</td><td>{self.id or 'N/A'}</td></tr>
+            <tr><td>Parent Package</td><td>{self.package_id}</td></tr>
+            <tr><td>Relation To Parent</td><td>{self.relation}</td></tr>
+            <tr><td>Name</td><td>{self.name}</td></tr>
+            <tr><td>URL</td><td><a href="{self.url}" target="_blank">{self.url}</a></td></tr>
+            <tr><td>Format</td><td>{self.format}</td></tr>
+        </table>
+        """
+        return HTML(html)._repr_html_()
 
     def to_dict(self):
         """
@@ -118,141 +130,6 @@ class Resource:
         return json_dict
 
 
-# class Dataset:
-#     """
-#     A class representing a STELAR dataset with metadata, resources, and additional details.
-#     Objects of this class are used for holding metadata information of a STELAR dataset entity
-#     during the usage of the client in a local runtime.
-#     """
-#     @classmethod
-#     def from_dict(cls, data: dict):
-#         """
-#         A class method for constructing a Dataset object from a dictionary of metadata.
-
-#         This method is used to parse JSON data received from the STELAR API and
-#         construct a Dataset object that maintains consistency and integrity of metadata
-#         in a local runtime environment.
-
-#         Args:
-#             data (dict): The dictionary containing dataset metadata fetched from the API.
-#                         It includes fields such as tags, extras, resources, and other dataset properties.
-
-#         Returns:
-#             Dataset: An instance of the Dataset class populated with the parsed metadata.
-#         """
-#         tags = [tag.get("name") for tag in data.get("tags", [])]
-#         extras = {extra.get("key"): extra.get("value") for extra in data.get("extras", [])}
-#         resources = [Resource.from_dict(resource) for resource in data.get("resources", [])]
-
-#         return cls(
-#             title=data.get('title'),
-#             notes=data.get('notes'),
-#             tags=tags,
-#             extras=extras,
-#             resources=resources,
-#         )._populate_additional_fields(data)
-
-#     def _populate_additional_fields(self, data: dict):
-#         """
-#         A helper method to populate additional fields of the Dataset object.
-#         This is used internally after the primary construction to set fields
-#         not directly passed in the constructor.
-
-#         Args:
-#             data (dict): The raw dictionary representing the dataset metadata from the API.
-
-#         Returns:
-#             Dataset: The updated Dataset instance (self).
-#         """
-#         self.id = data.get('id')
-#         self.name = data.get('name')
-#         self.modified_date = data.get('metadata_modified')
-#         self.creation_date = data.get('metadata_created')
-#         self.num_tags = data.get('num_tags')
-#         self.num_resources = data.get('num_resources')
-#         self.creation_user_id = data.get('author')
-#         self.url = data.get('url')
-#         return self
-    
-
-#     def to_dict(self):
-#         if self.extras:
-#             json_dict = {
-#                 "basic_metadata":{
-#                     "title":self.title,
-#                     "notes":self.notes,
-#                     "tags":self.tags
-#                 },
-#                 "extra_metadata": self.extras
-
-#             }
-#         else:
-#             json_dict = {
-#                 "basic_metadata":{
-#                     "title":self.title,
-#                     "notes":self.notes,
-#                     "tags":self.tags
-#                 }
-#             }
-           
-#         return json_dict
-    
-#     def update_from_dict(self, data: dict):
-#         """
-#         Updates the current Dataset instance with new data from a dictionary.
-
-#         Args:
-#             data (dict): The dictionary containing updated dataset metadata.
-
-#         Returns:
-#             None: Updates the instance in place.
-#         """
-#         if 'title' in data:
-#             self.title = data['title']
-#         if 'notes' in data:
-#             self.notes = data['notes']
-#         if 'tags' in data:
-#             self.tags = [tag.get("name") for tag in data.get("tags", [])]
-#         if 'extras' in data:
-#             self.extras = {extra.get("key"): extra.get("value") for extra in data.get("extras", [])}
-#         if 'resources' in data:
-#             self.resources = [Resource.from_dict(resource) for resource in data.get("resources", [])]
-        
-#         # Update additional fields
-#         self._populate_additional_fields(data)
-
-        
-#     def __init__(self, title: str, notes: str, tags: List[str], extras: Dict = None, profile: Resource = None, resources: List[Resource] = None):
-#         """
-#         Initializes an object of the Dataset class.
-
-#         Args:
-#             title (str): The title of the dataset.
-#             notes (str): A description or notes about the dataset.
-#             tags (list): A list of tags (str) associated with the dataset.
-#             extras (dict): Additional metadata (spatial, theme, language etc.) for the dataset.
-#             profile (Resource): A profile Resource related to the dataset.
-#             resources (List[Resource]): A list of resources to be included in the dataset.
-#         """
-#         self.id = None
-#         self.name = None
-#         self.modified_date = None
-#         self.title = title
-#         self.notes = notes
-#         self.tags = tags
-#         self.extras = extras
-#         self.profile = profile
-#         self.resources = resources
-
-
-#     def __str__(self):
-#         dataset_info = f"Title: {self.title} | Dataset ID: {self.id} | Name: {self.name} | Tags: {self.tags} | Modified Date: {self.modified_date}\nDataset Resources:\n"
-#         if self.resources :
-#             for resource in self.resources:
-#                 dataset_info = dataset_info + "\t" + str(resource) + "\n"
-#         else:
-#             dataset_info = dataset_info + "\tNo Resources Associated"
-#         return dataset_info
 
 class Dataset:
     """
@@ -382,6 +259,46 @@ class Dataset:
         # Update additional fields
         self._populate_additional_fields(data)
 
+    
+    def _repr_html_(self):
+        """
+        Provide an HTML representation of the Dataset instance for Jupyter display.
+        """
+        resources_html = ""
+        if self.resources:
+            resources_html = "".join(
+                f"""
+                <tr>
+                    <td>{resource.id or 'N/A'}</td>
+                    <td>{resource.name}</td>
+                    <td><a href="{resource.url}" target="_blank">{resource.url}</a></td>
+                    <td>{resource.format}</td>
+                </tr>
+                """
+                for resource in self.resources
+            )
+        else:
+            resources_html = "<tr><td colspan='4'>No Resources Associated</td></tr>"
+
+        html = f"""
+        <strong>Dataset Summary:</strong>
+        <table>
+            <tr><th>Attribute</th><th>Value</th></tr>
+            <tr><td>ID</td><td>{self.id or 'N/A'}</td></tr>
+            <tr><td>Title</td><td>{self.title}</td></tr>
+            <tr><td>Notes</td><td>{self.notes}</td></tr>
+            <tr><td>Tags</td><td>{', '.join(self.tags)}</td></tr>
+            <tr><td>Modified Date</td><td>{self.modified_date or 'N/A'}</td></tr>
+        </table>
+        <br>
+        <strong>Dataset Resources:</strong>
+        <table border="1" style="border-collapse: collapse; width: 100%;">
+            <tr><th>ID</th><th>Name</th><th>URL</th><th>Format</th></tr>
+            {resources_html}
+        </table>
+        """
+        return HTML(html)._repr_html_()
+    
     def __str__(self):
         dataset_info = f"Title: {self.title} | Dataset ID: {self.id} | Name: {self.name} | Tags: {self.tags} | Modified Date: {self.modified_date}\nDataset Resources:\n"
         if self.resources:
