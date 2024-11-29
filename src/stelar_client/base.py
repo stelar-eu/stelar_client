@@ -35,7 +35,6 @@ class BaseAPI:
         # Combine base_url with the endpoint
         endpoint = endpoint.lstrip('/')
         url = urljoin(self.api_url+"/", endpoint)
-        print(url)
         # Handle query parameters in the endpoint or passed as 'params'
         if "?" in endpoint and params:
             raise ValueError("Specify query parameters either in the endpoint or in 'params', not both.")
