@@ -1,46 +1,73 @@
 from typing import List, Dict
 from IPython.core.display import HTML
 
+
 class Resource:
     """
     A class representing a STELAR resource with metadata and additional details.
 
     This class is designed to hold metadata for a STELAR resource entity, making it easier
     to manage and manipulate resource information within the client application runtime.
-
-    Attributes:
-        id (str): The unique identifier for the resource.
-        url (str): The URL where the resource is located.
-        format (str): The format of the resource (e.g., "CSV", "JSON").
-        name (str): The name of the resource.
     """
-
 
     def __init__(self, url: str, format: str, name: str) -> None:
         """
-    Initialize a Resource instance with essential fields.
+        Initialize a Resource instance with essential fields.
 
-    Args:
-        url (str): The URL where the resource is located.
-        format (str): The format of the resource.
-        name (str): The name of the resource.
-    """
+        Args:
+            url (str): The URL where the resource is located.
+            format (str): The format of the resource.
+            name (str): The name of the resource.
+            kwargs: Additional optional fields.
+        """
+        self._data = {
+            "url": url,
+            "format": format,
+            "name": name
+        }
+        self._original_data = self._data.copy()  # Copy for dirty tracking
+        self._dirty_fields = set()  # Track which fields have been modified
+
+        # Additional fields
         self.id = None
-        self.url = url
-        self.format = format
-        self.name = name
-        pass
+        self.relation = None
+        self.package_id = None
+        self.modified_date = None
+        self.creation_date = None
+        self.description = None
 
+    def __getattr__(self, name):
+        """Handle attribute access dynamically."""
+        if name in self._data:
+            return self._data[name]
+        raise AttributeError(f"'Resource' object has no attribute '{name}'")
 
-    def __str__(self):
-        """
-        Provide a human-readable string representation of the Resource instance.
+    def __setattr__(self, name, value):
+        """Handle attribute assignment dynamically."""
+        if name in {"_data", "_original_data", "_dirty_fields"} or name not in self._data:
+            super().__setattr__(name, value)
+        else:
+            # Only mark as dirty if the value actually changes
+            if self._data[name] != value:
+                self._data[name] = value
+                self._dirty_fields.add(name)
 
-        Returns:
-            str: A string describing the resource's key attributes.
-        """
-        return f"Resource ID: {self.id} | Relation: {self.relation} | Name: {self.name} | URL: {self.url} | Format : {self.format}"
-    
+    def is_dirty(self):
+        """Check if any field is dirty."""
+        return bool(self._dirty_fields)
+
+    def changes(self):
+        """Return the fields that have been modified and their changes."""
+        return {
+            key: (self._original_data[key], self._data[key])
+            for key in self._dirty_fields
+        }
+
+    def reset_dirty(self):
+        """Reset the dirty state and save the current data as original."""
+        self._original_data = self._data.copy()
+        self._dirty_fields.clear()
+
     @classmethod
     def from_dict(cls, data: dict):
         """
@@ -52,25 +79,20 @@ class Resource:
         Returns:
             Resource: A fully constructed Resource instance.
         """
-        return cls(
+        instance = cls(
             url=data.get('url'),
             format=data.get('format'),
             name=data.get('name'),
-        )._populate_additional_fields(data)
-    
+        )
+        instance._populate_additional_fields(data)
+        return instance
 
     def _populate_additional_fields(self, data: dict):
         """
-        A helper method to populate additional fields from the dictionary.
-
-        This is used internally by the `from_dict` method to set optional fields
-        that aren't part of the main constructor.
+        Populate additional fields of the Resource object.
 
         Args:
             data (dict): The dictionary containing resource metadata.
-
-        Returns:
-            Resource: The updated Resource instance (self).
         """
         self.id = data.get('id')
         self.relation = data.get('relation')
@@ -79,7 +101,21 @@ class Resource:
         self.creation_date = data.get('created')
         self.description = data.get('description')
         return self
-    
+
+    def to_dict(self):
+        """
+        Convert the Resource instance into a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the Resource instance.
+        """
+        resource_dict = {
+            "url": self.url,
+            "format": self.format,
+            "name": self.name,
+        }
+        return resource_dict
+
     def update_from_dict(self, data: dict):
         """
         Updates the current Resource instance with new data from a dictionary.
@@ -87,15 +123,22 @@ class Resource:
         Args:
             data (dict): A dictionary containing new data for the Resource.
         """
-        # Update the primary fields of the Resource
         for key in ['url', 'format', 'name']:
             if key in data:
                 setattr(self, key, data[key])
 
-        # Update the additional fields
+        # Update additional fields
         self._populate_additional_fields(data)
 
-        
+    def __str__(self):
+        """
+        Provide a human-readable string representation of the Resource instance.
+
+        Returns:
+            str: A string describing the resource's key attributes.
+        """
+        return f"Resource ID: {self.id} | Relation: {self.relation} | Name: {self.name} | URL: {self.url} | Format : {self.format}"
+
     def _repr_html_(self):
         """
         Provide an HTML representation of the Resource instance for Jupyter display.
@@ -104,30 +147,16 @@ class Resource:
         <table border="1" style="border-collapse: collapse; width: 50%; text-align: left;">
             <tr><th>Attribute</th><th>Value</th></tr>
             <tr><td>ID</td><td>{self.id or 'N/A'}</td></tr>
-            <tr><td>Parent Package</td><td>{self.package_id}</td></tr>
-            <tr><td>Relation To Parent</td><td>{self.relation}</td></tr>
+            <tr><td>Parent Package</td><td>{self.package_id or 'N/A'}</td></tr>
+            <tr><td>Relation To Parent</td><td>{self.relation or 'N/A'}</td></tr>
             <tr><td>Name</td><td>{self.name}</td></tr>
             <tr><td>URL</td><td><a href="{self.url}" target="_blank">{self.url}</a></td></tr>
             <tr><td>Format</td><td>{self.format}</td></tr>
+            <tr><td>Description</td><td>{self.description or 'N/A'}</td></tr>
         </table>
         """
         return HTML(html)._repr_html_()
 
-    def to_dict(self):
-        """
-        Convert the Resource instance into a dictionary.
-        """
-    
-        json_dict = {
-            "resource_metadata": {
-                "url": self.url,
-                "name": self.name,
-                "format": self.format,
-            }
-        
-        
-        }
-        return json_dict
 
 
 
@@ -247,6 +276,7 @@ class Dataset:
                 }
             }
         return json_dict
+    
 
     def update_from_dict(self, data: dict):
         """

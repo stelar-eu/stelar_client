@@ -42,7 +42,7 @@ class CatalogAPI(BaseAPI):
             if he.response.status_code == 400:
                 raise MissingParametersError(f"Bad Request")
             elif he.response.status_code == 404:
-                raise EntityNotFoundError(f"Entiy Not Found: {id}")
+                raise EntityNotFoundError(f"Entity Not Found: {id}")
     
     def create_dataset(self, dataset: Dataset):
 
@@ -54,7 +54,7 @@ class CatalogAPI(BaseAPI):
             if dataset_response.status_code == 200:
                 djson = dataset_response.json()['result']['dataset']
                 dataset.update_from_dict(djson)
-
+                dataset.reset_dirty()
         except HTTPError as he:
             if he.response.status_code == 400:
                 raise MissingParametersError("Bad Request")
@@ -73,14 +73,46 @@ class CatalogAPI(BaseAPI):
         except HTTPError as he:
             raise STELARUnknownError("STELAR unknown Error")
         
-    
+        
     def patch_datasets(self,dataset: Dataset):
         if not dataset:
             return None
         try:
-            dataset_to_patch = dataset.id
-        except:
-            pass
+            if dataset.is_dirty():
+                json_obj = {"package_metadata":{}}
+                for key,value in dataset.changes().items():
+                    json_obj['package_metadata'][key] = value[1]
+                
+                dataset_response = self.request("PATCH",urljoin(APIEndpointsV1.PATCH_DATASET,dataset.id),json=json_obj)
+                if dataset_response.status_code == 200:
+                    djson = dataset_response.json()['result']['dataset']
+                    dataset.update_from_dict(djson)
+                    dataset.reset_dirty()
+            else:
+                print("No changes at Dataset Object to update")
+        except HTTPError as he:
+            if he.response.status_code == 404:
+                raise EntityNotFoundError(f"Entity Not Found: {dataset.id}")
+            else:
+                raise STELARUnknownError("STELAR unknown Error")
+
+                
+
+    def delete_dataset(self,id: str):
+        if not id:
+            return None
+        try:
+            dataset_response = self.request("DELETE",urljoin(APIEndpointsV1.DELETE_DATASET,id))
+            if dataset_response.status_code == 200:
+                deleted_id = dataset_response.json()['result']['dataset']
+                print(f"Dataset with id: {deleted_id} deleted successfully")
+                return True
+        except HTTPError as he:
+            if he.response.status_code == 404:
+                raise EntityNotFoundError(f"Entity Not Found: {id}")
+            else:
+                raise STELARUnknownError("STELAR unknown Error")
+
 
     #################################################
     ################### RESOURCES ###################
@@ -93,11 +125,11 @@ class CatalogAPI(BaseAPI):
             new_resource = resource.to_dict()
             id = dataset.id
             
-            resource_response = self.request("POST", APIEndpointsV1.POST_DATASET_RESOURCE.replace("?",f"{id}"), json=new_resource)
+            resource_response = self.request("POST",APIEndpointsV1.POST_DATASET_RESOURCE.replace("?",f"{id}"),json=new_resource)
             if resource_response.status_code == 200:
                 resource_json = resource_response.json()['result']['resource']
                 resource.update_from_dict(resource_json)
-
+                resource.reset_dirty()
                 dataset.resources.append(resource)
 
         except HTTPError as he:
@@ -113,7 +145,7 @@ class CatalogAPI(BaseAPI):
         if not filter:
             try:
 
-                resource_response = self.request("GET", APIEndpointsV1.GET_DATASET_RESOURCES.replace("?",f"{id}"))
+                resource_response = self.request("GET",APIEndpointsV1.GET_DATASET_RESOURCES.replace("?",f"{id}"))
                 if resource_response.status_code == 200:
                     resources_list = resource_response.json()['result']['resources']
                     resources_object_list = [Resource.from_dict(resource) for resource in resources_list]
@@ -126,7 +158,7 @@ class CatalogAPI(BaseAPI):
                     raise STELARUnknownError("STELAR unknown error")
         else:
             try:
-                resource_response = self.request("GET", APIEndpointsV1.GET_DATASET_RESOURCES_FILTER.replace("?",f"{id}")+filter)
+                resource_response = self.request("GET",APIEndpointsV1.GET_DATASET_RESOURCES_FILTER.replace("?",f"{id}")+filter)
                 if resource_response.status_code == 200:
                     resources_list = resource_response.json()['result']['resources']
                     resources_object_list = [Resource.from_dict(resource) for resource in resources_list]
@@ -137,7 +169,61 @@ class CatalogAPI(BaseAPI):
                     raise EntityNotFoundError(f"Entity not found: {id}")
                 else:
                     raise STELARUnknownError("STELAR unknown error")
+                
+    def get_resource(self,id: str):
+        if not id:
+            return None
+        try:
+            resource_response = self.request("GET",  urljoin(APIEndpointsV1.GET_RESOURCE, id),)
+            if resource_response.status_code == 200:
+                rjson = resource_response.json()['result']['resource']
+                resource_entity = Resource.from_dict(rjson)
+                return resource_entity
+        except HTTPError as he:
+            if he.response.status_code == 404:
+                raise EntityNotFoundError(f"Entity Not Found: {id}")
+            else:
+                raise STELARUnknownError("STELAR unknown error")
+            
+    def patch_resource(self,resource: Resource):
+        if not resource:
+            return None
+        try:
+            if resource.is_dirty():
+                json_obj = {"resource_metadata":{}}
+                for key,value in resource.changes().items():
+                    json_obj['resource_metadata'][key] = value[1]
+                
+                resource_response = self.request("PATCH",urljoin(APIEndpointsV1.PATCH_RESOURCE,resource.id),json=json_obj)
+                if resource_response.status_code == 200:
+                    djson = resource_response.json()['result']['resource']
+                    resource.update_from_dict(djson)
+                    resource.reset_dirty()
+            else:
+                print("No changes at resource Object to update")
+        except HTTPError as he:
+            if he.response.status_code == 404:
+                raise EntityNotFoundError(f"Entity Not Found: {resource.id}")
+            elif he.response.status_code == 400:
+                raise MissingParametersError("Bad Request")
+            else:
+                raise STELARUnknownError("STELAR unknown Error")
 
+            
+    def delete_resource(self,id: str):
+        if not id:
+            return None
+        try:
+            resource_response = self.request("DELETE",urljoin(APIEndpointsV1.DELETE_RESOURCE,id))
+            if resource_response.status_code == 200:
+                deleted_id = resource_response.json()['result']['resource']
+                print(f"Resource with id: {deleted_id} deleted successfully")
+                return True
+        except HTTPError as he:
+            if he.response.status_code == 404:
+                raise EntityNotFoundError(f"Entity Not Found: {id}")
+            else:
+                raise STELARUnknownError("STELAR unknown Error")
 
 
             

@@ -45,4 +45,11 @@ class APIEndpointsV1:
     POST_DATASET_RESOURCE = "/datasets/?/resource"
     GET_DATASET_RESOURCES = "/datasets/?/resources"
     GET_DATASET_RESOURCES_FILTER = "/datasets/?/resources/"
+    GET_RESOURCE = "/resources/"
+    DELETE_RESOURCE = "/resources/"
+
+    DELETE_DATASET = "/datasets/"
+
+    PATCH_DATASET = "/datasets/"
+    PATCH_RESOURCE = "/resources/"
     
