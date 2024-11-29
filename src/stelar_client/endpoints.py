@@ -28,10 +28,10 @@ class APIEndpointsV1:
   
     """
     # Used under different HTTP schemes (POST for ISSUE, PUT for REFRESH)
-    TOKEN_ISSUE = "/users/token"        # POST
-    TOKEN_REFRESH = "/users/token"      # PUT
-    TOKEN_VERIFY = "/users/token"       # GET
-
+    TOKEN_ISSUE = "/users/token"                # POST
+    TOKEN_REFRESH = "/users/token"              # PUT
+    TOKEN_VERIFY = "/users/token"               # GET
+    S3_CREDENTIALS = "/users/s3/credentials"    # GET
 
     GET_USER = "/users/"
     GET_USERS = "/users"
@@ -43,7 +43,6 @@ class APIEndpointsV1:
     POST_DATASETS = "/datasets"
 
     POST_DATASET_RESOURCE = "/datasets/?/resource"
-
     GET_DATASET_RESOURCES = "/datasets/?/resources"
     GET_DATASET_RESOURCES_FILTER = "/datasets/?/resources/"
     

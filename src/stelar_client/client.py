@@ -14,6 +14,8 @@ from workflows import WorkflowsAPI
 from catalog import CatalogAPI
 from knowgraph import KnowledgeGraphAPI
 from admin import AdminAPI
+from s3 import S3API
+
 
 class Client:
     """An SDK (client) for the STELAR API.
@@ -63,6 +65,7 @@ class Client:
         self.catalog = CatalogAPI(self.api_url, token=self.token)
         self.knowledgegraph = KnowledgeGraphAPI(self.api_url, token=self.token)
         self.admin = AdminAPI(self.api_url, token=self.token)  
+        self.s3 = S3API(self.api_url, token=self.token)  
 
 
     def authenticate(self, username, password):
@@ -175,3 +178,4 @@ class Client:
         self.admin.token = value
         self.catalog.token = value
         self.knowledgegraph.token = value
+        self.s3 = value

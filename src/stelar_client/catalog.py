@@ -73,7 +73,7 @@ class CatalogAPI(BaseAPI):
         except HTTPError as he:
             raise STELARUnknownError("STELAR unknown Error")
         
-        
+    
     def patch_datasets(self,dataset: Dataset):
         if not dataset:
             return None
@@ -93,7 +93,7 @@ class CatalogAPI(BaseAPI):
             new_resource = resource.to_dict()
             id = dataset.id
             
-            resource_response = self.request("POST",APIEndpointsV1.POST_DATASET_RESOURCE.replace("?",f"{id}"),json=new_resource)
+            resource_response = self.request("POST", APIEndpointsV1.POST_DATASET_RESOURCE.replace("?",f"{id}"), json=new_resource)
             if resource_response.status_code == 200:
                 resource_json = resource_response.json()['result']['resource']
                 resource.update_from_dict(resource_json)
@@ -113,7 +113,7 @@ class CatalogAPI(BaseAPI):
         if not filter:
             try:
 
-                resource_response = self.request("GET",APIEndpointsV1.GET_DATASET_RESOURCES.replace("?",f"{id}"))
+                resource_response = self.request("GET", APIEndpointsV1.GET_DATASET_RESOURCES.replace("?",f"{id}"))
                 if resource_response.status_code == 200:
                     resources_list = resource_response.json()['result']['resources']
                     resources_object_list = [Resource.from_dict(resource) for resource in resources_list]
@@ -126,7 +126,7 @@ class CatalogAPI(BaseAPI):
                     raise STELARUnknownError("STELAR unknown error")
         else:
             try:
-                resource_response = self.request("GET",APIEndpointsV1.GET_DATASET_RESOURCES_FILTER.replace("?",f"{id}")+filter)
+                resource_response = self.request("GET", APIEndpointsV1.GET_DATASET_RESOURCES_FILTER.replace("?",f"{id}")+filter)
                 if resource_response.status_code == 200:
                     resources_list = resource_response.json()['result']['resources']
                     resources_object_list = [Resource.from_dict(resource) for resource in resources_list]
