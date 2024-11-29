@@ -39,7 +39,7 @@ class Resource:
         Returns:
             str: A string describing the resource's key attributes.
         """
-        return f"Resource ID: {self.id} | Name: {self.name} | URL: {self.url} | Format : {self.format}"
+        return f"Resource ID: {self.id} | Relation: {self.relation} | Name: {self.name} | URL: {self.url} | Format : {self.format}"
     
     @classmethod
     def from_dict(cls, data: dict):
@@ -270,6 +270,7 @@ class Dataset:
                 f"""
                 <tr>
                     <td>{resource.id or 'N/A'}</td>
+                    <td>{resource.relation}</td>
                     <td>{resource.name}</td>
                     <td><a href="{resource.url}" target="_blank">{resource.url}</a></td>
                     <td>{resource.format}</td>
@@ -293,7 +294,7 @@ class Dataset:
         <br>
         <strong>Dataset Resources:</strong>
         <table border="1" style="border-collapse: collapse; width: 100%;">
-            <tr><th>ID</th><th>Name</th><th>URL</th><th>Format</th></tr>
+            <tr><th>ID</th><th>Relation to Parent</th><th>Name</th><th>URL</th><th>Format</th></tr>
             {resources_html}
         </table>
         """
