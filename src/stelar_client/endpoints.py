@@ -28,28 +28,30 @@ class APIEndpointsV1:
   
     """
     # Used under different HTTP schemes (POST for ISSUE, PUT for REFRESH)
-    TOKEN_ISSUE = "/users/token"                # POST
-    TOKEN_REFRESH = "/users/token"              # PUT
-    TOKEN_VERIFY = "/users/token"               # GET
-    S3_CREDENTIALS = "/users/s3/credentials"    # GET
+    
+    ### Authentication/Authorization Endpoints
+    TOKEN_ISSUE = "/v1/users/token"                # POST
+    TOKEN_REFRESH = "/v1/users/token"              # PUT
+    TOKEN_VERIFY = "/v1/users/token"               # GET
+    S3_CREDENTIALS = "/v1/users/s3/credentials"    # GET
 
-    GET_USER = "/users/"
-    GET_USERS = "/users"
+    GET_USER = "/v1/users/"
+    GET_USERS = "/v1/users"
 
-    GET_DATASET = "/datasets/"
-    GET_DATASETS = "/datasets"
-    GET_DATASETS_LIST = "/datasets/list"
 
-    POST_DATASETS = "/datasets"
+    ### Dataset Endpoints
+    GET_DATASET = "/v2/datasets/"
+    GET_DATASETS = "/v2/datasets"
+    GET_DATASETS_LIST = "/v2/datasets/list"
+    POST_DATASETS = "/v2/datasets"
+    DELETE_DATASET = "/v2/datasets/"
+    PATCH_DATASET = "/v2/datasets/"
 
-    POST_DATASET_RESOURCE = "/datasets/?/resource"
-    GET_DATASET_RESOURCES = "/datasets/?/resources"
-    GET_DATASET_RESOURCES_FILTER = "/datasets/?/resources/"
-    GET_RESOURCE = "/resources/"
-    DELETE_RESOURCE = "/resources/"
-
-    DELETE_DATASET = "/datasets/"
-
-    PATCH_DATASET = "/datasets/"
-    PATCH_RESOURCE = "/resources/"
+    ### Resource Endpoints
+    POST_DATASET_RESOURCE = "/v2/datasets/?/resource"
+    GET_DATASET_RESOURCES = "/v2/datasets/?/resources"
+    GET_DATASET_RESOURCES_FILTER = "/v2/datasets/?/resources/"
+    GET_RESOURCE = "/v2/resources/"
+    DELETE_RESOURCE = "/v2/resources/"
+    PATCH_RESOURCE = "/v2/resources/"
     

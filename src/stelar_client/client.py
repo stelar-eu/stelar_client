@@ -23,10 +23,9 @@ class Client:
     Arguments:
         base_url (str): The base URL to the STELAR installation.
         token (str): The user token issued by the KLMS SSO service.
-        version (str, optional): The API version to use ('v1' or 'v2'). Defaults to 'v1'.
     """
     
-    def __init__(self, base_url, token=None, username=None, password=None, version="v1"):
+    def __init__(self, base_url, token=None, username=None, password=None):
         # Validate base_url
         if not self.__is_valid_url(base_url):
             raise ValueError(f"Invalid base URL: {base_url}")
@@ -34,12 +33,7 @@ class Client:
         # Normalize base_url
         self.base_url = self.__normalize_base_url(base_url)
         
-        # Append version path (e.g., /api/v1 or /api/v2)
-        self.version = version.lower()
-        if self.version not in ["v1", "v2"]:
-            raise ValueError(f"Invalid version '{self.version}'. Only 'v1' or 'v2' are supported.")
-        
-        self.base_url = self.base_url + f"/api/{self.version}"
+        self.base_url = self.base_url + "/api"
 
         # If user provides token explicitely then use this token 
         # else if username and password was provided then initialize 

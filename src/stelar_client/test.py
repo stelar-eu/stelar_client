@@ -2,7 +2,7 @@ from client import  Client
 from model import Dataset, Resource
 
 
-stelar = Client("https://klms.stelar.gr/stelar",username="admin",password="stelartuc", version="v2")
+stelar = Client("https://klms.stelar.gr/stelar",username="admin",password="stelartuc")
 
 resource1 = Resource("s3://path/path/foo1.txt","TXT","Resource 1")
 resource2 = Resource("s3://path/path/foo2.txt","TXT","Resource 2")
@@ -11,7 +11,6 @@ resource4 = Resource("s3://path/path/foo4.txt","TXT","Resource 4")
 resource5 = Resource("s3://path/path/foo5.txt","TXT","Resource 5")
 
 resources = [resource1,resource2,resource3,resource4,resource5]
-
 
 resource_obj = stelar.catalog.get_resource("af6b1ad0-4daf-4c10-9d07-59b93d8d0915")
 print(f"The resource is dirty: {resource_obj.is_dirty()}")
