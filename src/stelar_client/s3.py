@@ -1,7 +1,7 @@
-from model import Resource, STELARUnknownError
-from base import BaseAPI
-from endpoints import APIEndpointsV1
-import mutils as s3
+from .model import Resource, STELARUnknownError
+from .base import BaseAPI
+from .endpoints import APIEndpointsV1
+import stelar_client.mutils as s3
 from requests import HTTPError
 from minio.error import S3Error
 import traceback

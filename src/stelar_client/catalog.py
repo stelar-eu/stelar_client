@@ -1,6 +1,6 @@
-from base import BaseAPI
-from endpoints import APIEndpointsV1
-from model import Dataset, Resource, MissingParametersError,STELARUnknownError,DuplicateEntryError, EntityNotFoundError
+from .base import BaseAPI
+from .endpoints import APIEndpointsV1
+from .model import Dataset, Resource, MissingParametersError,STELARUnknownError,DuplicateEntryError, EntityNotFoundError
 from requests.exceptions import HTTPError
 from urllib.parse import urljoin, urlencode
 

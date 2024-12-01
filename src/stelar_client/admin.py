@@ -1,5 +1,5 @@
-from base import BaseAPI
-from endpoints import APIEndpointsV1
+from .base import BaseAPI
+from .endpoints import APIEndpointsV1
 from urllib.parse import urljoin, urlencode
 
 class AdminAPI(BaseAPI):

@@ -7,14 +7,14 @@ access the API.
 
 from urllib.parse import urljoin, urlparse
 import requests
-from endpoints import APIEndpointsV1
+from .endpoints import APIEndpointsV1
 
 # Import subAPIs modules
-from workflows import WorkflowsAPI
-from catalog import CatalogAPI
-from knowgraph import KnowledgeGraphAPI
-from admin import AdminAPI
-from s3 import S3API
+from .workflows import WorkflowsAPI
+from .catalog import CatalogAPI
+from .knowgraph import KnowledgeGraphAPI
+from .admin import AdminAPI
+from .s3 import S3API
 
 
 class Client:
@@ -135,10 +135,8 @@ class Client:
         """
         if base_url.endswith('/stelar'):
             return base_url
-        elif base_url.endswith('/'):
-            return urljoin(base_url, 'stelar')
         else:
-            return urljoin(base_url + '/', 'stelar')
+            return urljoin(base_url, 'stelar')
         
 
     @property
