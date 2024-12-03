@@ -54,4 +54,10 @@ class APIEndpointsV1:
     GET_RESOURCE = "/v2/resources/"
     DELETE_RESOURCE = "/v2/resources/"
     PATCH_RESOURCE = "/v2/resources/"
+
+    ### Policy Endpoints
+    POST_POLICY = "/v1/auth/policy"
+    GET_POLICY_REPRESENATION = "/v1/auth/policy/representation/"
+    GET_POLICY_INFO = "/v1/auth/policy/"
+    GET_POLICY_LIST = "/v1/auth/policy"
     

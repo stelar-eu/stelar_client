@@ -1,5 +1,6 @@
 from client import  Client
-from model import Dataset, Resource
+from model import Dataset, Resource, Policy
+import yaml
 
 
 stelar = Client("https://klms.stelar.gr/stelar",username="admin",password="stelartuc")
@@ -12,18 +13,18 @@ resource5 = Resource("s3://path/path/foo5.txt","TXT","Resource 5")
 
 resources = [resource1,resource2,resource3,resource4,resource5]
 
-resource_obj = stelar.catalog.get_resource("af6b1ad0-4daf-4c10-9d07-59b93d8d0915")
-print(f"The resource is dirty: {resource_obj.is_dirty()}")
+# resource_obj = stelar.catalog.get_resource("af6b1ad0-4daf-4c10-9d07-59b93d8d0915")
+# print(f"The resource is dirty: {resource_obj.is_dirty()}")
 
-resource_obj.url = "s3://path/path/fooUpdated.pdf"
-resource_obj.format = "PDF"
-resource_obj.name = "Resource 2 updated"
+# resource_obj.url = "s3://path/path/fooUpdated.pdf"
+# resource_obj.format = "PDF"
+# resource_obj.name = "Resource 2 updated"
 
-print(f"The resource is dirty: {resource_obj.is_dirty()}")
+# print(f"The resource is dirty: {resource_obj.is_dirty()}")
 
-stelar.catalog.patch_resource(resource_obj)
+# stelar.catalog.patch_resource(resource_obj)
 
-print(resource_obj.name)
+# print(resource_obj.name)
 
 # new_dataset = Dataset("STELAR dataset non dirty 6","Somes notes fore the Dataset",["STELAR","Testing"])
 # stelar.catalog.create_dataset(new_dataset)
@@ -75,3 +76,77 @@ print(resource_obj.name)
 
 # resource_is_deleted = stelar.catalog.delete_resource("88d67200-f518-4458-a6c3-fc4f2b38bb2b")
 # print(resource_is_deleted)
+
+
+
+
+#########################################################
+################### POLICY TESTING ######################
+#########################################################
+
+# Test for policy listing
+# policy_list = stelar.admin.get_policy_list()
+# for item in policy_list:
+#     print(item)
+
+# Get policy info
+# policy_obj = stelar.admin.get_policy_info("active")
+# print(policy_obj.policy_uuid)
+# print(yaml.dump(policy_obj.policy_content,default_flow_style=False,default_style='"'))
+# print(policy_obj.policy_familiar_name)
+
+
+# Get policy representation
+# stelar.admin.get_policy_representation("active")
+
+
+# Create policy object and then call create policy method
+yaml_string = """
+roles:
+  - name: "chief_operations_officer"
+    permissions:
+      - action: "read,write"
+        resource: "operations/*"
+      - action: "read,write"
+        resource: "training/materials/*"
+  - name: "training_manager"
+    permissions:
+      - action: "read,write"
+        resource: "training/*"
+      - action: "read"
+        resource: "operations/reports/*"
+  - name: "finance_manager"
+    permissions:
+      - action: "read,write"
+        resource: "finance/*"
+      - action: "read"
+        resource: "operations/plans/*"
+      - action: "read"
+        resource: "operations/logs/*"
+  - name: "logistics_coordinator"
+    permissions:
+      - action: "read,write"
+        resource: "operations/plans/*"
+      - action: "read"
+        resource: "operations/reports/daily/*"
+      - action: "write"
+        resource: "operations/logs/*"
+  - name: "intern"
+    permissions:
+      - action: "read,write"
+        resource: "training/materials/*"
+      - action: "read"
+        resource: "finance/expenses/Q1/*"
+"""
+# policy_obj = Policy("My new Policy 2",yaml_string)
+policy_obj_2 = Policy("My updated Policy","/home/nibakats/Downloads/final_project-20240930T174310Z-001/final_project/finance_model_v2.yaml")
+
+# stelar.admin.create_policy(policy_obj)
+stelar.admin.create_policy(policy_obj_2)
+# print(policy_obj.policy_familiar_name)
+# print(type(policy_obj.policy_content))
+# print(type(policy_obj.policy_content))
+
+# yaml_repr = yaml.dump(policy_obj.policy_content)
+# print(yaml_repr)
+# print(type(yaml_repr))

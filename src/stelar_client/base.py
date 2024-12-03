@@ -51,7 +51,9 @@ class BaseAPI:
         if self._token:
             default_headers["Authorization"] = f"Bearer {self._token}"
 
-        if headers:
+        if headers and headers.get("Content-Type") == 'application/x-yaml':
+            # default_headers.update(headers)
+            default_headers["Content-Type"] = "application/x-yaml"
             default_headers.update(headers)
 
         # Validate data/json and handle accordingly
