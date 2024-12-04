@@ -1,5 +1,5 @@
-from client import  Client
-from model import Dataset, Resource, Policy
+from .client import  Client
+from .model import Dataset, Resource, Policy
 import yaml
 
 
@@ -143,9 +143,10 @@ policy_obj_2 = Policy("My updated Policy","/home/nibakats/Downloads/final_projec
 
 # stelar.admin.create_policy(policy_obj)
 stelar.admin.create_policy(policy_obj_2)
-# print(policy_obj.policy_familiar_name)
-# print(type(policy_obj.policy_content))
-# print(type(policy_obj.policy_content))
+
+print(policy_obj_2.policy_familiar_name)
+print(policy_obj_2.policy_content)
+print(policy_obj_2.policy_uuid)
 
 # yaml_repr = yaml.dump(policy_obj.policy_content)
 # print(yaml_repr)

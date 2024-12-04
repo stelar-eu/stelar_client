@@ -588,6 +588,7 @@ class Policy:
         self.created_at = data.get('created_at')
         self.policy_uuid = data.get('policy_uuid')
         self.user_id = data.get('user_id')
+        self.policy_content = data.get('policy_content')
         
         
         return self
