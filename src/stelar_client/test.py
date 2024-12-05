@@ -26,21 +26,21 @@ resources = [resource1,resource2,resource3,resource4,resource5]
 
 # print(resource_obj.name)
 
-# new_dataset = Dataset("STELAR dataset non dirty 6","Somes notes fore the Dataset",["STELAR","Testing"])
-# stelar.catalog.create_dataset(new_dataset)
+new_dataset = Dataset("STELAR dataset non dirty 6","Somes notes fore the Dataset",["STELAR","Testing"])
+stelar.catalog.create_dataset(new_dataset)
 
 # for resource in resources:
 #     stelar.catalog.publish_dataset_resource(new_dataset,resource)
 # print(f"The new dataset is dirty: {new_dataset.is_dirty()}")
 
-# new_dataset.title = "STELAR dataset dirty"
-# new_dataset.notes = "added notes,dirty af"
-# new_dataset.tags = ["STELAR","Testing","VeryDIRTY"]
+new_dataset.title = "STELAR dataset dirty"
+new_dataset.notes = "added notes,dirty af"
+new_dataset.tags = ["STELAR","Testing","VeryDIRTY"]
 
 # print(f"The new dataset is dirty: {new_dataset.is_dirty()}")
 # # print(new_dataset.changes())
 
-# stelar.catalog.patch_datasets(new_dataset)
+stelar.catalog.patch_datasets(new_dataset)
 
 # json_obj = {"package_metadata":{}}
 # for key,value in new_dataset.changes().items():

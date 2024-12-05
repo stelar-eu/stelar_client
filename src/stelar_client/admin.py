@@ -132,8 +132,8 @@ class AdminAPI(BaseAPI):
                     pjson['policy_content'] = formatted_yaml_string
                 # print(yaml.dump(policy_response.json()['result']['policy']))
 
-                # dataset.update_from_dict(djson)
-                # dataset.reset_dirty()
+                    policy.update_from_dict(pjson)
+                    policy.reset_dirty()
         except HTTPError as he:
             if he.response.status_code == 400:
                 raise MissingParametersError("Bad Request")

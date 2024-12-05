@@ -340,6 +340,12 @@ class Dataset:
                 if key == 'tags':
                     tags = [tag.get("name") for tag in data.get("tags", [])]
                     setattr(self, key, tags)
+                elif key == 'resources':
+                    resources = [Resource.from_dict(resource) for resource in data.get("resources", [])]
+                    setattr(self, key, resources)
+                elif key == 'extras':
+                    extras = {extra.get("key"): extra.get("value") for extra in data.get("extras", [])}
+                    setattr(self, key, extras)
                 else:
                     setattr(self, key, data[key])
 
