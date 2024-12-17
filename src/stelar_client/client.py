@@ -4,65 +4,116 @@ The Client class is the main STELAR API client object.
 The Client class primarily holds the API URL and user credentials needed to
 access the API.
 """
+from __future__ import annotations
 
-from urllib.parse import urljoin, urlparse
+from typing import TYPE_CHECKING
+from urllib.parse import urljoin
+from requests.utils import get_auth_from_url, urldefragauth
+from pathlib import Path
+from configparser import ConfigParser
 import requests
-from .endpoints import APIEndpointsV1
 
 # Import subAPIs modules
+from .endpoints import APIEndpointsV1
 from .workflows import WorkflowsAPI
 from .catalog import CatalogAPI
 from .knowgraph import KnowledgeGraphAPI
 from .admin import AdminAPI
 from .s3 import S3API
 
+if TYPE_CHECKING:
+    from os import PathLike
 
-class Client:
+class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
     """An SDK (client) for the STELAR API.
+    
+    The config file contains a collection of contexts, and is encoded in the
+    INI format:    
+    ```
+    [default]
+    base_url=https://klms.example.com
+    username=joe
+    password=my!secret
+
+    [admin]
+    base_url=https://klms.example.com
+    username=admin
+    password=very!secret
+    ```
+
 
     Arguments:
-        base_url (str): The base URL to the STELAR installation.
-        token (str): The user token issued by the KLMS SSO service.
+        context (str): load the specified context from $HOME/.stelar (or 
+        the 'stelar_config' path). If this is None, the default context is used.
+        If a config file is not found, the base_url, username and password
+        can be provided as keywords.
+    
+        base_url (str): The base URL to the STELAR installation. This URL contains only the
+        hostname. Optionally, it may contain a user name and password, as in 
+        https://joe:joespassword@klms.example.com/
+        The user name and password are only used if the keyword arguments 'username' and 
+        'password' are None.
+
+        token (str): The user token issued by the KLMS SSO service, if available. If a token is
+        provided, the username and password are ignored.
+
+        username (str): The user name to authenticate as for this client.
+        password (str): The password to authenticate with.
+
+        tls_verify (bool):  Verify the server TLS certificate. This setting takes precedence
+        if given. If none, the default is to verify.
+        
+        config_file (PathLike): Path to the config file. If None, the default of "$HOME/.stelar" is
+        used.
     """
     
-    def __init__(self, base_url, token=None, username=None, password=None):
+    def __init__(self, context: str=None, *, token=None, base_url:str =None, username=None, password=None, 
+                 tls_verify=True, config_file: PathLike=None):
         # Validate base_url
-        if not self.__is_valid_url(base_url):
-            raise ValueError(f"Invalid base URL: {base_url}")
-        
-        # Normalize base_url
-        self.base_url = self.__normalize_base_url(base_url)
-        
-        self.base_url = self.base_url + "/api"
+        self._config_file = config_file
+        self._context = context
 
-        # If user provides token explicitely then use this token 
-        # else if username and password was provided then initialize 
-        # the subAPIs using this token for the user. 
-        # 
-        # Client can be also initialized without any credentials if used for specific methods provided
-        if token:
-            self._token = token
-        elif username and password and (token is None):
-            #Authenticating provides a set of tokens (an access and a refresh one used to keep the Client valid for longer periods of time)
-            self.authenticate(username, password)
-        else:
-            self._token = None
+        if not tls_verify:
+            import urllib3
+            urllib3.disable_warnings()
 
-        #Initiliaze the operators with the newly acquired token
-        self.__initialize_operators()
+        if token is not None:
+            if base_url is None:
+                raise ValueError("Token is specified but base_url is missing")
+            base_url = self.__normalize_base_url(base_url)
+            refresh_token = None
+
+        elif context is not None or base_url is None:
+            base_url, username, password = self.__from_context()
+            token, refresh_token = self.authenticate(base_url, username=username, password=password, tls_verify=tls_verify)
+
+        else: # have base_url, get username and password
+            uuser, upass = get_auth_from_url(base_url)
+            if not username:
+                username = uuser
+            if not password:
+                username = upass
+            
+            base_url = self.__normalize_base_url(base_url)
+            token, refresh_token = self.authenticate(base_url, username, password, tls_verify=tls_verify)
+
+
+        super().__init__(base_url, token, refresh_token, tls_verify)
+
 
         ####################################################################
 
     def __initialize_operators(self):
         ##  Instatiate the subAPIs as member variables of the client  ######
-        self.workflows = WorkflowsAPI(self.api_url, token=self.token)
-        self.catalog = CatalogAPI(self.api_url, token=self.token)
-        self.knowledgegraph = KnowledgeGraphAPI(self.api_url, token=self.token)
-        self.admin = AdminAPI(self.api_url, token=self.token)  
-        self.s3 = S3API(self.api_url, token=self.token)  
+        self.workflows = self
+        self.catalog = self
+        self.knowledgegraph = self
+        self.admin = self
+        self.s3 = self
 
 
-    def authenticate(self, username, password):
+    @classmethod
+    def authenticate(cls, base_url, username, password, tls_verify=True):
         """
         Authenticates the user and retrieves access and refresh tokens.
 
@@ -71,15 +122,17 @@ class Client:
         property and refreshes the token for all subAPI instances.
 
         Args:
+            base_url (str): The URL of the STELAR service
             username (str): The username of the user.
             password (str): The password of the user.
+            tls_verify (str): Whether to verify the server TLS certificate.
 
         Raises:
             ValueError: If either the username or password is empty.
             RuntimeError: If authentication fails due to incorrect credentials or server issues.
 
         Returns: 
-            True: If the authentication was successful
+            token, refresh_token: If authentication was successful, a OpenID token and refresh token
         """
        
 
@@ -88,16 +141,22 @@ class Client:
                 "username": username,
                 "password": password
             }
-            token_response = requests.post(url=self.base_url+APIEndpointsV1.TOKEN_ISSUE, json=auth_data, headers={"Content-Type": "application/json"})
+            req_url = urljoin(base_url, "/stelar/api"+APIEndpointsV1.TOKEN_ISSUE)
+
+            token_response = requests.post(
+                url=req_url, 
+                json=auth_data, 
+                headers={"Content-Type": "application/json"},
+                verify=tls_verify)
             status_code = token_response.status_code
             token_json = token_response.json().get('result', None)
             success = token_response.json().get('success')
             
             if token_json and token_json['token'] and token_json['refresh_token'] and success and status_code == 200:
-                self._token = token_json['token']
-                self._refresh_token = token_json['refresh_token']
+                token = token_json['token']
+                refresh_token = token_json['refresh_token']
 
-                return True
+                return token, refresh_token
 
             else: 
                 raise RuntimeError("Could not authenticate user. Check the provided credentials and verify the availability of the STELAR API.")
@@ -106,68 +165,33 @@ class Client:
 
 
     @staticmethod
-    def __is_valid_url(url):
-        """
-        Validates the given URL.
-
-        Args:
-            url (str): The URL to validate.
-
-        Returns:
-            bool: True if the URL is valid, False otherwise.
-        """
-        parsed = urlparse(url)
-        return all([parsed.scheme, parsed.netloc])
-
-    @staticmethod
     def __normalize_base_url(base_url):
         """
-        Normalizes the base URL based on the following rules:
-        - If base_url ends with '/stelar', do nothing.
-        - If base_url ends with '/', append 'stelar'.
-        - Otherwise, append '/stelar'.
+        Returns the base url for the STELAR service.
+
+        This is computed from any partial URL, by appending
+        the default path prefix '/stelar'. Also, any fragment
+        or authentication info is removed.
 
         Args:
             base_url (str): The base URL to normalize.
 
         Returns:
-            str: The normalized base URL.
+            str: The API URL.
         """
-        if base_url.endswith('/stelar'):
-            return base_url
-        else:
-            return urljoin(base_url, 'stelar')
-        
+        burl = urldefragauth(base_url)
+        return urljoin(burl, "stelar")
 
-    @property
-    def api_url(self):
-        """Constructs and returns the complete API URL."""
-        return self.base_url
-
-    @property
-    def token(self):
-        """Getter for the token property."""
-        return self._token
-
-    @token.setter
-    def token(self, value):
-        """
-        Setter for the token property.
-
-        Updates the token the client uses for all requests.
-
-        Args:
-            value (str): The new token to replace the existing one.
-
-        Raises:
-            ValueError: If the token is empty.
-        """
-        if not value:
-            raise ValueError("Token cannot be empty.")
-        self._token = value
-        # Update subAPIs too.
-        self.workflows.token = value
-        self.admin.token = value
-        self.catalog.token = value
-        self.knowledgegraph.token = value
-        self.s3 = value
+    def __from_context(self):
+        config_file = self._config_file if self._config_file else Path.home()/".stelar"
+        context = self._context if self._context else "default"
+        c = ConfigParser()
+        c.read(config_file)
+        if not c.has_section(context):
+            raise ValueError(f"Client context '{context}' does not exist")
+        ctx = c[context]
+        base_url = self.__normalize_base_url(ctx['base_url'])
+        usr = ctx['username']
+        pwd = ctx['password']
+        return base_url, usr, pwd
+    

@@ -3,19 +3,23 @@ from urllib.parse import urljoin, urlencode
 
 class BaseAPI:
 
-    def __init__(self, api_url, token=None):
-        self.api_url = api_url
+    def __init__(self, base_url, token, refresh_token, tls_verify=True):
+        self._base_url = base_url
+        self._api_url = base_url+"/api/"
         self._token = token
+        self._refresh_token = refresh_token
+        self._tls_verify = tls_verify
+
+    @property
+    def api_url(self):
+        """Return the base URL to the STELAR API"""
+        return self._api_url
 
     @property
     def token(self):
         """Getter for the token property."""
         return self._token
     
-    @token.setter
-    def token(self, token):
-        self._token = token
-
 
     def request(self, method, endpoint, params=None, data=None, headers=None, json=None):
         """
@@ -34,7 +38,7 @@ class BaseAPI:
         """
         # Combine base_url with the endpoint
         endpoint = endpoint.lstrip('/')
-        url = urljoin(self.api_url+"/", endpoint)
+        url = urljoin(self.api_url, endpoint)
         # Handle query parameters in the endpoint or passed as 'params'
         if "?" in endpoint and params:
             raise ValueError("Specify query parameters either in the endpoint or in 'params', not both.")
@@ -51,9 +55,7 @@ class BaseAPI:
         if self._token:
             default_headers["Authorization"] = f"Bearer {self._token}"
 
-        if headers and headers.get("Content-Type") == 'application/x-yaml':
-            # default_headers.update(headers)
-            default_headers["Content-Type"] = "application/x-yaml"
+        if headers:
             default_headers.update(headers)
 
         # Validate data/json and handle accordingly
@@ -74,7 +76,7 @@ class BaseAPI:
             data=data,    # if provided, this will be form data
             json=json,    # if provided, this will be JSON payload
             headers=default_headers,
-            verify=True
+            verify=self._tls_verify
         )
 
         # Raise an exception for HTTP errors (4xx, 5xx responses)
