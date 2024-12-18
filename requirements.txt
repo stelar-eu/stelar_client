@@ -5,4 +5,5 @@ flake8
 isort
 pyscaffold
 pytest
-yaml
+pytest_mock
+PyYAML
