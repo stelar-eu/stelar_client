@@ -14,11 +14,7 @@ from stelar_client import Client
 
 @pytest.fixture()
 def testcli() -> Client:
-    with open(pathlib.Path.home()/".stelar") as cred_file:
-        cred = json.load(cred_file)
-
-    ctx = cred['apitest']
-    cli = Client(ctx["url"], username=ctx["username"], password=ctx["password"])
+    cli = Client('apitest')
     yield cli
 
     # No logout yet. Once it is implemented,

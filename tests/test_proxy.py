@@ -130,6 +130,8 @@ def test_property():
 #  not implement an entity.
 ##################################################
 class TestProxy(ProxyObj, entity=False):
+    __test__ = False
+
     data = {}
     def proxy_fetch(self):
         return self.data

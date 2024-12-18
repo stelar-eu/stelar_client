@@ -92,10 +92,10 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             if not username:
                 username = uuser
             if not password:
-                username = upass
+                password = upass
             
             base_url = self.__normalize_base_url(base_url)
-            token, refresh_token = self.authenticate(base_url, username, password, tls_verify=tls_verify)
+            token, refresh_token = self.authenticate(base_url, username=username, password=password, tls_verify=tls_verify)
 
 
         super().__init__(base_url, token, refresh_token, tls_verify)
