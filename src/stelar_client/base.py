@@ -1,7 +1,13 @@
 import requests
 from urllib.parse import urljoin, urlencode
 
+
 class BaseAPI:
+    """Base class for all parts of the client API.
+    
+        Its main responsibility is to support API calls to the
+        STELAR server.
+    """
 
     def __init__(self, base_url, token, refresh_token, tls_verify=True):
         self._base_url = base_url
@@ -19,7 +25,6 @@ class BaseAPI:
     def token(self):
         """Getter for the token property."""
         return self._token
-    
 
     def request(self, method, endpoint, params=None, data=None, headers=None, json=None):
         """

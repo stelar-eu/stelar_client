@@ -7,7 +7,7 @@ access the API.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse, urlunparse
 from requests.utils import get_auth_from_url, urldefragauth
 from pathlib import Path
 from configparser import ConfigParser
@@ -41,13 +41,12 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
     password=very!secret
     ```
 
-
     Arguments:
         context (str): load the specified context from $HOME/.stelar (or 
         the 'stelar_config' path). If this is None, the default context is used.
         If a config file is not found, the base_url, username and password
         can be provided as keywords.
-    
+
         base_url (str): The base URL to the STELAR installation. This URL contains only the
         hostname. Optionally, it may contain a user name and password, as in 
         https://joe:joespassword@klms.example.com/
@@ -62,11 +61,11 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
 
         tls_verify (bool):  Verify the server TLS certificate. This setting takes precedence
         if given. If none, the default is to verify.
-        
+
         config_file (PathLike): Path to the config file. If None, the default of "$HOME/.stelar" is
         used.
     """
-    
+
     def __init__(self, context: str=None, *, token=None, base_url:str =None, username=None, password=None, 
                  tls_verify=True, config_file: PathLike=None):
         # Validate base_url
@@ -77,13 +76,13 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             import urllib3
             urllib3.disable_warnings()
 
-        if token is not None:
+        if token is not None:  # direct provision of token
             if base_url is None:
                 raise ValueError("Token is specified but base_url is missing")
             base_url = self.__normalize_base_url(base_url)
             refresh_token = None
 
-        elif context is not None or base_url is None:
+        elif context is not None or base_url is None:  # init via context
             base_url, username, password = self.__from_context()
             token, refresh_token = self.authenticate(base_url, username=username, password=password, tls_verify=tls_verify)
 
@@ -93,11 +92,10 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
                 username = uuser
             if not password:
                 password = upass
-            
             base_url = self.__normalize_base_url(base_url)
             token, refresh_token = self.authenticate(base_url, username=username, password=password, tls_verify=tls_verify)
 
-
+        self._username = username
         super().__init__(base_url, token, refresh_token, tls_verify)
 
 
@@ -194,4 +192,12 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         usr = ctx['username']
         pwd = ctx['password']
         return base_url, usr, pwd
-    
+
+    def __repr__(self):
+        purl = urlparse(self._base_url)
+        if self._username:
+            netloc = f"{self._username}@{purl.netloc}"
+        else:
+            netloc = purl.netloc
+        enhanced_url = urlunparse((purl.scheme, netloc, purl.path, '', '', ''))
+        return f"{__name__}.{self.__class__.__qualname__}({enhanced_url})"
