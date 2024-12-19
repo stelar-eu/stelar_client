@@ -1,4 +1,5 @@
-from .model import Resource, STELARUnknownError
+from .resource import Resource
+from .model import STELARUnknownError
 from .base import BaseAPI
 from .endpoints import APIEndpointsV1
 import stelar_client.mutils as s3

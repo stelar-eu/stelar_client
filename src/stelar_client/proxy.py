@@ -1,6 +1,10 @@
 from __future__ import annotations
-from typing import Iterator
+from typing import Iterator, Optional, TYPE_CHECKING, TypeVar, Generic
 from uuid import UUID
+from weakref import WeakValueDictionary
+
+if TYPE_CHECKING:
+    from .client import Client
 
 """
     Proxy objects represent STELAR entities in Python:
@@ -41,7 +45,7 @@ class ProxySchema:
 
         # Initialize the properties list
         # N.B. This does not check the superclasses
-        for name,prop in cls.__dict__.items():
+        for name, prop in cls.__dict__.items():
             if isinstance(prop, ProxyProperty):
                 if prop.isId:
                     assert isinstance(prop, ProxyId)
@@ -50,7 +54,6 @@ class ProxySchema:
                     self.id = prop
                 else:
                     self.properties[name] = prop
-
 
         # check that we have specified an ID attribute, and add a default
         # ID attribute otherwise
@@ -63,6 +66,10 @@ class ProxySchema:
             cls.id = self.id
             self.id.__set_name__(cls, 'id')
 
+    def get_id(self, entity) -> str:
+        """Return the entity ID from the entity object"""
+        return entity[self.id.entity_name]
+
     def loaded_attributes(self, entity):
         """Return an object suitable for 'proxy_attr' from an entity object"""
         return {
@@ -71,15 +78,18 @@ class ProxySchema:
             if not prop.isId
         }
 
-
     @staticmethod
     def check_non_entity(cls):
-        for name,prop in cls.__dict__.items():
+        for prop in cls.__dict__.values():
             if isinstance(prop, ProxyProperty):
                 raise TypeError(f"Class {cls.__qualname__} has properties defined but is not an entity")
 
+
 class ProxyObj:
     """Base class for all proxy objects of the STELAR entities.
+
+    Proxy objects are managed by ProxyCache. The primary implementation
+    of ProxyCache is Client.
 
     Attributes are used to hold property values:
     proxy_id: The UUID of the proxies entity
@@ -94,7 +104,8 @@ class ProxyObj:
     an entity JSON body.
     """
 
-    def __init__(self, eid=None, entity=None):
+    def __init__(self, cache: ProxyCache, eid: Optional[str|UUID] = None, entity=None):
+        self.proxy_cache = cache
         if eid is None and entity is None:
             raise ValueError("A proxy must be initialized either with an entity ID" 
                              " or with an entity JSON object containing the ID")
@@ -122,7 +133,6 @@ class ProxyObj:
             self.proxy_attr = None
         self.proxy_changed = None
 
-
     def __init_subclass__(cls, entity=True):
         if entity:
             cls.proxy_schema = ProxySchema(cls)
@@ -130,6 +140,10 @@ class ProxyObj:
             # cls is not an entity class, check that 
             # there are no properties defined on it
             ProxySchema.check_non_entity(cls)
+
+    @classmethod
+    def get_entity_id(cls, entity) -> str:
+        return cls.proxy_schema.get_id(entity)
 
     def proxy_fetch(self) -> dict:
         """Subclasses use this to read the current entity from the API"""
@@ -256,4 +270,35 @@ class ProxyId(ProxyProperty):
     
     def __delete__(self, obj):
         raise AttributeError("Entity ID attribute cannot be deleted")
+
+
+ProxyClass = TypeVar('ProxyClass', bound=ProxyObj)
+
+
+class ProxyCache(Generic[ProxyClass]):
+    def __init__(self, client: Client, proxy_type):
+        self.client = client
+        self.cache = WeakValueDictionary()
+        self.proxy_type = proxy_type
+    
+    def fetch_proxy(self, eid: UUID) -> ProxyClass:
+        proxy = self.cache.get(eid, None)
+        if proxy is None:
+            proxy = self.proxy_type(cache=self, eid=eid)
+            self.cache[proxy.proxy_id] = proxy
+        return proxy
+
+    def fetch_proxy_for_entity(self, entity) -> ProxyClass:
+        eid = UUID(self.proxy_type.get_entity_id(entity))
+        proxy: ProxyObj = self.cache.get(eid, None)
+        if proxy is None:
+            print("entity=",entity)
+            proxy = self.proxy_type(cache=self, entity=entity)
+            self.cache[proxy.proxy_id] = proxy
+        else:
+            if proxy.proxy_clean():
+                proxy.proxy_attr = proxy.proxy_schema.loaded_attributes(entity)                
+            else:
+                raise RuntimeError("Proxy fetched with new entity on dirty state")
+        return proxy
 

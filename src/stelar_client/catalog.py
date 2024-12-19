@@ -1,8 +1,12 @@
 from .base import BaseAPI
 from .endpoints import APIEndpointsV1
-from .model import Dataset, Resource, MissingParametersError,STELARUnknownError,DuplicateEntryError, EntityNotFoundError
+from .dataset import Dataset
+from .resource import Resource
+from .model import MissingParametersError, STELARUnknownError, DuplicateEntryError, EntityNotFoundError
+from .proxy import ProxyCache
 from requests.exceptions import HTTPError
 from urllib.parse import urljoin, urlencode
+
 
 class CatalogAPI(BaseAPI):
     """
@@ -16,7 +20,13 @@ class CatalogAPI(BaseAPI):
     - get_resources_dict(dataset_id) -> Dict(Resource)
     - get_resources_list(dataset_id) -> List(Resource)
     """
-    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.dataset_cache = ProxyCache(self, Dataset)
+        self.resource_cache = ProxyCache(self, Resource)
+
+
     def get_dataset(self, id: str) -> Dataset:
         """Retrieves the information of a dataset as an object of the `Dataset` class.
 
@@ -35,9 +45,8 @@ class CatalogAPI(BaseAPI):
         try:
             dataset_response = self.request("GET",  urljoin(APIEndpointsV1.GET_DATASET, id),)
             if dataset_response.status_code == 200:
-                djson = dataset_response.json()['result']['dataset']
-                dataset_entity = Dataset.from_dict(djson)
-                return dataset_entity
+                entity = dataset_response.json()['result']['dataset']
+                return self.dataset_cache.fetch_proxy_for_entity(entity)
         except HTTPError as he:
             if he.response.status_code == 400:
                 raise MissingParametersError(f"Bad Request")
@@ -96,7 +105,6 @@ class CatalogAPI(BaseAPI):
             else:
                 raise STELARUnknownError("STELAR unknown Error")
 
-                
 
     def delete_dataset(self,id: str):
         if not id:
@@ -224,9 +232,3 @@ class CatalogAPI(BaseAPI):
                 raise EntityNotFoundError(f"Entity Not Found: {id}")
             else:
                 raise STELARUnknownError("STELAR unknown Error")
-
-
-            
-        
-
-

@@ -1,9 +1,10 @@
 from .base import BaseAPI
 from .endpoints import APIEndpointsV1
-from .model import Policy,MissingParametersError,STELARUnknownError,DuplicateEntryError, EntityNotFoundError
+from .policy import Policy
+from .model import MissingParametersError, STELARUnknownError, DuplicateEntryError, EntityNotFoundError
 from urllib.parse import urljoin, urlencode
 from requests.exceptions import HTTPError
-import yaml
+
 
 class AdminAPI(BaseAPI):
     """

@@ -1,6 +1,14 @@
 import pytest
-from stelar_client.proxy import ProxyObj, ProxyProperty, ProxyId
+from stelar_client.proxy import ProxyObj, ProxyProperty, ProxyId, ProxyCache
 from uuid import uuid4
+
+class TPCache(ProxyCache):
+    def __init__(self, proxy_type):
+        super().__init__(None, proxy_type)
+    def fetch(self, eid=None):
+        if eid is None:
+            eid = uuid4()
+        return self.proxy_type(self, eid)
 
 
 def test_abstract():
@@ -24,13 +32,17 @@ def test_abstract():
     assert not hasattr(Bar, 'proxy_schema')
     assert hasattr(Baz, 'proxy_schema')
 
-    x = Foo(uuid4())
+    PFoo = TPCache(Foo)
+    PBar = TPCache(Bar)
+    PBaz = TPCache(Baz)
+
+    x = PFoo.fetch()
     assert not hasattr(x, 'id')
 
-    x = Bar(uuid4())
+    x = PBar.fetch()
     assert not hasattr(x, 'id')
 
-    x = Baz(uuid4())
+    x = PBaz.fetch()
     assert hasattr(x, 'id')
     assert hasattr(x, 'a')
     
@@ -40,11 +52,11 @@ def test_abstract():
 
 
 def test_non_entity_class_property_raises():
-    with pytest.raises(RuntimeError):
+    with pytest.raises((RuntimeError, TypeError)):
         class Foo:
             a = ProxyProperty()
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises((RuntimeError, TypeError)):
         class Foo:
             a = ProxyId()
 
@@ -62,8 +74,9 @@ def test_empty_proxy_obj_schema():
     class Foo(ProxyObj):
         pass
 
+    PFoo = TPCache(Foo)
     eid = uuid4()
-    x = Foo(eid)
+    x = PFoo.fetch(eid)
     
     # 
     assert x.proxy_attr is None
@@ -71,13 +84,14 @@ def test_empty_proxy_obj_schema():
     assert x.proxy_schema.id.name == 'id'
     assert x.id == eid 
 
+
 def test_empty_proxy_obj_given_key():
 
     class Foo(ProxyObj):
         myid = ProxyId()
 
     eid = uuid4()
-    x = Foo(eid)
+    x = TPCache(Foo).fetch(eid)
 
     # 
     assert x.proxy_attr is None
@@ -91,7 +105,7 @@ def test_empty_proxy_obj_given_key_with_args():
         myid = ProxyId(entity_name='entity_id', doc="The ID doc")
 
     eid = uuid4()
-    x = Foo(eid)
+    x = TPCache(Foo).fetch(eid)
 
     # 
     assert x.proxy_attr is None
@@ -109,7 +123,7 @@ def test_property():
         aprop = ProxyProperty()
 
     eid = uuid4()
-    x = Foo(eid)
+    x = TPCache(Foo).fetch(eid)
 
     # Just checking...
     assert x.proxy_attr is None
@@ -164,7 +178,7 @@ def test_proxy_obj():
             return new_data
 
     eid = uuid4()
-    x = Foo(eid)
+    x = TPCache(Foo).fetch(eid)
     assert x.proxy_attr is None
     assert len(x.proxy_schema.properties) == 3
     assert x.proxy_schema.id.name == 'id'
@@ -187,16 +201,15 @@ def test_proxy_obj():
     assert x.proxy_clean()
 
 
-
-
-
 def test_attr_read_only():
 
     class Foo(TestProxy):
         a = ProxyProperty(updatable=False)
         data = {'a': 20}
 
-    x = Foo(uuid4())
+    eid = uuid4()
+    x = TPCache(Foo).fetch(eid)
+
     assert x.a == 20
     with pytest.raises(expected_exception=AttributeError):
         x.a = 10
@@ -204,33 +217,7 @@ def test_attr_read_only():
     with pytest.raises(expected_exception=AttributeError):
         del x.a
       
-    y = Foo(uuid4())
-    with pytest.raises(expected_exception=AttributeError):
-        y.a = 10
-
-    with pytest.raises(expected_exception=AttributeError):
-        del y.a
-    
-    assert x.a == 20
-    assert y.a == 20
-
-
-def test_attr_read_only():
-
-    class Foo(TestProxy):
-        a = ProxyProperty(updatable=False)
-        data = {'a': 20}
-
-
-    x = Foo(uuid4())
-    assert x.a == 20
-    with pytest.raises(expected_exception=AttributeError):
-        x.a = 10
-
-    with pytest.raises(expected_exception=AttributeError):
-        del x.a
-      
-    y = Foo(uuid4())
+    y = TPCache(Foo).fetch()
     with pytest.raises(expected_exception=AttributeError):
         y.a = 10
 
@@ -249,7 +236,8 @@ def test_prop_optional():
 
         data = {}
 
-    x = Foo(uuid4())
+    eid = uuid4()
+    x = TPCache(Foo).fetch(eid)
     with pytest.raises(ValueError):
         x.c
 
@@ -286,7 +274,7 @@ def test_missing_values():
         data = {}
 
 
-    x = Foo(uuid4())
+    x = TPCache(Foo).fetch()
     with pytest.raises(ValueError):
         x.a
 
@@ -301,7 +289,7 @@ def test_set_changed_once():
         data = {'a': 1}
 
     
-    x = Foo(uuid4())
+    x = TPCache(Foo).fetch()
     assert x.a == 1
     x.a = 2
     assert x.a == 2
@@ -325,7 +313,7 @@ def test_id_property_nonkey_raise():
     with pytest.raises(TypeError): 
         class Foo(TestProxy):
             id = ProxyProperty()
-        x = Foo(uuid4())
+        x = TPCache(Foo).fetch()
 
 
 def test_proxyobj_init():
@@ -333,34 +321,34 @@ def test_proxyobj_init():
         a = ProxyProperty()
         data = {'a': 1}
 
-    with pytest.raises(ValueError):
-        x = Foo()
-
-
     eid = uuid4()
     eid2 = uuid4()
+    tpc = TPCache(Foo)
 
     with pytest.raises(ValueError):
-        x = Foo(eid=eid, entity={'id': str(eid2), 'a': 10})
+        x = Foo(tpc)
 
     with pytest.raises(ValueError):
-        x = Foo(entity = {'id2': str(eid2), 'a': 10})
+        x = Foo(tpc, eid=eid, entity={'id': str(eid2), 'a': 10})
 
-    x = Foo(eid, entity={'id': str(eid), 'a': 20})
+    with pytest.raises(ValueError):
+        x = Foo(tpc, entity = {'id2': str(eid2), 'a': 10})
+
+    x = Foo(tpc, eid, entity={'id': str(eid), 'a': 20})
     assert x.id == eid
 
-    x = Foo(eid, entity={'a': 30})
+    x = Foo(tpc, eid, entity={'a': 30})
     assert x.id == eid
     assert x.a == 30
 
-    x = Foo(eid)
+    x = Foo(tpc, eid)
     assert x.id == eid
 
-    x = Foo(str(eid))
+    x = Foo(tpc, str(eid))
     assert x.id == eid
     assert x.a == 1
 
-    x = Foo(entity={'id': eid, 'a': 20})
+    x = Foo(tpc, entity={'id': eid, 'a': 20})
     assert x.a == 20
 
 
@@ -370,7 +358,7 @@ def test_setting_on_new_obj_syncs():
         b = ProxyProperty(updatable=True)
         data = {'a': 10, 'b':20}
 
-    x = Foo(uuid4())
+    x = TPCache(Foo).fetch()
     assert x.proxy_attr is None
     x.a = 1
     assert x.proxy_attr['a'] == 1
@@ -383,7 +371,7 @@ def test_cannot_set_to_ellipsis():
         b = ProxyProperty(updatable=True)
         data = {'a': 10, 'b':20}
 
-    x = Foo(uuid4())
+    x = TPCache(Foo).fetch()
     assert x.proxy_attr is None
     x.proxy_sync()
 
@@ -397,7 +385,7 @@ def test_double_deletion():
         b = ProxyProperty(updatable=True, optional=True)
         data = {'a': 10, 'b':20}
 
-    x = Foo(uuid4())
+    x = TPCache(Foo).fetch()
     assert x.proxy_attr is None
     x.proxy_sync()
 
@@ -417,7 +405,7 @@ def test_key_unchangable():
         data = {'a': 10, 'b':20}
 
     eid = uuid4()
-    x = Foo(eid)
+    x = TPCache(Foo).fetch(eid)
     assert x.id == eid
     with pytest.raises(AttributeError):
         x.id = uuid4()

@@ -193,6 +193,8 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         pwd = ctx['password']
         return base_url, usr, pwd
 
+    __repr_classname = "stelar_client.Class"
+
     def __repr__(self):
         purl = urlparse(self._base_url)
         if self._username:
@@ -200,4 +202,4 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         else:
             netloc = purl.netloc
         enhanced_url = urlunparse((purl.scheme, netloc, purl.path, '', '', ''))
-        return f"{__name__}.{self.__class__.__qualname__}({enhanced_url})"
+        return f"{self.__repr_classname}({enhanced_url})"
