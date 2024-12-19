@@ -191,6 +191,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         base_url = self.__normalize_base_url(ctx['base_url'])
         usr = ctx['username']
         pwd = ctx['password']
+        self._ckan_apitoken = ctx.get('ckan_apitoken', None)
         return base_url, usr, pwd
 
     __repr_classname = "stelar_client.Class"
