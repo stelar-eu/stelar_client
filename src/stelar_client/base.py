@@ -12,9 +12,8 @@ class BaseAPI:
     def __init__(self, base_url, token, refresh_token, tls_verify=True):
         self._base_url = base_url
         self._api_url = base_url+"/api/"
-        self._token = token
-        self._refresh_token = refresh_token
         self._tls_verify = tls_verify
+        self.reset_tokens(token, refresh_token)
 
     @property
     def api_url(self):
@@ -25,6 +24,17 @@ class BaseAPI:
     def token(self):
         """Getter for the token property."""
         return self._token
+
+    def reset_tokens(self, token, refresh_token):
+        """
+        Reset the primary and refresh tokens.
+
+        Args:
+            token (str): The new token for authentication
+            refresh_token (str): The new refresh token
+        """
+        self._token = token
+        self._refresh_token = refresh_token
 
     def request(self, method, endpoint, params=None, data=None, headers=None, json=None):
         """

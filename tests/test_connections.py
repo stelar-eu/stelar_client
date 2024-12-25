@@ -140,13 +140,8 @@ def test_user_pass_given(mocker):
 def test_fetch(testcli):
     dsets = testcli.catalog.get_datasets()
     assert len(dsets) > 0
-
-def test_fetch(testcli):
-    dset = testcli.get_dataset('f5afbd09-14c8-401c-b235-6c68cfbca9de')
-    #dset = testcli.get_dataset('bfaaa78a-5bd3-400d-980e-ae5296b43e3c')
-    #dset = testcli.get_dataset('bfaaa78a-5bd3-400d-980e-ae5296b43e3c')
-    #dset = testcli.get_dataset('bfaaa78a-5bd3-400d-980e-ae5296b43e3c')
     print(dset.id)
     print(dset.name)
     print(dset.title)
     print(dset.notes)
+

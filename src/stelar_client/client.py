@@ -99,7 +99,27 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         super().__init__(base_url, token, refresh_token, tls_verify)
 
 
-        ####################################################################
+    def refresh_tokens(self, password=None):
+        """Refresh the access token for this client.
+
+        Note: eventually, this should be using the OpenID refresh_token
+        facility. For now, it just repeats the login.
+
+        Args:
+            password (str): A password, which is used for username/password authentication.
+                If not provided, the context mechanism is used.
+        """
+        if self._context or password is None:
+            base_url, username, password = self.__from_context()
+        else:
+            username = self._username
+
+        token, refresh_token = self.authenticate(self._base_url,
+            username=username, 
+            password=password, 
+            tls_verify=self._tls_verify)
+        self.reset_tokens(token, refresh_token)
+        
 
     def __initialize_operators(self):
         ##  Instatiate the subAPIs as member variables of the client  ######
@@ -132,8 +152,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         Returns: 
             token, refresh_token: If authentication was successful, a OpenID token and refresh token
         """
-       
-
+      
         if username and password:
             auth_data = {
                 "username": username,

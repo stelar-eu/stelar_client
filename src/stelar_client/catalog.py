@@ -21,11 +21,13 @@ class CatalogAPI(BaseAPI):
     - get_resources_list(dataset_id) -> List(Resource)
     """
 
+    dataset_cache: ProxyCache[Dataset]
+    resource_cache: ProxyCache[Resource]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.dataset_cache = ProxyCache(self, Dataset)
         self.resource_cache = ProxyCache(self, Resource)
-
 
     def get_dataset(self, id: str) -> Dataset:
         """Retrieves the information of a dataset as an object of the `Dataset` class.

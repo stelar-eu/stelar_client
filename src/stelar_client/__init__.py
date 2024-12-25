@@ -17,7 +17,11 @@ finally:
 
 
 from .client import Client
+from .dataset import Dataset
+from .resource import Resource
 
 __all__ = [
-    'Client'
+    'Client',
+    'Dataset',
+    'Resource',
 ]

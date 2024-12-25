@@ -1,5 +1,5 @@
 import pytest
-from stelar_client.proxy import ProxyObj, ProxyProperty, ProxyId, ProxyCache
+from stelar_client.proxy import ProxyObj, ProxyProperty, ProxyId, ProxyCache, ProxySchema
 from uuid import uuid4
 
 class TPCache(ProxyCache):
@@ -70,6 +70,13 @@ def test_non_entity_class_property_raises():
 
 
 
+def test_proxy_schema_registration():
+    class Foo(ProxyObj):
+        pass
+
+    assert hasattr(Foo, 'proxy_schema')
+    assert ProxySchema.for_entity('Foo') is Foo.proxy_schema
+
 def test_empty_proxy_obj_schema():
     class Foo(ProxyObj):
         pass
@@ -136,7 +143,6 @@ def test_property():
     assert p.updatable is False
     assert p.optional is False
     assert p.entity_name == 'aprop'
-    assert p.types == object
 
 
 ##################################################

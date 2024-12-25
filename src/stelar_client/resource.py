@@ -1,137 +1,30 @@
+
 from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
+from .proxy import ProxyObj, ProxyId, ProxyProperty, ProxyCache
 
-
-class Resource:
+class Resource(ProxyObj):
     """
-    A class representing a STELAR resource with metadata and additional details.
-
-    This class is designed to hold metadata for a STELAR resource entity, making it easier
-    to manage and manipulate resource information within the client application runtime.
+    A proxy for a STELAR resource with metadata and additional details.
     """
 
-    def __init__(self, url: str, format: str, name: str) -> None:
-        """
-        Initialize a Resource instance with essential fields.
+    package_id = ProxyProperty()
+    
+    url = ProxyProperty(updatable=True)
+    format = ProxyProperty(updatable=True)
+    hash = ProxyProperty(updatable=True)
+    name = ProxyProperty(updatable=True)
+    resource_type = ProxyProperty(updatable=True)
+    mimetype = ProxyProperty(updatable=True)
+    mimetype_inner = ProxyProperty(updatable=True)
+    cache_url = ProxyProperty(updatable=True)
+    size = ProxyProperty(updatable=True)
+    created = ProxyProperty(updatable=True)
+    last_modified = ProxyProperty(updatable=True)
+    cache_last_updated = ProxyProperty(updatable=True)
 
-        Args:
-            url (str): The URL where the resource is located.
-            format (str): The format of the resource.
-            name (str): The name of the resource.
-            kwargs: Additional optional fields.
-        """
-        self._data = {
-            "url": url,
-            "format": format,
-            "name": name
-        }
-        self._original_data = self._data.copy()  # Copy for dirty tracking
-        self._dirty_fields = set()  # Track which fields have been modified
-
-        # Additional fields
-        self.id = None
-        self.relation = None
-        self.package_id = None
-        self.modified_date = None
-        self.creation_date = None
-        self.description = None
-
-    def __getattr__(self, name):
-        """Handle attribute access dynamically."""
-        if name in self._data:
-            return self._data[name]
-        raise AttributeError(f"'Resource' object has no attribute '{name}'")
-
-    def __setattr__(self, name, value):
-        """Handle attribute assignment dynamically."""
-        if name in {"_data", "_original_data", "_dirty_fields"} or name not in self._data:
-            super().__setattr__(name, value)
-        else:
-            # Only mark as dirty if the value actually changes
-            if self._data[name] != value:
-                self._data[name] = value
-                self._dirty_fields.add(name)
-
-    def is_dirty(self):
-        """Check if any field is dirty."""
-        return bool(self._dirty_fields)
-
-    def changes(self):
-        """Return the fields that have been modified and their changes."""
-        return {
-            key: (self._original_data[key], self._data[key])
-            for key in self._dirty_fields
-        }
-
-    def reset_dirty(self):
-        """Reset the dirty state and save the current data as original."""
-        self._original_data = self._data.copy()
-        self._dirty_fields.clear()
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        """
-        A class method to construct a Resource instance from a dictionary.
-
-        Args:
-            data (dict): The dictionary containing resource metadata.
-
-        Returns:
-            Resource: A fully constructed Resource instance.
-        """
-        instance = cls(
-            url=data.get('url'),
-            format=data.get('format'),
-            name=data.get('name'),
-        )
-        instance._populate_additional_fields(data)
-        return instance
-
-    def _populate_additional_fields(self, data: dict):
-        """
-        Populate additional fields of the Resource object.
-
-        Args:
-            data (dict): The dictionary containing resource metadata.
-        """
-        self.id = data.get('id')
-        self.relation = data.get('relation')
-        self.package_id = data.get('package_id')
-        self.modified_date = data.get('metadata_modified')
-        self.creation_date = data.get('created')
-        self.description = data.get('description')
-        return self
-
-    def to_dict(self):
-        """
-        Convert the Resource instance into a dictionary.
-
-        Returns:
-            dict: A dictionary representation of the Resource instance.
-        """
-        resource_dict = {
-            "resource_metadata":{
-                "url": self.url,
-                "format": self.format,
-                "name": self.name,
-            }   
-        }
-        return resource_dict
-
-    def update_from_dict(self, data: dict):
-        """
-        Updates the current Resource instance with new data from a dictionary.
-
-        Args:
-            data (dict): A dictionary containing new data for the Resource.
-        """
-        for key in ['url', 'format', 'name']:
-            if key in data:
-                setattr(self, key, data[key])
-
-        # Update additional fields
-        self._populate_additional_fields(data)
+    
 
     def __str__(self):
         """

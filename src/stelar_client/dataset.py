@@ -3,8 +3,8 @@ from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
 from .resource import Resource
-from .proxy import ProxyObj, ProxyProperty, ProxyId
-
+from .proxy import ProxyObj, ProxyProperty, ProxyId, ProxySubset      
+    
 
 class Dataset(ProxyObj):
     """
@@ -16,6 +16,7 @@ class Dataset(ProxyObj):
     metadata_created = ProxyProperty()
     metadata_modified = ProxyProperty()
     state = ProxyProperty()
+    type = ProxyProperty()
 
     private = ProxyProperty(updatable=True)
     title = ProxyProperty(updatable=True)
@@ -30,11 +31,16 @@ class Dataset(ProxyObj):
     url = ProxyProperty(updatable=True)
     version = ProxyProperty(updatable=True)
 
+    resources = ProxySubset(Resource)
 
-    # tags: list[str]
+    # *tags: list[str]
     # extras: dict[str,str]
     # profile
-    # resources
+    # *resources
+    # *groups
+    # owner_org
+    # relationships_as_object
+    # relationships_as subject
 
     #def __init__(self, *args, **kwargs):
     #    # We treat the case where just the name is provided specially

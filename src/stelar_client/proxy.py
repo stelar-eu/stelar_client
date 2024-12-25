@@ -1,21 +1,25 @@
 from __future__ import annotations
-from typing import Iterator, Optional, TYPE_CHECKING, TypeVar, Generic
+from typing import Iterator, Optional, TYPE_CHECKING, TypeVar, Generic, Any
 from uuid import UUID
 from weakref import WeakValueDictionary
+from datetime import datetime
 
 if TYPE_CHECKING:
     from .client import Client
 
 """
+    Introduction
+    ------------
+
     Proxy objects represent STELAR entities in Python:
     - Datasets
     - Resources
     - Workflows
-
+    - Groups
+    - Organizations
     - Processes (workflow executions)
     - Tasks
     - Tools
-    
     - Policies
     - Users 
       
@@ -31,13 +35,198 @@ if TYPE_CHECKING:
     - loading propertties on demand
     - updating single properties
     - updating multiple properties
+
+    Proxy values
+    -------------
+
+    The proxied entity fields (attributes) have two representations: one
+    that appears in the JSON object (stored in a dict) and one that is used
+    by the proxy objects.
+
+    client proxy value  <-->  json entity value
+
+    For example, dates are represented as datetime objects in the proxy and as strings
+    in the JSON entity.
+
+    Conversion between the two is done via the two conversion methods of this class.
+    Furthermore, when setting data a validation can be executed.
+
+    This class implements base behaviour: no conversion is performed and validation
+    always succeeds. In general, this is unwanted, but it is the default
 """
+
+class FieldValidator:
+    """Provide simple validation and conversion for entity fields. 
+    
+        A validation is a sequence of checks. Each check can:
+        - Raise an exception of ValueError
+        - Apply a value conversion and continue
+        - Apply a value conversion and terminate
+    
+    Any function that takes as input a value, and returns a pair (newvalue, done)
+    where `done` is a boolean, can be used as a check.
+
+    At the end of all conversions, if no conversion signaled `done`, the `strict` attribute
+    is checked. If True, an error is raised, else (the default) conversion succeeds.
+    """
+
+    def __init__(self, *, 
+                 strict: bool=False, 
+                 nullable: bool = True, 
+                 minimum_value: Any = None, maximum_value: Any = None,
+                 maximum_len: Optional[int]=None, minimum_len: Optional[int]=None):
+        
+        self.prioritized_checks = []
+        self.checks = []
+        self.strict = strict
+        self.nullable = nullable
+        self.minimum_value = minimum_value
+        self.maximum_value = maximum_value
+        self.maximum_len = maximum_len
+        self.minimum_len = minimum_len
+
+        if nullable is not None:
+            self.add_check(self.check_null, -1)
+        
+        if minimum_value is not None:
+            self.add_check(self.check_minimum, 10)
+        if maximum_value is not None:
+            self.add_check(self.check_maximum, 12)
+        if maximum_len is not None or minimum_len is not None:
+            self.add_check(self.check_length, 20)
+
+    def add_check(self, check_func, pri: int):
+        self.prioritized_checks.append((check_func, pri))
+        self.prioritized_checks.sort(key= lambda p: p[1])
+        self.checks = [p[0] for p in self.prioritized_checks]
+
+    @staticmethod
+    def check_null(value):
+        if value is None:
+            if self.nullable:
+                return None, True
+            else:
+                raise ValueError("None is not allowed")
+        else:
+            return value, False
+        
+    def check_length(self, value):
+        l = len(value)
+        if self.minimum_len is not None and l < self.minimum_len:
+            raise ValueError(f"The length ({l}) is less than the minimum ({self.minimum_len})")
+        if self.maximum_len is not None and l > self.maximum_len:
+            raise ValueError(f"The length ({l}) is greater that the maximum ({self.maximum_len})")
+        return value, False
+
+    def check_minimum(self, value):
+        if v < self.minimum_value:
+            raise ValueError(f"Value ({value}) too low (minimum={self.minimum})")
+        return value, False
+
+    def check_maximum(self, value):
+        if v > self.maximum_value:
+            raise ValueError(f"Value ({value}) too high (maximum={self.maximum})")
+        return value, False
+
+    def validate(self, value):
+        done = False
+        for check in self.checks:
+            value, done = check(value)
+            if done:
+                return value
+        if self.strict:
+            raise ValueError("Validation failed to match input value")
+        else:
+            return value
+        
+    def convert_to_proxy(self, value):
+        raise NotImplementedError()
+    def convert_to_entity(self, value):
+        raise NotImplementedError()
+
+
+class AnyField(FieldValidator):
+    """A very promiscuous basic validator."""
+    def convert_to_proxy(self, value):
+        return value
+    def convert_to_entity(self, value):
+        return value
+
+
+class BasicField(FieldValidator):
+    def __init__(self, ftype, **kwargs):
+        super().__init__(**kwargs)
+        self.ftype = ftype
+        self.add_check(self.to_ftype, 5)
+
+    def to_ftype(self, value):
+        if not isinstance(value, self.ftype):
+            value = self.ftype(value)
+        return value, True
+
+
+class StrField(BasicField):
+    def __init__(self, **kwargs):
+        super().__init__(ftype=str, **kwargs)
+
+
+class IntField(BasicField):
+    def __init__(self, **kwargs):
+        super().__init__(ftype=int, **kwargs)
+
+
+class BoolField(BasicField):
+    def __init__(self, **kwargs):
+        super().__init__(ftype=bool, **kwargs)
+
+
+class DateField(FieldValidator):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.add_check(self.to_date, 5)
+
+    def to_date(self, value: Any) -> (datetime, bool):
+        if isinstance(value, str):
+            return datetime.fromisoformat(value), True
+        elif isinstance(value, datetime):
+            return value, True
+        else:
+            raise ValueError("Invalid type, expected datetime or string")
+
+    def convert_to_entity(self, value: datetime) -> str:
+        return value.to
+    def convert_to_proxy(self, value: str) -> datetime:
+        return datetime.fromisoformat(value)
+
+
+class UUIDField(BasicField):
+    def __init__(self, **kwargs):
+        super().__init__(ftype=UUID, **kwargs)
+    def convert_to_proxy(self, value: str) -> UUID:
+        return UUID(value)
+    def convert_to_entity(self, value: UUID) -> str:
+        return str(value)
+
+
+
 
 
 class ProxySchema:
     """ A class that holds all information related to an entity proxy class.
         This includes the list of proxied properties, and other information
     """
+
+    entity_schema = dict()
+
+    @classmethod
+    def for_entity(cls, name: str) -> ProxySchema:
+        """Return the schema for the given named entity"""
+        return cls.entity_schema.get(name)
+
+    @property
+    def class_name(self):
+        return self.cls.__name__
+
     def __init__(self, cls):
         self.cls = cls
         self.properties = {}
@@ -65,6 +254,9 @@ class ProxySchema:
             self.id = ProxyId()
             cls.id = self.id
             self.id.__set_name__(cls, 'id')
+
+        # Register yourself
+        self.entity_schema[self.class_name] = self
 
     def get_id(self, entity) -> str:
         """Return the entity ID from the entity object"""
@@ -187,12 +379,12 @@ class ProxyProperty:
     """A Python descriptor for implementing access and updating of
        fields of proxy objects.
     """
-    def __init__(self, *, updatable=False, optional=False, entity_name=None, doc=None):
+    def __init__(self, *, validator=None, updatable=False, optional=False, entity_name=None, doc=None):
         """Constructs a proxy proerty descriptor"""
         self.updatable = updatable
         self.isId = False
         self.optional = optional
-        self.types = object
+        self.validator = validator if validator is not None else AnyField()
         self.entity_name = entity_name
         self.owner = self.name = None
         if doc is not None:
@@ -211,18 +403,15 @@ class ProxyProperty:
             raise ValueError(f"Property '{self.name}' is not optional")
         return value
 
-    def __get__(self, obj, objtype=None):
+    def get(self, obj):
+        """Low-level getter """
         if obj.proxy_attr is None:
             obj.proxy_sync()
-        val = obj.proxy_attr[self.name]
-
-        # The attribute is deleted
-        if val is ...:
-            raise AttributeError(f"Property '{self.name}' is not present")
-        return val
+        return obj.proxy_attr[self.name]
 
     def set(self, obj, value):
-
+        """Low-level setter"""
+        value = self.validator.validate(value)
         if obj.proxy_changed is None:
             # Initialize proxy_changed on clean object
             if obj.proxy_attr is None:
@@ -235,6 +424,14 @@ class ProxyProperty:
         # update the value
         obj.proxy_attr[self.name] = value
 
+    def __get__(self, obj, objtype=None):
+        val = self.get(obj)
+
+        # The attribute is deleted
+        if val is ...:
+            raise AttributeError(f"Property '{self.name}' is not present")
+        return val
+
     def __set__(self, obj, value):
         if value is ...:
             raise ValueError("Properties cannot be set to '...'")
@@ -246,7 +443,7 @@ class ProxyProperty:
         if obj.proxy_attr is None:
             obj.proxy_sync()
         if obj.proxy_attr[self.name] is ...:
-            raise AttributeError(f"{self.name}")
+            raise AttributeError(f"{self.name} is not present")
         if not self.optional:
             raise AttributeError(f"Property '{self.name}' is not optional")
         self.set(obj, ...)
@@ -258,7 +455,7 @@ class ProxyId(ProxyProperty):
     def __init__(self, entity_name=None, doc=None):
         if doc is None:
             doc = "The ID"
-        super().__init__(entity_name=entity_name, doc=doc)
+        super().__init__(validator=UUIDField(nullable=False), entity_name=entity_name, doc=doc)
         self.isId = True
         self.types = UUID
     
@@ -292,7 +489,6 @@ class ProxyCache(Generic[ProxyClass]):
         eid = UUID(self.proxy_type.get_entity_id(entity))
         proxy: ProxyObj = self.cache.get(eid, None)
         if proxy is None:
-            print("entity=",entity)
             proxy = self.proxy_type(cache=self, entity=entity)
             self.cache[proxy.proxy_id] = proxy
         else:
@@ -302,3 +498,53 @@ class ProxyCache(Generic[ProxyClass]):
                 raise RuntimeError("Proxy fetched with new entity on dirty state")
         return proxy
 
+
+class ProxySubset(ProxyProperty):
+    """A proxy property that manages a sub-schema (a sub-collection of other properties)
+    """
+
+    def __init__(self, proxy_type, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__proxy_type = proxy_type
+
+    @property
+    def proxy_type(self):
+        if isinstance(self.__proxy_type, str):
+            self.__proxy_type = ProxySchema.for_entity(self.__proxy_type).cls
+        return self.__proxy_type
+
+    def __get__(self, obj, obj_type=None):
+        if obj.proxy_attr is None:
+            obj.proxy_sync()
+        return SubCollection(self, obj)
+        
+
+class SubCollection:
+    """A proxy class that translates collection operations to operations
+       on an entity sub-collection.
+    """
+
+    owner: ProxyObj
+
+    def __init__(self, property: ProxySubset, owner: ProxyObj):
+        self.property = property
+        self.owner = owner
+
+    @property
+    def __coll(self):
+        return self.property.get(self.owner)
+
+    def __iter__(self):
+        return iter(self.__coll)
+    
+    def __len__(self):
+        return len(self.__coll)
+
+    def __getitem__(self, key):
+        return self.__coll[key]
+    
+    def __delitem__(self, key):
+        raise NotImplementedError(f"delitem  {self.property.owner.__name__}.{self.property.name}")
+
+    def __iadd__(self, **kwargs):
+        raise NotImplementedError(f"iadd {self.property.owner.__name__}.{self.property.name}")
