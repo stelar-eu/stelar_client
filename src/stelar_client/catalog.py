@@ -21,13 +21,13 @@ class CatalogAPI(BaseAPI):
     - get_resources_list(dataset_id) -> List(Resource)
     """
 
-    dataset_cache: Registry[Dataset]
-    resource_cache: Registry[Resource]
+    dataset_registry: Registry[Dataset]
+    resource_registry: Registry[Resource]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.dataset_cache = Registry(self, Dataset)
-        self.resource_cache = Registry(self, Resource)
+        self.dataset_registry = Registry(self, Dataset)
+        self.resource_registry = Registry(self, Resource)
 
     def get_dataset(self, id: str) -> Dataset:
         """Retrieves the information of a dataset as an object of the `Dataset` class.
@@ -48,7 +48,7 @@ class CatalogAPI(BaseAPI):
             dataset_response = self.request("GET",  urljoin(APIEndpointsV1.GET_DATASET, id),)
             if dataset_response.status_code == 200:
                 entity = dataset_response.json()['result']['dataset']
-                return self.dataset_cache.fetch_proxy_for_entity(entity)
+                return self.dataset_registry.fetch_proxy_for_entity(entity)
         except HTTPError as he:
             if he.response.status_code == 400:
                 raise MissingParametersError(f"Bad Request")

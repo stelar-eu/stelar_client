@@ -47,7 +47,7 @@ class Dataset(Proxy):
     #    super().__init__(self, *args, **kwargs)
 
     def proxy_fetch(self):
-        return self.proxy_cache.client.get_dataset(str(self.proxy_id))
+        return self.proxy_registry.client.get_dataset(str(self.proxy_id))
 
     def proxy_update(self, updates, orig):
         return super().proxy_update(updates, orig)

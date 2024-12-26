@@ -57,7 +57,7 @@ class Proxy:
     of Registry is Client.
 
     Attributes are used to hold property values:
-    proxy_cache: The Registry instance that this proxy belongs to
+    proxy_registry: The Registry instance that this proxy belongs to
     proxy_id: The UUID of the proxies entity
     proxy_attr:
         A dict of all loaded attributes. When None, the entity has
@@ -75,8 +75,8 @@ class Proxy:
 
     """
 
-    def __init__(self, cache: Registry, eid: Optional[str|UUID] = None, entity=None):
-        self.proxy_cache = cache
+    def __init__(self, registry: Registry, eid: Optional[str|UUID] = None, entity=None):
+        self.proxy_registry = registry
         if eid is None and entity is None:
             raise ValueError("A proxy must be initialized either with an entity ID" 
                              " or with an entity JSON object containing the ID")
@@ -216,22 +216,22 @@ ProxyClass = TypeVar('ProxyClass', bound=Proxy)
 class Registry(Generic[ProxyClass]):
     def __init__(self, client: Client, proxy_type):
         self.client = client
-        self.cache = WeakValueDictionary()
+        self.registry = WeakValueDictionary()
         self.proxy_type = proxy_type
     
     def fetch_proxy(self, eid: UUID) -> ProxyClass:
-        proxy = self.cache.get(eid, None)
+        proxy = self.registry.get(eid, None)
         if proxy is None:
-            proxy = self.proxy_type(cache=self, eid=eid)
-            self.cache[proxy.proxy_id] = proxy
+            proxy = self.proxy_type(registry=self, eid=eid)
+            self.registry[proxy.proxy_id] = proxy
         return proxy
 
     def fetch_proxy_for_entity(self, entity) -> ProxyClass:
         eid = UUID(self.proxy_type.get_entity_id(entity))
-        proxy: Proxy = self.cache.get(eid, None)
+        proxy: Proxy = self.registry.get(eid, None)
         if proxy is None:
-            proxy = self.proxy_type(cache=self, entity=entity)
-            self.cache[proxy.proxy_id] = proxy
+            proxy = self.proxy_type(registry=self, entity=entity)
+            self.registry[proxy.proxy_id] = proxy
         else:
             if proxy.proxy_clean():
                 proxy.proxy_attr = proxy.proxy_schema.proxy_attributes(entity)                

@@ -143,7 +143,10 @@ class Reference(Property):
         return self.__proxy_type
 
     def convert_entity_to_proxy(self, proxy, entity):
-        return super().convert_entity_to_proxy(proxy, entity)
+        entities = entity[self.entity_name]
+        # entities is a list of entities, we need to fetch them from
+        # our proxy's client.
+        proxy.proxy_registry
 
     def convert_proxy_to_entity(self, proxy, entity):
         return super().convert_proxy_to_entity(proxy, entity)
