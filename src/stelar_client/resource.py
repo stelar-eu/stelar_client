@@ -2,28 +2,28 @@
 from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
-from .proxy import ProxyObj, ProxyId, ProxyProperty, ProxyCache, StrField, IntField, DateField
+from .proxy import Proxy, Id, Property, Registry, StrField, IntField, DateField
 
-class Resource(ProxyObj):
+class Resource(Proxy):
     """
     A proxy for a STELAR resource with metadata and additional details.
     """
 
-    package_id = ProxyProperty()
-    metadata_modified = ProxyProperty(validator=DateField)
+    package_id = Property()
+    metadata_modified = Property(validator=DateField)
     
-    url = ProxyProperty(validator=StrField, updatable=True)
-    format = ProxyProperty(validator=StrField, updatable=True)
-    hash = ProxyProperty(validator=StrField, updatable=True)
-    name = ProxyProperty(validator=StrField, updatable=True)
-    resource_type = ProxyProperty(validator=StrField, updatable=True)
-    mimetype = ProxyProperty(validator=StrField, updatable=True)
-    mimetype_inner = ProxyProperty(validator=StrField, updatable=True)
-    cache_url = ProxyProperty(validator=StrField, updatable=True)
-    size = ProxyProperty(validator=IntField, updatable=True)
-    created = ProxyProperty(validator=DateField, updatable=True)
-    last_modified = ProxyProperty(validator=DateField, updatable=True)
-    cache_last_updated = ProxyProperty(validator=DateField, updatable=True)
+    url = Property(validator=StrField, updatable=True)
+    format = Property(validator=StrField, updatable=True)
+    hash = Property(validator=StrField, updatable=True)
+    name = Property(validator=StrField, updatable=True)
+    resource_type = Property(validator=StrField, updatable=True)
+    mimetype = Property(validator=StrField, updatable=True)
+    mimetype_inner = Property(validator=StrField, updatable=True)
+    cache_url = Property(validator=StrField, updatable=True)
+    size = Property(validator=IntField, updatable=True)
+    created = Property(validator=DateField, updatable=True)
+    last_modified = Property(validator=DateField, updatable=True)
+    cache_last_updated = Property(validator=DateField, updatable=True)
 
 
 

@@ -1,9 +1,9 @@
 from __future__ import annotations
 from .base import BaseAPI
-from .proxy import ProxyObj, ProxyProperty
+from .proxy import Proxy
 
 
-class Task(ProxyObj):
+class Task(Proxy):
     """Proxy object for Process tasks.
     """
     def __init__(self, wf: Process, id):
@@ -45,7 +45,7 @@ class TaskSpec:
     
 
 
-class Process(ProxyObj):
+class Process(Proxy):
     """Proxy object for workflow processes (executions).
     """
 

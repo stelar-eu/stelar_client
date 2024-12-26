@@ -3,35 +3,35 @@ from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
 from .resource import Resource
-from .proxy import ProxyObj, ProxyProperty, ProxyId, ProxySubset, DateField, StrField, BoolField
+from .proxy import Proxy, Property, Id, RefList, DateField, StrField, BoolField
     
 
-class Dataset(ProxyObj):
+class Dataset(Proxy):
     """
     A proxy of a STELAR dataset.
     """
 
-    id = ProxyId()
-    name = ProxyProperty()
-    metadata_created = ProxyProperty(validator=DateField)
-    metadata_modified = ProxyProperty(validator=DateField)
-    state = ProxyProperty()
-    type = ProxyProperty()
+    id = Id()
+    name = Property()
+    metadata_created = Property(validator=DateField)
+    metadata_modified = Property(validator=DateField)
+    state = Property()
+    type = Property()
 
-    private = ProxyProperty(validator=BoolField, updatable=True)
-    title = ProxyProperty(validator=StrField, updatable=True)
-    notes = ProxyProperty(validator=StrField, updatable=True)
-    author = ProxyProperty(validator=StrField, updatable=True)
-    author_email = ProxyProperty(validator=StrField, updatable=True)
-    maintainer = ProxyProperty(validator=StrField, updatable=True)
-    maintainer_email = ProxyProperty(validator=StrField, updatable=True)
+    private = Property(validator=BoolField, updatable=True)
+    title = Property(validator=StrField, updatable=True)
+    notes = Property(validator=StrField, updatable=True)
+    author = Property(validator=StrField, updatable=True)
+    author_email = Property(validator=StrField, updatable=True)
+    maintainer = Property(validator=StrField, updatable=True)
+    maintainer_email = Property(validator=StrField, updatable=True)
 
     # weird ones
-    license_id = ProxyProperty(updatable=True)
-    url = ProxyProperty(validator=StrField, updatable=True)
-    version = ProxyProperty(validator=StrField(maximum_len=100), updatable=True)
+    license_id = Property(updatable=True)
+    url = Property(validator=StrField, updatable=True)
+    version = Property(validator=StrField(maximum_len=100), updatable=True)
 
-    resources = ProxySubset(Resource)
+    resources = RefList(Resource)
 
     # *tags: list[str]
     # extras: dict[str,str]

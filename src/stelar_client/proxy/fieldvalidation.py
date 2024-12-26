@@ -9,13 +9,8 @@ by the proxy objects.
 client proxy value  <-->  json entity value
 
 For example, dates are represented as datetime objects in the proxy and as strings
-in the JSON entity.
-
-Conversion between the two is done via the two conversion methods of this class.
-Furthermore, when setting data a validation can be executed.
-
-This class implements base behaviour: no conversion is performed and validation
-always succeeds. In general, this is unwanted, but it is the default
+in the JSON entity. Conversion between the two is done via the two conversion methods 
+of the classes herein.
 """
 
 from __future__ import annotations
@@ -127,13 +122,13 @@ class AnyField(FieldValidator):
         return value
 
 
-class RefField(AnyField):
-    def __init__(self, proxy_type, **kwargs):
-        super().__init__(**kwargs)
-        self.proxy_type = proxy_type
-    
-
 class BasicField(AnyField):
+    """
+    Given ftype T, accept value if it is an instance of T or if T(value) succeeds.
+    Conversion to T is performed.
+
+    Subclasses include basic types: str, int, bool 
+    """
     def __init__(self, ftype, **kwargs):
         super().__init__(**kwargs)
         self.ftype = ftype
@@ -146,16 +141,19 @@ class BasicField(AnyField):
 
 
 class StrField(BasicField):
+    """A string field validator"""
     def __init__(self, **kwargs):
         super().__init__(ftype=str, **kwargs)
 
 
 class IntField(BasicField):
+    """An int field validator"""
     def __init__(self, **kwargs):
         super().__init__(ftype=int, **kwargs)
 
 
 class BoolField(BasicField):
+    """A bool field validator"""
     def __init__(self, **kwargs):
         super().__init__(ftype=bool, **kwargs)
 
@@ -165,7 +163,7 @@ class DateField(FieldValidator):
         super().__init__(**kwargs)
         self.add_check(self.to_date, 5)
 
-    def to_date(self, value: Any) -> (datetime, bool):
+    def to_date(self, value: Any) -> tuple[datetime, bool]:
         if isinstance(value, str):
             return datetime.fromisoformat(value), False
         elif isinstance(value, datetime):

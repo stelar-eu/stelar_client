@@ -7,6 +7,7 @@ from .decl import ProxyState
 
 if TYPE_CHECKING:
     from ..client import Client
+    from .property import RefList
 
 """
     Introduction
@@ -43,20 +44,20 @@ if TYPE_CHECKING:
 
 #----------------------------------------------------------
 #
-# ProxyObj is the base class for all proxy classes
+# Proxy is the base class for all proxy classes
 #
 #----------------------------------------------------------
 
 
 
-class ProxyObj:
+class Proxy:
     """Base class for all proxy objects of the STELAR entities.
 
-    Proxy objects are managed by ProxyCache. The primary implementation
-    of ProxyCache is Client.
+    Proxy objects are managed by Registry. The primary implementation
+    of Registry is Client.
 
     Attributes are used to hold property values:
-    proxy_cache: The ProxyCache instance that this proxy belongs to
+    proxy_cache: The Registry instance that this proxy belongs to
     proxy_id: The UUID of the proxies entity
     proxy_attr:
         A dict of all loaded attributes. When None, the entity has
@@ -74,7 +75,7 @@ class ProxyObj:
 
     """
 
-    def __init__(self, cache: ProxyCache, eid: Optional[str|UUID] = None, entity=None):
+    def __init__(self, cache: Registry, eid: Optional[str|UUID] = None, entity=None):
         self.proxy_cache = cache
         if eid is None and entity is None:
             raise ValueError("A proxy must be initialized either with an entity ID" 
@@ -103,13 +104,13 @@ class ProxyObj:
             self.proxy_schema.proxy_from_entity(self, entity)
 
     def __init_subclass__(cls, entity=True):
-        from .schema import ProxySchema
+        from .schema import Schema
         if entity:
-            cls.proxy_schema = ProxySchema(cls)
+            cls.proxy_schema = Schema(cls)
         else:
             # cls is not an entity class, check that 
             # there are no properties defined on it
-            ProxySchema.check_non_entity(cls)
+            Schema.check_non_entity(cls)
 
     @classmethod
     def get_entity_id(cls, entity) -> str:
@@ -179,14 +180,14 @@ class ProxyObj:
 
 
 
-class SubCollection:
+class ProxyList:
     """A proxy class that translates collection operations to operations
        on an entity sub-collection.
     """
 
-    owner: ProxyObj
+    owner: Proxy
 
-    def __init__(self, property: ProxySubset, owner: ProxyObj):
+    def __init__(self, property: RefList, owner: Proxy):
         self.property = property
         self.owner = owner
 
@@ -210,9 +211,9 @@ class SubCollection:
         raise NotImplementedError(f"iadd {self.property.owner.__name__}.{self.property.name}")
 
 
-ProxyClass = TypeVar('ProxyClass', bound=ProxyObj)
+ProxyClass = TypeVar('ProxyClass', bound=Proxy)
 
-class ProxyCache(Generic[ProxyClass]):
+class Registry(Generic[ProxyClass]):
     def __init__(self, client: Client, proxy_type):
         self.client = client
         self.cache = WeakValueDictionary()
@@ -227,7 +228,7 @@ class ProxyCache(Generic[ProxyClass]):
 
     def fetch_proxy_for_entity(self, entity) -> ProxyClass:
         eid = UUID(self.proxy_type.get_entity_id(entity))
-        proxy: ProxyObj = self.cache.get(eid, None)
+        proxy: Proxy = self.cache.get(eid, None)
         if proxy is None:
             proxy = self.proxy_type(cache=self, entity=entity)
             self.cache[proxy.proxy_id] = proxy

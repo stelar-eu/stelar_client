@@ -1,15 +1,15 @@
 from uuid import uuid4
 from proxy_utils import TPCache, ProxyTestObj
-from stelar_client.proxy import ProxyObj, ProxyProperty, ProxyId, ProxyCache, ProxySubset
+from stelar_client.proxy import Proxy, Property, Id, Registry, RefList
 
 
 def test_simple_subset_decl():
     class Foo(ProxyTestObj):
-        a = ProxyProperty()
+        a = Property()
 
     class Bar(ProxyTestObj):
-        b = ProxyProperty()
-        acoll = ProxySubset(Foo)
+        b = Property()
+        acoll = RefList(Foo)
 
     assert 'acoll' in Bar.proxy_schema.properties
     acoll_descriptor = Bar.proxy_schema.properties['acoll']
@@ -20,7 +20,7 @@ def test_simple_subset_decl():
 def test_collection_init():
     uuids = [uuid4() for i in range(4)]
     class Foo(ProxyTestObj):
-        a = ProxyProperty()
+        a = Property()
 
     Foo.data = {
         uuids[i]: {
@@ -32,8 +32,8 @@ def test_collection_init():
     }
 
     class Bar(ProxyTestObj):
-        b = ProxyProperty()
-        acoll = ProxySubset(Foo)
+        b = Property()
+        acoll = RefList(Foo)
 
     Bar.data = {
         uuids[3]: {

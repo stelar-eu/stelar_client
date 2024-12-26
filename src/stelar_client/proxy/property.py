@@ -3,9 +3,9 @@ from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any
 from uuid import UUID
 from .exceptions import EntityError
 from .fieldvalidation import AnyField, UUIDField
-from .proxy import ProxyObj
+from .proxy import Proxy, ProxyList
 
-class ProxyProperty:
+class Property:
     """A Python descriptor for implementing access and updating of
        fields of proxy objects.
     """
@@ -26,8 +26,8 @@ class ProxyProperty:
             self.__doc__ = doc
 
     def __set_name__(self, owner, name):
-        if not issubclass(owner, ProxyObj):
-            raise TypeError(f"Class {owner.__qualname__} must inherit from class ProxyObj")
+        if not issubclass(owner, Proxy):
+            raise TypeError(f"Class {owner.__qualname__} must inherit from class Proxy")
         self.owner = owner
         self.name = name
         if self.entity_name is None:
@@ -59,7 +59,7 @@ class ProxyProperty:
         # update the value
         obj.proxy_attr[self.name] = value
 
-    def convert_entity_to_proxy(self, proxy: ProxyObj, entity: Any):
+    def convert_entity_to_proxy(self, proxy: Proxy, entity: Any):
         """Update proxy dict to represent this property from the entity"""
         if self.optional:
             entity_value = entity.get(self.entity_name, ...)
@@ -71,9 +71,9 @@ class ProxyProperty:
             
         proxy.proxy_attr[self.name] = self.validator.convert_to_proxy(entity_value)
 
-    def convert_proxy_to_entity(self, proxy: ProxyObj, entity: dict):
+    def convert_proxy_to_entity(self, proxy: Proxy, entity: dict):
         """Update entity dict to represent this property from the proxy.        
-           The `changes` flag is true when the proxy_attr is actually the ProxyObj.proxy_changes
+           The `changes` flag is true when the proxy_attr is actually the Proxy.proxy_changes
            dict.
         """
         proxy_value = proxy.proxy_attr[self.name]
@@ -106,7 +106,7 @@ class ProxyProperty:
         self.set(obj, ...)
 
 
-class ProxyId(ProxyProperty):
+class Id(Property):
     """A Python descriptor for implementing entity ID access."""
 
     def __init__(self, entity_name=None, doc=None):
@@ -127,7 +127,7 @@ class ProxyId(ProxyProperty):
 
 
 
-class ProxyReference(ProxyProperty):
+class Reference(Property):
     """A proxy property which is a reference to an entity.
     """
     def __init__(self, proxy_type, *args, **kwargs):
@@ -135,9 +135,10 @@ class ProxyReference(ProxyProperty):
         self.__proxy_type = proxy_type
 
     @property
-    def proxy_type(self) -> ProxyClass:
+    def proxy_type(self):
         """The class of the proxy object pointed to by this"""
         if isinstance(self.__proxy_type, str):
+            from .schema import ProxySchema
             self.__proxy_type = ProxySchema.for_entity(self.__proxy_type).cls
         return self.__proxy_type
 
@@ -148,7 +149,7 @@ class ProxyReference(ProxyProperty):
         return super().convert_proxy_to_entity(proxy, entity)
         
 
-class ProxySubset(ProxyReference):
+class RefList(Reference):
     """A proxy property that manages a sub-schema (a sub-collection of other properties)
     """
 
@@ -156,8 +157,7 @@ class ProxySubset(ProxyReference):
         super().__init__(*args, **kwargs)
 
     def __get__(self, obj, obj_type=None):
-        from .proxy import SubCollection
         if obj.proxy_attr is None:
             obj.proxy_sync()
-        return SubCollection(self, obj)
+        return ProxyList(self, obj)
         

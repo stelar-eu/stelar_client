@@ -1,7 +1,7 @@
 from uuid import uuid4
-from stelar_client.proxy import ProxyObj, ProxyProperty, ProxyId, ProxyCache
+from stelar_client.proxy import Proxy, Property, Id, Registry
 
-class TPCache(ProxyCache):
+class TPCache(Registry):
     def __init__(self, proxy_type):
         super().__init__(None, proxy_type)
     def fetch(self, eid=None):
@@ -13,7 +13,7 @@ class TPCache(ProxyCache):
 #  An 'abstract' subclass of ProxyObj which does
 #  not implement an entity.
 ##################################################
-class ProxyTestObj(ProxyObj, entity=False):
+class ProxyTestObj(Proxy, entity=False):
 
     data = {}
     old_data = {}

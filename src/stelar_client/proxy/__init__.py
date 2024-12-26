@@ -11,10 +11,10 @@ from .fieldvalidation import (
     AnyField, BoolField, IntField, StrField, DateField, UUIDField
 )
 from .property import (
-    ProxyProperty, ProxyId, ProxyReference, ProxySubset
+    Property, Id, Reference, RefList
 )
-from .schema import ProxySchema
-from .proxy import ProxyObj, ProxyCache
+from .schema import Schema
+from .proxy import Proxy, Registry
 
 
 __all__ = [
@@ -29,14 +29,14 @@ __all__ = [
     'DateField',
     'UUIDField',
 
-    'ProxyProperty',
-    'ProxyId',
-    'ProxyReference',
-    'ProxySubset',
+    'Property',
+    'Id',
+    'Reference',
+    'RefList',
 
-    'ProxySchema',
+    'Schema',
 
-    'ProxyObj',
-    'ProxyCache',
+    'Proxy',
+    'Registry',
     'ProxyState',
 ]

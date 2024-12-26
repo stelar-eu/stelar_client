@@ -3,7 +3,7 @@ from .endpoints import APIEndpointsV1
 from .dataset import Dataset
 from .resource import Resource
 from .model import MissingParametersError, STELARUnknownError, DuplicateEntryError, EntityNotFoundError
-from .proxy import ProxyCache
+from .proxy import Registry
 from requests.exceptions import HTTPError
 from urllib.parse import urljoin, urlencode
 
@@ -21,13 +21,13 @@ class CatalogAPI(BaseAPI):
     - get_resources_list(dataset_id) -> List(Resource)
     """
 
-    dataset_cache: ProxyCache[Dataset]
-    resource_cache: ProxyCache[Resource]
+    dataset_cache: Registry[Dataset]
+    resource_cache: Registry[Resource]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.dataset_cache = ProxyCache(self, Dataset)
-        self.resource_cache = ProxyCache(self, Resource)
+        self.dataset_cache = Registry(self, Dataset)
+        self.resource_cache = Registry(self, Resource)
 
     def get_dataset(self, id: str) -> Dataset:
         """Retrieves the information of a dataset as an object of the `Dataset` class.
