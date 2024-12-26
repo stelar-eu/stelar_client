@@ -3,7 +3,7 @@ from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
 from .resource import Resource
-from .proxy import ProxyObj, ProxyProperty, ProxyId, ProxySubset      
+from .proxy import ProxyObj, ProxyProperty, ProxyId, ProxySubset, DateField, StrField, BoolField
     
 
 class Dataset(ProxyObj):
@@ -13,23 +13,23 @@ class Dataset(ProxyObj):
 
     id = ProxyId()
     name = ProxyProperty()
-    metadata_created = ProxyProperty()
-    metadata_modified = ProxyProperty()
+    metadata_created = ProxyProperty(validator=DateField)
+    metadata_modified = ProxyProperty(validator=DateField)
     state = ProxyProperty()
     type = ProxyProperty()
 
-    private = ProxyProperty(updatable=True)
-    title = ProxyProperty(updatable=True)
-    notes = ProxyProperty(updatable=True)
-    author = ProxyProperty(updatable=True)
-    author_email = ProxyProperty(updatable=True)
-    maintainer = ProxyProperty(updatable=True)
-    maintainer_email = ProxyProperty(updatable=True)
+    private = ProxyProperty(validator=BoolField, updatable=True)
+    title = ProxyProperty(validator=StrField, updatable=True)
+    notes = ProxyProperty(validator=StrField, updatable=True)
+    author = ProxyProperty(validator=StrField, updatable=True)
+    author_email = ProxyProperty(validator=StrField, updatable=True)
+    maintainer = ProxyProperty(validator=StrField, updatable=True)
+    maintainer_email = ProxyProperty(validator=StrField, updatable=True)
 
     # weird ones
     license_id = ProxyProperty(updatable=True)
-    url = ProxyProperty(updatable=True)
-    version = ProxyProperty(updatable=True)
+    url = ProxyProperty(validator=StrField, updatable=True)
+    version = ProxyProperty(validator=StrField(maximum_len=100), updatable=True)
 
     resources = ProxySubset(Resource)
 

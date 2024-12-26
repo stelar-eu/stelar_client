@@ -2,7 +2,7 @@
 from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
-from .proxy import ProxyObj, ProxyId, ProxyProperty, ProxyCache
+from .proxy import ProxyObj, ProxyId, ProxyProperty, ProxyCache, StrField, IntField, DateField
 
 class Resource(ProxyObj):
     """
@@ -10,21 +10,22 @@ class Resource(ProxyObj):
     """
 
     package_id = ProxyProperty()
+    metadata_modified = ProxyProperty(validator=DateField)
     
-    url = ProxyProperty(updatable=True)
-    format = ProxyProperty(updatable=True)
-    hash = ProxyProperty(updatable=True)
-    name = ProxyProperty(updatable=True)
-    resource_type = ProxyProperty(updatable=True)
-    mimetype = ProxyProperty(updatable=True)
-    mimetype_inner = ProxyProperty(updatable=True)
-    cache_url = ProxyProperty(updatable=True)
-    size = ProxyProperty(updatable=True)
-    created = ProxyProperty(updatable=True)
-    last_modified = ProxyProperty(updatable=True)
-    cache_last_updated = ProxyProperty(updatable=True)
+    url = ProxyProperty(validator=StrField, updatable=True)
+    format = ProxyProperty(validator=StrField, updatable=True)
+    hash = ProxyProperty(validator=StrField, updatable=True)
+    name = ProxyProperty(validator=StrField, updatable=True)
+    resource_type = ProxyProperty(validator=StrField, updatable=True)
+    mimetype = ProxyProperty(validator=StrField, updatable=True)
+    mimetype_inner = ProxyProperty(validator=StrField, updatable=True)
+    cache_url = ProxyProperty(validator=StrField, updatable=True)
+    size = ProxyProperty(validator=IntField, updatable=True)
+    created = ProxyProperty(validator=DateField, updatable=True)
+    last_modified = ProxyProperty(validator=DateField, updatable=True)
+    cache_last_updated = ProxyProperty(validator=DateField, updatable=True)
 
-    
+
 
     def __str__(self):
         """

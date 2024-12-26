@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 from stelar_client.proxy import *
-
+from stelar_client.proxy.fieldvalidation import FieldValidator
 
 def test_basic_checks():
     val = FieldValidator()

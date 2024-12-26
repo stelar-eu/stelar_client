@@ -1,5 +1,6 @@
 import pytest
-from stelar_client.proxy import ProxyObj, ProxyProperty, ProxyId, ProxyCache, ProxySchema
+from stelar_client.proxy import (ProxyObj, ProxyProperty, ProxyId, ProxyCache, 
+                                 ProxySchema, IntField, StrField, ProxyState, InvalidationError)
 from uuid import uuid4
 
 class TPCache(ProxyCache):
@@ -9,6 +10,22 @@ class TPCache(ProxyCache):
         if eid is None:
             eid = uuid4()
         return self.proxy_type(self, eid)
+
+
+##################################################
+#  An 'abstract' subclass of ProxyObj which does
+#  not implement an entity.
+##################################################
+class TestProxy(ProxyObj, entity=False):
+    __test__ = False
+
+    data = {}
+    def proxy_sync(self):
+        if self.proxy_changed is not None:
+            self.data = self.proxy_schema.proxy_to_entity(self)
+            self.old_data = self.proxy_schema.proxy_to_entity(self)
+        self.proxy_schema.proxy_from_entity(self, self.data)
+        self.proxy_changed = None
 
 
 def test_abstract():
@@ -25,8 +42,9 @@ def test_abstract():
             super().__init__(*args, **kwargs)
 
         a = ProxyProperty()
-        def proxy_fetch(self):
-            return {'a': None}
+        def proxy_sync(self):
+            self.proxy_attr = {'a': None}
+            self.proxy_changed = None
 
     assert not hasattr(Foo, 'proxy_schema')
     assert not hasattr(Bar, 'proxy_schema')
@@ -145,23 +163,6 @@ def test_property():
     assert p.entity_name == 'aprop'
 
 
-##################################################
-#  An 'abstract' subclass of ProxyObj which does
-#  not implement an entity.
-##################################################
-class TestProxy(ProxyObj, entity=False):
-    __test__ = False
-
-    data = {}
-    def proxy_fetch(self):
-        return self.data
-    def proxy_update(self, new_data, old_data):
-        self.data = new_data
-        self.old_data = old_data
-        return new_data
-
-
-
 
 def test_proxy_obj():
     class Foo(ProxyObj):
@@ -177,34 +178,58 @@ def test_proxy_obj():
         b = ProxyProperty(updatable=True)
         c = ProxyProperty(updatable=True)
 
-        def proxy_fetch(self):
-            return self.data
-        def proxy_update(self, new_data, old_data):
-            self.data = new_data
-            return new_data
+        def proxy_sync(self):
+            if self.proxy_changed is not None:
+                self.data = self.proxy_schema.proxy_to_entity(self)
+            self.proxy_schema.proxy_from_entity(self, self.data)
+            self.proxy_changed = None
 
     eid = uuid4()
     x = TPCache(Foo).fetch(eid)
+
     assert x.proxy_attr is None
+    assert x.proxy_state is ProxyState.EMPTY
     assert len(x.proxy_schema.properties) == 3
     assert x.proxy_schema.id.name == 'id'
     assert x.id == eid 
     assert x.proxy_attr is None
-    assert x.proxy_clean()
+    assert x.proxy_changed is None
 
     assert x.a == 10
     assert x.b == "Hello"
     assert x.c is None
-    assert x.proxy_clean()
+    assert x.proxy_changed is None
+    assert x.proxy_state is ProxyState.CLEAN
 
     x.a = 20
     x.b = "Hi there"    
-    assert not x.proxy_clean()
+    assert x.proxy_changed is not None
+    assert x.proxy_state is ProxyState.DIRTY
     x.proxy_sync()
+    assert x.proxy_state is ProxyState.CLEAN
 
     assert x.a == 20
     assert x.b == "Hi there"
-    assert x.proxy_clean()
+    assert x.proxy_changed is None
+    assert x.proxy_state is ProxyState.CLEAN
+
+    x.a = 30
+    assert x.proxy_state is ProxyState.DIRTY
+    assert x.a == 30
+    with pytest.raises(InvalidationError):
+        x.proxy_invalidate()
+    x.proxy_reset()
+    assert x.proxy_state is ProxyState.CLEAN
+    assert x.a == 20
+    assert x.b == "Hi there"
+
+    x.a = 30
+    assert x.proxy_state is ProxyState.DIRTY
+    assert x.a == 30
+    x.proxy_invalidate(force=True)
+    assert x.proxy_state is ProxyState.EMPTY
+    assert x.a == 20
+    assert x.proxy_state is ProxyState.CLEAN
 
 
 def test_attr_read_only():
@@ -248,6 +273,7 @@ def test_prop_optional():
         x.c
 
     x.data = {'c': 10}
+    x.proxy_invalidate()
     assert x.c == 10
     assert not hasattr(x, 'a')
     assert not hasattr(x, 'b')
@@ -272,6 +298,22 @@ def test_prop_optional():
     x.proxy_sync()
     assert 'b' not in x.data
 
+def test_property_validator():
+    class Foo(TestProxy):
+        a = ProxyProperty(validator=IntField, updatable=True)
+        b = ProxyProperty(validator=StrField(), updatable=False)
+        data = {'a': -1, 'b': 'one'}
+
+    
+    assert Foo.proxy_schema.properties['a'].validator.validate(10) == 10
+    assert Foo.proxy_schema.properties['b'].validator.validate('10') == '10'
+
+
+    x = TPCache(Foo).fetch()
+    assert x.a == -1
+    x.a = 10
+    assert x.a == 10
+
 
 def test_missing_values():
     class Foo(TestProxy):
@@ -285,6 +327,7 @@ def test_missing_values():
         x.a
 
     x.data = {'a':10, 'b': 20}
+    x.proxy_invalidate()
     assert x.a == 10
     assert x.b == 20
 
@@ -302,12 +345,11 @@ def test_set_changed_once():
     x.a = 3
     assert x.a == 3
 
-    assert x.data['a'] == 1
-    assert not hasattr(x, 'old_data')
-    x.proxy_sync()
-    assert x.old_data['a'] == 1
-    assert x.data['a'] == 3
+    assert x.proxy_attr['a'] == 3
+    assert x.proxy_changed['a'] == 1
 
+    x.proxy_reset()
+    assert x.a == 1
 
 def test_multiple_keys_raise():
     with pytest.raises(TypeError): 
