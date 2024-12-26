@@ -100,8 +100,7 @@ class FieldValidator:
         self.prioritized_checks.sort(key= lambda p: p[1])
         self.checks = [p[0] for p in self.prioritized_checks]
 
-    @staticmethod
-    def check_null(value):
+    def check_null(self, value):
         if value is None:
             if self.nullable:
                 return None, True
@@ -111,29 +110,35 @@ class FieldValidator:
             return value, False
         
     def check_length(self, value):
-        l = len(value)
-        if self.minimum_len is not None and l < self.minimum_len:
-            raise ValueError(f"The length ({l}) is less than the minimum ({self.minimum_len})")
-        if self.maximum_len is not None and l > self.maximum_len:
-            raise ValueError(f"The length ({l}) is greater that the maximum ({self.maximum_len})")
+        value_len = len(value)
+        if self.minimum_len is not None and value_len < self.minimum_len:
+            raise ValueError(f"The length ({value_len}) is less than the minimum ({self.minimum_len})")
+        if self.maximum_len is not None and value_len > self.maximum_len:
+            raise ValueError(f"The length ({value_len}) is greater that the maximum ({self.maximum_len})")
         return value, False
 
     def check_minimum(self, value):
-        if v < self.minimum_value:
-            raise ValueError(f"Value ({value}) too low (minimum={self.minimum})")
+        if value < self.minimum_value:
+            raise ValueError(f"Value ({value}) too low (minimum={self.minimum_value})")
         return value, False
 
     def check_maximum(self, value):
-        if v > self.maximum_value:
-            raise ValueError(f"Value ({value}) too high (maximum={self.maximum})")
+        if value > self.maximum_value:
+            raise ValueError(f"Value ({value}) too high (maximum={self.maximum_value})")
         return value, False
 
     def validate(self, value):
         done = False
-        for check in self.checks:
-            value, done = check(value)
-            if done:
-                return value
+        try:
+            for check in self.checks:
+                value, done = check(value)
+                if done:
+                    return value
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError("Bad value found during validation") from e
+        
         if self.strict:
             raise ValueError("Validation failed to match input value")
         else:
@@ -162,7 +167,7 @@ class BasicField(FieldValidator):
     def to_ftype(self, value):
         if not isinstance(value, self.ftype):
             value = self.ftype(value)
-        return value, True
+        return value, False
 
 
 class StrField(BasicField):
@@ -187,14 +192,14 @@ class DateField(FieldValidator):
 
     def to_date(self, value: Any) -> (datetime, bool):
         if isinstance(value, str):
-            return datetime.fromisoformat(value), True
+            return datetime.fromisoformat(value), False
         elif isinstance(value, datetime):
-            return value, True
+            return value, False
         else:
             raise ValueError("Invalid type, expected datetime or string")
 
     def convert_to_entity(self, value: datetime) -> str:
-        return value.to
+        return value.isoformat()
     def convert_to_proxy(self, value: str) -> datetime:
         return datetime.fromisoformat(value)
 
@@ -207,9 +212,13 @@ class UUIDField(BasicField):
     def convert_to_entity(self, value: UUID) -> str:
         return str(value)
 
-
-
-
+#----------------------------------------------------------
+#  Proxy Schema 
+#
+#  A collection of attributes defined for an entity.
+#  Each attribute is an instance of ProxyProperty and 
+#  contains metadata related to this attribute.
+#----------------------------------------------------------
 
 class ProxySchema:
     """ A class that holds all information related to an entity proxy class.
