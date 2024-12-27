@@ -1,13 +1,21 @@
 from uuid import uuid4
-from stelar_client.proxy import Proxy, Property, Id, Registry
+from stelar_client.proxy import Proxy, Registry, RegistryCatalog
 
-class TPCache(Registry):
-    def __init__(self, proxy_type):
-        super().__init__(None, proxy_type)
+
+class TPRegistry(Registry):
+    def __init__(self, catalog, proxy_type):
+        super().__init__(catalog, proxy_type)
     def fetch(self, eid=None):
         if eid is None:
             eid = uuid4()
         return self.proxy_type(self, eid)
+
+class TPCatalog(RegistryCatalog):
+    def registry_for(self, cls):
+        if cls not in self.registry_catalog:
+            self.add_registry_for(cls, TPRegistry(self, cls))
+        return super().registry_for(cls)
+
 
 ##################################################
 #  An 'abstract' subclass of ProxyObj which does

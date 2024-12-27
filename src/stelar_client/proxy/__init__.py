@@ -14,8 +14,8 @@ from .property import (
     Property, Id, Reference, RefList
 )
 from .schema import Schema
-from .proxy import Proxy, Registry
-
+from .proxy import Proxy
+from .registry import Registry, RegistryCatalog
 
 __all__ = [
     'EntityError',
@@ -37,6 +37,8 @@ __all__ = [
     'Schema',
 
     'Proxy',
-    'Registry',
     'ProxyState',
+
+    'Registry',
+    'RegistryCatalog',
 ]

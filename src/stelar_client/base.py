@@ -1,19 +1,22 @@
 import requests
 from urllib.parse import urljoin, urlencode
+from .proxy import RegistryCatalog
 
 
-class BaseAPI:
+class BaseAPI(RegistryCatalog):
     """Base class for all parts of the client API.
     
-        Its main responsibility is to support API calls to the
-        STELAR server.
+       Its main responsibility is to support API calls to the
+       STELAR server. It also contains logic to manage the proxies.
     """
 
     def __init__(self, base_url, token, refresh_token, tls_verify=True):
+        super().__init__()
         self._base_url = base_url
         self._api_url = base_url+"/api/"
         self._tls_verify = tls_verify
         self.reset_tokens(token, refresh_token)
+
 
     @property
     def api_url(self):

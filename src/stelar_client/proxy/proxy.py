@@ -8,6 +8,7 @@ from .decl import ProxyState
 if TYPE_CHECKING:
     from ..client import Client
     from .property import RefList
+    from .registry import Registry
 
 """
     Introduction
@@ -210,32 +211,4 @@ class ProxyList:
     def __iadd__(self, **kwargs):
         raise NotImplementedError(f"iadd {self.property.owner.__name__}.{self.property.name}")
 
-
-ProxyClass = TypeVar('ProxyClass', bound=Proxy)
-
-class Registry(Generic[ProxyClass]):
-    def __init__(self, client: Client, proxy_type):
-        self.client = client
-        self.registry = WeakValueDictionary()
-        self.proxy_type = proxy_type
-    
-    def fetch_proxy(self, eid: UUID) -> ProxyClass:
-        proxy = self.registry.get(eid, None)
-        if proxy is None:
-            proxy = self.proxy_type(registry=self, eid=eid)
-            self.registry[proxy.proxy_id] = proxy
-        return proxy
-
-    def fetch_proxy_for_entity(self, entity) -> ProxyClass:
-        eid = UUID(self.proxy_type.get_entity_id(entity))
-        proxy: Proxy = self.registry.get(eid, None)
-        if proxy is None:
-            proxy = self.proxy_type(registry=self, entity=entity)
-            self.registry[proxy.proxy_id] = proxy
-        else:
-            if proxy.proxy_clean():
-                proxy.proxy_attr = proxy.proxy_schema.proxy_attributes(entity)                
-            else:
-                raise RuntimeError("Proxy fetched with new entity on dirty state")
-        return proxy
 

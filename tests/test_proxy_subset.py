@@ -1,5 +1,5 @@
 from uuid import uuid4
-from proxy_utils import TPCache, ProxyTestObj
+from proxy_utils import TPCatalog, ProxyTestObj
 from stelar_client.proxy import Proxy, Property, Id, Registry, RefList
 
 
@@ -45,7 +45,8 @@ def test_collection_init():
         }
     }
 
-    foo_cache = TPCache(Foo)
-    bar_cache = TPCache(Bar)
+    c = TPCatalog()
+    foo_cache = c.registry_for(Foo)
+    bar_cache = c.registry_for(Bar)
 
     

@@ -140,6 +140,7 @@ def test_user_pass_given(mocker):
 def test_fetch(testcli):
     dsets = testcli.catalog.get_datasets()
     assert len(dsets) > 0
+    dset = dsets[0]
     print(dset.id)
     print(dset.name)
     print(dset.title)

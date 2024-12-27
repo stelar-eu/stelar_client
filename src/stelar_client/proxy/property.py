@@ -4,6 +4,7 @@ from uuid import UUID
 from .exceptions import EntityError
 from .fieldvalidation import AnyField, UUIDField
 from .proxy import Proxy, ProxyList
+from .registry import Registry
 
 class Property:
     """A Python descriptor for implementing access and updating of
@@ -130,9 +131,10 @@ class Id(Property):
 class Reference(Property):
     """A proxy property which is a reference to an entity.
     """
-    def __init__(self, proxy_type, *args, **kwargs):
+    def __init__(self, proxy_type, nullable=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__proxy_type = proxy_type
+        self.nullable = nullable
 
     @property
     def proxy_type(self):
@@ -142,14 +144,59 @@ class Reference(Property):
             self.__proxy_type = ProxySchema.for_entity(self.__proxy_type).cls
         return self.__proxy_type
 
+    def registry_for(self, obj) -> Registry:
+        """Return the registry for the referrent, given owner"""
+        return obj.proxy_registry.catalog.registry_for(self.proxy_type)
+
     def convert_entity_to_proxy(self, proxy, entity):
-        entities = entity[self.entity_name]
-        # entities is a list of entities, we need to fetch them from
-        # our proxy's client.
-        proxy.proxy_registry
+        refid = entity[self.entity_name]
+        if not refid:
+            refproxy = None
+        else:
+            refproxy = self.registry_for(proxy).fetch_proxy(refid)
+        proxy.proxy_attr[self.name] = refproxy
 
     def convert_proxy_to_entity(self, proxy, entity):
-        return super().convert_proxy_to_entity(proxy, entity)
+        refproxy = proxy.proxy_attr[self.name]
+        if refproxy is None:
+            refid = None
+        else:
+            refid = str(refproxy.proxy_id)
+        entity[self.entity_name] = refid
+
+    def set(self, obj, value):
+        """Low-level setter"""
+        
+        # Validate
+        if value is None:
+            if not self.nullable:
+                raise ValueError("The property cannot be set to None")
+        else:
+            if not isinstance(value, self.proxy_type):
+                # Transform or fail
+                if isinstance(value, (UUID,str)):
+                    value = self.registry_for(obj).fetch_proxy(value)
+                else:
+                    raise ValueError(f"Cannot convert value to {self.proxy_type.__name__}")
+
+        if obj.proxy_changed is None:   
+            if obj.proxy_attr is None:  # Actually EMPTY, make CLEAN
+                obj.proxy_sync()
+            # Initialize proxy_changed on CLEAN object
+            obj.proxy_changed = {self.name: obj.proxy_attr[self.name]}
+        elif self.name not in obj.proxy_changed:
+            # Record only first change
+            obj.proxy_changed[self.name] = obj.proxy_attr[self.name]
+        
+        # update the value
+        obj.proxy_attr[self.name] = value
+
+    def __set__(self, obj, value):
+        if value is ...:
+            raise ValueError("Properties cannot be set to '...'")
+        if not self.updatable:
+            raise AttributeError(f"Property '{self.name}' is read-only")
+        self.set(obj, value)
         
 
 class RefList(Reference):
@@ -164,3 +211,15 @@ class RefList(Reference):
             obj.proxy_sync()
         return ProxyList(self, obj)
         
+    def convert_entity_to_proxy(self, proxy, entity):
+        entities = entity[self.entity_name]
+        # entities is a list of entities, we need to fetch them from
+        # our proxy's client.
+        registry = self.registry_for(proxy)
+        proxies = [registry.fetch_proxy_for_entity(e)
+                   for e in entities
+                  ]
+        proxy.proxy_attr[self.name] = proxies
+
+    def convert_proxy_to_entity(self, proxy, entity):
+        pass
