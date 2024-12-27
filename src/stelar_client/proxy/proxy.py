@@ -102,7 +102,7 @@ class Proxy:
         self.proxy_attr = None
         self.proxy_changed = None
         if entity is not None:
-            self.proxy_schema.proxy_from_entity(self, entity)
+            self.proxy_sync(entity)
 
     def __init_subclass__(cls, entity=True):
         from .schema import Schema
@@ -156,29 +156,71 @@ class Proxy:
                 self.proxy_attr[name] = value
             self.proxy_changed = None                        
 
-    def proxy_sync(self):
+    def proxy_from_entity(self, entity: Any):
+        """Update the proxy_attr dictionary from a given entity."""
+        if self.proxy_attr is None:
+            self.proxy_attr = dict()
+        for prop in self.proxy_schema.properties.values():
+            if not prop.isId:
+                prop.convert_entity_to_proxy(self, entity)
+    
+    def proxy_to_entity(self, attrset: set[str]|dict[str,Any]|None = None):
+        """Return an entity from the proxy values. 
+
+        Note that the entity returned will not contain the id attribute.
+        
+        Args:
+            attrset (set of property names, optional): If not None, 
+                determines the set of names to add to the entity.
+
+                Any type of object, where the expression
+                `name in attrset` is valid, can be used.
+                                
+                Use this to only add names of changed properties to
+                an entity:
+                self.proxy_to_entity(self.proxy_changed)
+
+        Returns:
+            entity (dict): An entity dict containing all values 
+                specified.
+        """
+        entity = dict()
+        for prop in self.proxy_schema.properties.values():
+            if prop.isId or (attrset is not None and prop.name not in attrset):
+                continue
+            prop.convert_proxy_to_entity(self, entity)
+        return entity
+
+
+    def proxy_sync(self, entity=None):
         """Sync the data between the proxy and the API entity.
 
-            After a sync, the proxy is CLEAN and consistent with the
-            underlying entity in the Data Catalog.
+        After a sync, the proxy is CLEAN and consistent with the
+        underlying entity in the Data Catalog.  This method must be 
+        overloaded in subclasses, to cater to the details of different 
+        types of entities.
+        
+        In order to sync, the method works as follows:
 
-            This method needs to be overloaded in subclasses.
-            For typical operations, the method can use
-            the following functions:
+        1. If the proxy is DIRTY: 
+            - updates are sent to the API. 
+            - The API optionally returns a new entity object. If so, set 
+        `entity` to the new object. 
+            - Make object CLEAN (by setting proxy_changed to None)
 
-            ```
-            self.proxy_schema.proxy_from_entity(self, entity)
-            ```
-            in order to update the proxy from a new entity dict.
+        2. If `entity` is None: load `entity` from API
 
-            ```
-            self.proxy_schema.proxy_to_entity(self, entity, change)
-            ```
-            in order to obtain a new entity object suitable for passing
-            to the STELAR API.
+        3. Update the proxy data from the new entity. This may involve
+           updating additional proxies with data contained in the given
+           entity.
+
+        For typical operations, the implementation can use the following mathods:
+        ```
+        self.proxy_from_entity(entity)
+        self.proxy_to_entity(attrset) -> entity
+        ```
         """
         raise NotImplementedError
-
 
 
 class ProxyList:

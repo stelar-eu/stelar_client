@@ -63,28 +63,7 @@ class Schema:
 
     def get_id(self, entity) -> str:
         """Return the entity ID from the entity object"""
-        return entity[self.id.entity_name]
-    
-    def proxy_from_entity(self, proxy: Proxy, entity: Any):
-        """Update the proxy_attr dictionary from a given entity."""
-        if proxy.proxy_attr is None:
-            proxy.proxy_attr = dict()
-        for prop in self.properties.values():
-            if not prop.isId:
-                prop.convert_entity_to_proxy(proxy, entity)
-    
-    def proxy_to_entity(self, proxy: Proxy, attrset: set[str]|dict[str,Any]|None = None):
-        """Return an entity from the proxy values. 
-        
-        Returns:
-            entity (dict): An entity containing all values 
-        """
-        entity = dict()
-        for prop in self.properties.values():
-            if prop.isId or (attrset is not None and prop.name not in attrset):
-                continue
-            prop.convert_proxy_to_entity(proxy, entity)
-        return entity
+        return entity[self.id.entity_name]    
 
     @staticmethod
     def check_non_entity(cls):

@@ -24,15 +24,17 @@ class TPCatalog(RegistryCatalog):
 class ProxyTestObj(Proxy, entity=False):
 
     data = {}
-    old_data = {}
+    patch = {}
 
-    def proxy_fetch(self):
+    def proxy_sync(self, entity=None):
         myid = self.proxy_schema.get_id(self)
-        return self.data[myid]
+        if self.proxy_changed is not None:
+            entity = self.proxy_to_entity()
+            self.data[myid] = entity
+            self.patch[myid] = self.proxy_to_entity(self.proxy_changed)
+            self.proxy_changed = None
 
-    def proxy_update(self, new_data, old_data):
-        myid = self.proxy_schema.get_id(self)
-        self.data[myid] = new_data
-        self.old_data[myid] = old_data
-        return new_data
+        if entity is None:
+            entity = self.data[myid]
 
+        self.proxy_from_entity(entity)

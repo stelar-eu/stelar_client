@@ -13,11 +13,13 @@ class TestProxy(Proxy, entity=False):
     __test__ = False
 
     data = {}
-    def proxy_sync(self):
+    def proxy_sync(self, entity=None):
         if self.proxy_changed is not None:
-            self.data = self.proxy_schema.proxy_to_entity(self)
-            self.old_data = self.proxy_schema.proxy_to_entity(self)
-        self.proxy_schema.proxy_from_entity(self, self.data)
+            entity = self.data = self.proxy_to_entity()
+            self.patch = self.proxy_to_entity(self.proxy_changed)
+        if entity is None:
+            entity = self.data
+        self.proxy_from_entity(entity)
         self.proxy_changed = None
 
 
@@ -172,11 +174,13 @@ def test_proxy_obj():
         b = Property(updatable=True)
         c = Property(updatable=True)
 
-        def proxy_sync(self):
+        def proxy_sync(self, entity=None):
             if self.proxy_changed is not None:
-                self.data = self.proxy_schema.proxy_to_entity(self)
-            self.proxy_schema.proxy_from_entity(self, self.data)
-            self.proxy_changed = None
+                entity = self.data = self.proxy_to_entity()
+                self.proxy_changed = None
+            if entity is None:
+                entity = self.data
+            self.proxy_from_entity(entity)
 
     eid = uuid4()
     x = TPCatalog().registry_for(Foo).fetch(eid)

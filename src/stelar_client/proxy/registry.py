@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Type
 from uuid import UUID
 from weakref import WeakValueDictionary
+from .exceptions import ConflictError
 from .decl import ProxyState
 from .proxy import Proxy
 
@@ -33,10 +34,10 @@ class Registry(Generic[ProxyClass]):
             proxy = self.proxy_type(registry=self, entity=entity)
             self.registry[proxy.proxy_id] = proxy
         else:
-            if proxy.proxy_clean():
-                proxy.proxy_attr = proxy.proxy_schema.proxy_attributes(entity)                
+            if proxy.proxy_state is ProxyState.CLEAN:
+                proxy.proxy_sync(entity)
             else:
-                raise RuntimeError("Proxy fetched with new entity on dirty state")
+                raise ConflictError("Proxy fetched with new entity on dirty state")
         return proxy
 
 
@@ -46,7 +47,6 @@ class RegistryCatalog:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.registry_catalog = dict[type, Registry]()
-        print("Catalog created")
 
     def add_registry_for(self, cls: Type[ProxyClass], registry: Registry[ProxyClass]):
         """This method adds a registry to the catalog. It is often called from inside

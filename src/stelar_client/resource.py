@@ -2,14 +2,14 @@
 from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
-from .proxy import Proxy, Id, Property, Registry, StrField, IntField, DateField
+from .proxy import Proxy, Id, Property, Registry, Reference, StrField, IntField, DateField
 
 class Resource(Proxy):
     """
     A proxy for a STELAR resource with metadata and additional details.
     """
 
-    package_id = Property()
+    dataset = Reference('Dataset', entity_name='package_id')
     metadata_modified = Property(validator=DateField)
     
     url = Property(validator=StrField, updatable=True)

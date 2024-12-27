@@ -46,11 +46,8 @@ class Dataset(Proxy):
     #    # We treat the case where just the name is provided specially
     #    super().__init__(self, *args, **kwargs)
 
-    def proxy_fetch(self):
-        return self.proxy_registry.client.get_dataset(str(self.proxy_id))
-
-    def proxy_update(self, updates, orig):
-        return super().proxy_update(updates, orig)
+    def proxy_sync(self, entity=None):
+        super().proxy_sync(entity)
 
     def _repr_html_(self):
         """

@@ -6,7 +6,7 @@ Entities include Data Catalog entities, authorization entities, etc.
 """
 
 from .decl import ProxyState
-from .exceptions import EntityError, ProxyError, InvalidationError
+from .exceptions import EntityError, ProxyError, InvalidationError, ConflictError
 from .fieldvalidation import (
     AnyField, BoolField, IntField, StrField, DateField, UUIDField
 )
@@ -21,6 +21,7 @@ __all__ = [
     'EntityError',
     'ProxyError',
     'InvalidationError',
+    'ConflictError',
 
     'AnyField',
     'BoolField',

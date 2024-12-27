@@ -70,7 +70,8 @@ class Property:
             except KeyError as e:
                 raise EntityError(f"Entity does not have attribute {self.entity_name}") from e
             
-        proxy.proxy_attr[self.name] = self.validator.convert_to_proxy(entity_value)
+        proxy.proxy_attr[self.name] = (self.validator.convert_to_proxy(entity_value)
+                                       if entity_value is not None else None)
 
     def convert_proxy_to_entity(self, proxy: Proxy, entity: dict):
         """Update entity dict to represent this property from the proxy.        
@@ -80,7 +81,10 @@ class Property:
         proxy_value = proxy.proxy_attr[self.name]
         if proxy_value is ...:
             return
-        entity[self.entity_name] = self.validator.convert_to_entity(proxy_value)
+        if proxy_value is None:
+            entity[self.entity_name] = None
+        else:
+            entity[self.entity_name] = self.validator.convert_to_entity(proxy_value)
 
     def __get__(self, obj, objtype=None):
         val = self.get(obj)
@@ -130,6 +134,7 @@ class Id(Property):
 
 class Reference(Property):
     """A proxy property which is a reference to an entity.
+       
     """
     def __init__(self, proxy_type, nullable=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -140,8 +145,8 @@ class Reference(Property):
     def proxy_type(self):
         """The class of the proxy object pointed to by this"""
         if isinstance(self.__proxy_type, str):
-            from .schema import ProxySchema
-            self.__proxy_type = ProxySchema.for_entity(self.__proxy_type).cls
+            from .schema import Schema
+            self.__proxy_type = Schema.for_entity(self.__proxy_type).cls
         return self.__proxy_type
 
     def registry_for(self, obj) -> Registry:
