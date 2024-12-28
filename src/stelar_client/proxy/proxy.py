@@ -101,8 +101,6 @@ class Proxy:
 
         self.proxy_attr = None
         self.proxy_changed = None
-        if entity is not None:
-            self.proxy_sync(entity)
 
     def __init_subclass__(cls, entity=True):
         from .schema import Schema
@@ -220,7 +218,7 @@ class Proxy:
         self.proxy_to_entity(attrset) -> entity
         ```
         """
-        raise NotImplementedError
+        raise NotImplementedError(self.__class__.__name__ + ".proxy_sync")
 
 
 class ProxyList:

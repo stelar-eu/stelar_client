@@ -213,7 +213,16 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         self._ckan_apitoken = ctx.get('ckan_apitoken', None)
         return base_url, usr, pwd
 
-    __repr_classname = "stelar_client.Class"
+    @property
+    def DC(self):
+        try:
+            return self._ckan_client
+        except AttributeError:
+            from .backdoor import CKAN
+            self._ckan_client = CKAN(client=self)
+            return self._ckan_client
+    
+    __repr_classname = "stelar_client.Client"
 
     def __repr__(self):
         purl = urlparse(self._base_url)
@@ -223,3 +232,4 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             netloc = purl.netloc
         enhanced_url = urlunparse((purl.scheme, netloc, purl.path, '', '', ''))
         return f"{self.__repr_classname}({enhanced_url})"
+

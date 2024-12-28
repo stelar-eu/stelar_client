@@ -3,7 +3,7 @@ from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
 from .resource import Resource
-from .proxy import Proxy, Property, Id, RefList, DateField, StrField, BoolField
+from .proxy import Proxy, Property, Id, Reference, RefList, DateField, StrField, BoolField
     
 
 class Dataset(Proxy):
@@ -33,12 +33,13 @@ class Dataset(Proxy):
 
     resources = RefList(Resource)
 
+    organization = Reference('Organization', entity_name='owner_org')
+
+
     # *tags: list[str]
     # extras: dict[str,str]
     # profile
-    # *resources
     # *groups
-    # owner_org
     # relationships_as_object
     # relationships_as subject
 
@@ -46,8 +47,29 @@ class Dataset(Proxy):
     #    # We treat the case where just the name is provided specially
     #    super().__init__(self, *args, **kwargs)
 
+    def proxy_GET(self):
+        dc = self.proxy_registry.catalog.DC
+        resp = dc.package_show(id=str(self.proxy_id))
+        if not resp['success']:
+            raise RuntimeError(resp['error']['message'])
+        return resp['result']
+    
+    def proxy_PATCH(self, updates):
+        dc = self.proxy_registry.catalog.DC
+        breakpoint()
+        resp = dc.package_patch(id=str(self.proxy_id), **updates)
+        if not resp['success']:
+            raise RuntimeError(resp['error']['message'])
+        return resp['result']
+
     def proxy_sync(self, entity=None):
-        super().proxy_sync(entity)
+        if self.proxy_changed is not None:
+            updates = self.proxy_to_entity(self.proxy_changed)
+            entity = self.proxy_PATCH(updates)
+            self.proxy_changed = None
+        if entity is None:
+            entity = self.proxy_GET()
+        self.proxy_from_entity(entity)
 
     def _repr_html_(self):
         """

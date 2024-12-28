@@ -385,7 +385,7 @@ def test_Proxy_init():
 
     x = Foo(tpc, eid, entity={'a': 30})
     assert x.id == eid
-    assert x.a == 30
+    assert x.a == 1
 
     x = Foo(tpc, eid)
     assert x.id == eid
@@ -395,7 +395,7 @@ def test_Proxy_init():
     assert x.a == 1
 
     x = Foo(tpc, entity={'id': eid, 'a': 20})
-    assert x.a == 20
+    assert x.a == 1
 
 
 def test_setting_on_new_obj_syncs():

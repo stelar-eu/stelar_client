@@ -100,3 +100,37 @@ class BaseAPI(RegistryCatalog):
         # Raise an exception for HTTP errors (4xx, 5xx responses)
         response.raise_for_status()
         return response
+
+    def api_request(self, method, endpoint, *, params=None, json=None):
+        """Do an actual API call"""
+
+        url = urljoin(self._api_url, endpoint)
+        headers = {
+            "Authorization": f"Bearer {self._token}"
+        }
+        if params is not None and 'json' in params:
+            json = params['json']
+
+        response = requests.request(method, url, params=params, 
+                                    json=json, headers=headers, verify=self._tls_verify)
+        return response
+    
+    def GET(self, *endp, **params):
+        endpoint = '/'.join(endp)
+        return self.api_request('GET', endpoint, params=params)
+    
+    def POST(self, *endp, **params):
+        endpoint = '/'.join(endp)
+        return self.api_request('POST', endpoint, params=params)
+
+    def PUT(self, *endp, **params):
+        endpoint = '/'.join(endp)
+        return self.api_request('PUT', endpoint, params=params)
+
+    def PATCH(self, *endp, **params):
+        endpoint = '/'.join(endp)
+        return self.api_request('PATCH', endpoint, params=params)
+
+    def DELETE(self, *endp, **params):
+        endpoint = '/'.join(endp)
+        return self.api_request('DELETE', endpoint, params=params)

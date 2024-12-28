@@ -1,9 +1,11 @@
 from .base import BaseAPI
 from .endpoints import APIEndpointsV1
-from .dataset import Dataset
-from .resource import Resource
 from .model import MissingParametersError, STELARUnknownError, DuplicateEntryError, EntityNotFoundError
 from .proxy import Registry
+from .dataset import Dataset
+from .resource import Resource
+from .organization import Organization
+
 from requests.exceptions import HTTPError
 from urllib.parse import urljoin, urlencode
 
@@ -21,13 +23,14 @@ class CatalogAPI(BaseAPI):
     - get_resources_list(dataset_id) -> List(Resource)
     """
 
-    dataset_registry: Registry[Dataset]
-    resource_registry: Registry[Resource]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.dataset_registry = Registry(self, Dataset)
-        self.resource_registry = Registry(self, Resource)
+
+        # Create the registries
+        dataset_registry = Registry(self, Dataset)
+        resource_registry = Registry(self, Resource)
+        organization_registry = Registry(self, Organization)
 
     def get_dataset(self, id: str) -> Dataset:
         """Retrieves the information of a dataset as an object of the `Dataset` class.

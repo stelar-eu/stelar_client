@@ -21,9 +21,12 @@ class Registry(Generic[ProxyClass]):
             self.catalog.add_registry_for(proxy_type, self)
     
     def fetch_proxy(self, eid: UUID) -> ProxyClass:
+        if not isinstance(eid, UUID):
+            eid = UUID(eid)
         proxy = self.registry.get(eid, None)
         if proxy is None:
             proxy = self.proxy_type(registry=self, eid=eid)
+            assert proxy.proxy_id == eid
             self.registry[proxy.proxy_id] = proxy
         return proxy
 
@@ -32,7 +35,10 @@ class Registry(Generic[ProxyClass]):
         proxy: Proxy = self.registry.get(eid, None)
         if proxy is None:
             proxy = self.proxy_type(registry=self, entity=entity)
+            assert eid==proxy.proxy_id
+            assert proxy.proxy_id not in self.registry
             self.registry[proxy.proxy_id] = proxy
+            proxy.proxy_sync(entity)
         else:
             if proxy.proxy_state is ProxyState.CLEAN:
                 proxy.proxy_sync(entity)
