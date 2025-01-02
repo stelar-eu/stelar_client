@@ -7,3 +7,4 @@ pyscaffold
 pytest
 pytest_mock
 PyYAML
+pandas
