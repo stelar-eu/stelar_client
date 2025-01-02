@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Type, TypeVar, Generic, Iterator
 from .backdoor import CKAN
 from functools import wraps
 from uuid import UUID
-from .proxy import Proxy, ProxyOperationError, ProxyCursor
+from .proxy import Proxy, ProxyOperationError, ProxyCursor, ProxyList
 
 if TYPE_CHECKING:
     from .client import Client
@@ -102,6 +102,14 @@ def generic_get(client: Client, proxy_type: Type[ProxyClass], name_or_id, defaul
         else:
             raise
 
+def generic_fetch_list(client: Client, proxy_type: Type[ProxyClass], *, limit: int, offset: int) -> list[str]:
+    ac = api_call(client)
+    ckan_type = _map_to_ckan[proxy_type.__name__]
+    _list = getattr(ac, f"{ckan_type}_list")
+    result = _list(limit=limit, offset=offset)
+
+    return result
+
 def generic_fetch(client: Client, proxy_type: Type[ProxyClass], *, limit: int, offset: int) -> Iterator[ProxyClass]:
     ac = api_call(client)
     ckan_type = _map_to_ckan[proxy_type.__name__]
@@ -149,34 +157,23 @@ class GenericProxy(Proxy, entity=False):
         """Sync the proxy with the entity in the API."""
         return generic_proxy_sync(self, entity)
 
-    def __aarepr__(self):
-        if hasattr(self, 'name'):
-            nid = self.name
-        else:
-            nid = str(self.proxy_id)
-        typename = type(self).__name__
-        return f"<{typename} {nid}>"
 
-    def __repr__(self):
-        import pandas as pd
-        def simplified(val):
-            if isinstance(val, Proxy):
-                if hasattr(val,'name'):
-                    return val.name
-                else:
-                    return val.proxy_id
-            else:
-                return val
+class GenericProxyList(ProxyList):
+    def __init__(self, eid_list, client, proxy_type):
+        """A proxy list using a list of ids or names.
 
-        
-        index = [self.proxy_schema.id.name] + [
-            name for name in self.proxy_schema.properties
-        ]
-        data = [
-            simplified(getattr(self, name))
-            for name in index
-        ]
-        return repr(pd.Series(index=index, data=data))
+        The resolving is done using 'generic_get()'
+        """
+
+        super().__init__(client, proxy_type)
+        self._data = eid_list
+
+    @property
+    def coll(self):
+        return self._data
+
+    def resolve_proxy(self, item):
+        return generic_get(self.client, self.proxy_type, item)
 
 
 class GenericCursor(ProxyCursor[ProxyClass]):
@@ -186,8 +183,15 @@ class GenericCursor(ProxyCursor[ProxyClass]):
     def get(self, name_or_id: str|UUID, default: ProxyClass=None) -> ProxyClass:
         return generic_get(self.client, self.proxy_type, name_or_id, default=default)
 
+    def fetch_list(self, *, limit: int, offset: int) -> list[str]:
+        return generic_fetch_list(self.client, self.proxy_type, limit=limit, offset=offset)
+
     def fetch(self, *, limit: int, offset: int) -> Iterator[ProxyClass]:
         yield from generic_fetch(self.client, self.proxy_type, limit=limit, offset=offset)
 
     def __getitem__(self, item):
-        return super().__getitem__(item)
+        v = super().__getitem__(item)
+        if isinstance(v, list):
+            return GenericProxyList(v, self.client, self.proxy_type)
+        else:
+            return v

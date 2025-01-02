@@ -103,6 +103,8 @@ class Proxy:
 
     def __init__(self, registry: Registry, eid: Optional[str|UUID] = None, entity=None):
         self.proxy_registry = registry
+        self.proxy_autosync = True
+
         if eid is None and entity is None:
             raise ValueError("A proxy must be initialized either with an entity ID" 
                              " or with an entity JSON object containing the ID")
@@ -151,6 +153,18 @@ class Proxy:
         self.proxy_registry.delete_proxy(self)
         self.proxy_deleted_id = self.proxy_id
         self.proxy_id = self.proxy_attr = self.proxy_changed = None
+
+
+    def update(self, **updates):
+        """Update a bunch of attributes in a single operation.
+        """
+        with deferred_sync(self):
+            for name, value in updates.items():
+                if value is ...:
+                    delattr(self, name)
+                else:
+                    setattr(self, name, value)
+
 
     @property
     def proxy_state(self) -> ProxyState:
@@ -257,90 +271,60 @@ class Proxy:
         """
         raise NotImplementedError(self.__class__.__name__ + ".proxy_sync")
 
+    def __repr__(self):
+        if hasattr(self, 'name'):
+            nid = self.name
+        else:
+            nid = str(self.proxy_id)
+        typename = type(self).__name__
+        return f"<{typename} {nid}>"
 
-
-ProxyClass = TypeVar('ProxyClass', bound=Proxy)
-
-
-class ProxyList:
-    """A proxy class that translates collection operations to operations
-       on an entity sub-collection.
-    """
-
-    owner: Proxy
-
-    def __init__(self, property: RefList, owner: Proxy):
-        self.property = property
-        self.owner = owner
-        self.registry = owner.proxy_registry.catalog.registry_for(property.proxy_type)
-
-    @property
-    def __coll(self):
-        return self.property.get(self.owner)
-
-    def __iter__(self):
-        return iter(self.__coll)
-    
-    def __len__(self):
-        return len(self.__coll)
-
-    def __getitem__(self, key):
-        return self.registry.fetch_proxy(self.__coll[key])
-    
-    def __delitem__(self, key):
-        raise NotImplementedError(f"delitem  {self.property.owner.__name__}.{self.property.name}")
-
-    def __iadd__(self, **kwargs):
-        raise NotImplementedError(f"iadd {self.property.owner.__name__}.{self.property.name}")
-
-
-class ProxyCursor(Generic[ProxyClass]):
-
-    MAX_FETCH=1000
-
-    def __init__(self, client: Client, proxy_type: Type[ProxyClass]):
-        self.client = client
-        self.proxy_type = proxy_type
-
-    def create(self, **updates) -> ProxyClass:
-        raise NotImplementedError
-    
-    def fetch(self, *, limit, offset) -> Iterator[ProxyClass]:
-        raise NotImplementedError
-
-    def get(self, name_or_id, default=None) -> ProxyClass:
-        raise NotImplementedError
-
-    def __getitem__(self, item: str|UUID|slice) -> ProxyClass|list[ProxyClass]:
-        if isinstance(item, slice):
-            offset = item.start if item.start is not None else 0
-            if offset < 0:
-                raise ValueError("Bad offset")
-            if item.step is not None:
-                limit = item.step
-            elif item.stop is not None:
-                limit = item.stop - offset
+    def __repr__(self):
+        import pandas as pd
+        def simplified(val):
+            if isinstance(val, Proxy):
+                if hasattr(val,'name'):
+                    return val.name
+                else:
+                    return val.proxy_id
             else:
-                limit = self.MAX_FETCH
-            if limit < 0:
-                raise ValueError("Bad limit")
-            # CUT OFF
-            if limit > self.MAX_FETCH:
-                limit = self.MAX_FETCH
-            return list(self.fetch(limit=limit, offset=offset))
+                return val
+
+        index = [self.proxy_schema.id.name] + [
+            name for name in self.proxy_schema.properties
+            if getattr(self, name, None)
+        ]
+        data = [
+            simplified(getattr(self, name))
+            for name in index
+        ]
+        return repr(pd.Series(index=index, data=data, name=type(self).__name__, dtype='object'))
+
+
+from contextlib import contextmanager
+
+@contextmanager
+def deferred_sync(* proxies):
+    saved_autosync = [p.proxy_autosync for p in proxies]
+    for p in proxies:
+        p.proxy_autosync = False
+    try:
+        yield proxies
+    except Exception as e:
+        for p in proxies:
+            if p.proxy_state is not ProxyState.ERROR:
+                p.proxy_reset()
+        raise
+    finally:
+        for p, a in zip(proxies, saved_autosync):
+            p.proxy_autosync = a
+
+    # This belongs outside the finally clause.
+    # It will not be executed if there is an error
+    for p in proxies:
+        if p.proxy_state is not ProxyState.ERROR:
+            p.proxy_sync()
         
-        elif isinstance(item, (str,UUID)):
-            proxy = self.get(item)
-            if proxy is None:
-                raise KeyError(f"Entity not found")
-            return proxy
-        else:
-            raise TypeError(f"Cannot fetch {self.proxy_type.__name__} by {item}: string or UUID is expected")
-        
-    def __contains__(self, item) -> bool:
-        if isinstance(item, self.proxy_type):
-            return item.proxy_state is not ProxyState.ERROR
-        elif isinstance(item, (str, UUID)):
-            return self.get(item) is not None
-        else:
-            return False
+
+
+

@@ -199,6 +199,7 @@ def test_proxy_obj():
     assert x.proxy_changed is None
     assert x.proxy_state is ProxyState.CLEAN
 
+    x.proxy_autosync = False
     x.a = 20
     x.b = "Hi there"    
     assert x.proxy_changed is not None
@@ -276,6 +277,7 @@ def test_prop_optional():
     assert not hasattr(x, 'a')
     assert not hasattr(x, 'b')
 
+    x.proxy_autosync = False
     x.a = 10
     assert x.a == 10
     assert hasattr(x, 'a')
@@ -337,6 +339,7 @@ def test_set_changed_once():
 
     
     x = TPCatalog().registry_for(Foo).fetch()
+    x.proxy_autosync = False
     assert x.a == 1
     x.a = 2
     assert x.a == 2
@@ -458,3 +461,60 @@ def test_key_unchangable():
 
     with pytest.raises(AttributeError):
         del x.id
+
+
+def test_autosync():
+    class Foo(TestProxy):
+        a = Property(updatable=True)
+        b = Property(updatable=True, optional=True)
+        data = {'a': 10, 'b':20}
+
+    eid = uuid4()
+    x = TPCatalog().registry_for(Foo).fetch(eid)
+
+    assert x.proxy_autosync
+
+    x.a = 4
+    assert x.a == 4
+    assert x.data['a'] == 4
+
+    x.update(a=0, b="haha")
+    assert x.a == 0
+    assert x.b == "haha"
+    assert x.data == {'a':0, 'b': 'haha'}
+
+    x.update(a=100, b=...)
+    assert x.a == 100
+    assert not hasattr(x, 'b')
+    assert x.data == {'a': 100}
+
+def test_autosync2():
+    class Foo(TestProxy):
+        a = Property(validator=IntField, updatable=True, optional=True)
+        b = Property(validator=IntField, updatable=True, optional=True)
+        data = {'a': 10, 'b':20}
+
+    eid = uuid4()
+    x = TPCatalog().registry_for(Foo).fetch(eid)
+
+    assert x.proxy_autosync
+    with pytest.raises(ValueError):
+        x.a = "aa"
+    assert x.a == 10
+    assert x.b == 20
+
+    with pytest.raises(ValueError):
+        x.update(a=0, b="aa")
+    assert x.a == 10
+    assert x.b == 20
+    
+    with pytest.raises(ValueError):
+        x.update(a="aa", b=0)
+    assert x.a == 10
+    assert x.b == 20
+
+    with pytest.raises(ValueError):
+        x.update(a=20, b="aa")
+    assert x.a == 10
+    assert x.b == 20
+

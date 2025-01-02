@@ -153,7 +153,7 @@ class Dataset(GenericProxy):
         html = f"{summary_html}<br>{resources_table_html}"
         return HTML(html)._repr_html_()
     
-    def __str__(self):
+    def __disabled_str__(self):
         dataset_info = f"Title: {self.title} | Dataset ID: {self.id} | Name: {self.name} | Tags: {self.tags} | Modified Date: {self.modified_date}\nDataset Resources:\n"
         if self.resources:
             for resource in self.resources:

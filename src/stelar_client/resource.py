@@ -34,7 +34,7 @@ class Resource(GenericProxy):
         Returns:
             str: A string describing the resource's key attributes.
         """
-        return f"Resource ID: {self.id} | Relation: {self.relation} | Name: {self.name} | URL: {self.url} | Format : {self.format}"
+        return f"Resource ID: {self.id} | Name: {self.name} | URL: {self.url} | Format : {self.format}"
 
     def _repr_html_(self):
         """

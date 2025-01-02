@@ -65,9 +65,20 @@ class Schema:
         """Return the entity ID from the entity object"""
         return entity[self.id.entity_name]    
 
+    SHORT_NAMES = {
+        'id', 'name', 'state', 'title', 'author', 'maintainer',
+        'type', 'resource_type', 'url',
+    }
+
+    def short_list(self, additional={}):
+        return [self.id.name]+[name
+            for name, prop in self.properties.items()
+            if (prop.short is True 
+                or name in additional 
+                or (prop.short is None and name in self.SHORT_NAMES))]
+
     @staticmethod
     def check_non_entity(cls):
         for prop in cls.__dict__.values():
             if isinstance(prop, Property):
                 raise TypeError(f"Class {cls.__qualname__} has properties defined but is not an entity")
-

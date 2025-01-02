@@ -4,7 +4,8 @@ from uuid import UUID
 from io import StringIO
 from .exceptions import EntityError
 from .fieldvalidation import AnyField, BasicField, UUIDField
-from .proxy import Proxy, ProxyList
+from .proxy import Proxy
+from .proxylist import ProxySublist
 from .registry import Registry
 
 if TYPE_CHECKING:
@@ -21,10 +22,27 @@ class Property:
             (validation, conversion to entity, nullabilty, updatability, optionality,
             view, etc)
         -   Performs internalization/externalization for the data.    
+
+
+
     """
     def __init__(self, *, validator=None, updatable=False, optional=False, 
-                 entity_name=None, doc=None, create_default=None):
-        """Constructs a proxy proerty descriptor"""
+                 entity_name=None, doc=None, create_default=None, short=None):
+        """Constructs a proxy property descriptor
+        
+        Args:
+            validator (FieldValidator)
+            updatable (bool): If false, property cannot be set
+            optional (bool): If false, property cannot be deleted
+            entity_name (str|None): Corresponds to the entity field name. If not given,
+                the same as the property name.
+            doc (str|None): A piece of text that describes the property. This is
+                used to form the full documentation for the property.
+            create_default (Any): used to initialize new entities, when the user does not
+                provide a value.
+            short (bool|None): Denotes whether this property is included in "short presentations"
+                of the entity. If None, a heuristic based on the name and type is used.
+        """
         self.updatable = updatable
         self.isId = False
         self.optional = optional
@@ -37,6 +55,7 @@ class Property:
         self.entity_name = entity_name
         self.owner = self.name = None
         self.create_default = create_default
+        self.short = short
         self.__doc__ = self.autodoc(doc, self.validator.repr_type(), self.validator.repr_constraints())
 
     def autodoc(self, doc, repr_type, repr_constraints):
@@ -44,6 +63,8 @@ class Property:
         out = StringIO()
         if doc is not None:
             print(doc, file=out)
+        else:
+            print(f"The '{self.name}' field", file=out)
         print(INDENT, f"Type: {repr_type}", file=out)
         for c in repr_constraints:
             print(INDENT, c, file=out)
@@ -151,6 +172,9 @@ class Property:
         if not self.updatable:
             raise AttributeError(f"Property '{self.name}' is read-only")
         self.set(obj, value)
+        if obj.proxy_autosync:
+            obj.proxy_sync()
+
 
     def __delete__(self, obj):
         if obj.proxy_attr is None:
@@ -281,7 +305,7 @@ class RefList(Reference):
     def __get__(self, obj, obj_type=None):
         if obj.proxy_attr is None:
             obj.proxy_sync()
-        return ProxyList(self, obj)
+        return ProxySublist(self, obj)
         
     def convert_entity_to_proxy(self, proxy, entity):
         entities = entity[self.entity_name]

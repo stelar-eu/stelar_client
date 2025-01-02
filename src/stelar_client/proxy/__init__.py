@@ -14,7 +14,8 @@ from .property import (
     Property, Id, Reference, RefList
 )
 from .schema import Schema
-from .proxy import Proxy, ProxyCursor, ProxyList
+from .proxy import Proxy
+from .proxylist import ProxyCursor, ProxyList, ProxySublist
 from .registry import Registry, RegistryCatalog
 
 __all__ = [
@@ -43,6 +44,7 @@ __all__ = [
     'ProxyState',
     'ProxyCursor',
     'ProxyList',
+    'ProxySublist',
 
     'Registry',
     'RegistryCatalog',
