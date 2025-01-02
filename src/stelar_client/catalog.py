@@ -6,7 +6,7 @@ from .apicall import GenericCursor
 from .dataset import Dataset
 from .resource import Resource
 from .organization import Organization
-
+from .group import Group
 from requests.exceptions import HTTPError
 from urllib.parse import urljoin, urlencode
 
@@ -26,6 +26,7 @@ class CatalogAPI(BaseAPI):
         dataset_registry = Registry(self, Dataset)
         resource_registry = Registry(self, Resource)
         organization_registry = Registry(self, Organization)
+        group_registry = Registry(self, Group)
 
     @property
     def datasets(self):

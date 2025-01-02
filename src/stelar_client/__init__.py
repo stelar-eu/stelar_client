@@ -20,6 +20,7 @@ from .client import Client
 from .dataset import Dataset
 from .resource import Resource
 from .organization import Organization
+from .group import Group
 from .proxy import ProxyState
 
 __all__ = [
@@ -27,5 +28,6 @@ __all__ = [
     'Dataset',
     'Resource',
     'Organization',
+    'Group',
     'ProxyState',
 ]

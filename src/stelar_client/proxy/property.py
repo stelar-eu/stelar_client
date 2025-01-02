@@ -13,8 +13,17 @@ if TYPE_CHECKING:
 class Property:
     """A Python descriptor for implementing access and updating of
        fields of proxy objects.
+
+       A property object performs the following roles:
+        -   Is a python 'descriptor' (implements getter, setter and deleter) for
+            proxy classes
+        -   Holds a number of metadata that determine the behaviour of the proxy
+            (validation, conversion to entity, nullabilty, updatability, optionality,
+            view, etc)
+        -   Performs internalization/externalization for the data.    
     """
-    def __init__(self, *, validator=None, updatable=False, optional=False, entity_name=None, doc=None, create_default=None):
+    def __init__(self, *, validator=None, updatable=False, optional=False, 
+                 entity_name=None, doc=None, create_default=None):
         """Constructs a proxy proerty descriptor"""
         self.updatable = updatable
         self.isId = False
@@ -121,7 +130,7 @@ class Property:
                 entity_props[self.entity_name] = self.create_default
             return
         proxy_value = create_props[self.name]
-        proxy_value = self.validator.validate(proxy_value)
+        proxy_value = self.validator.validate(proxy_value, proxy=None)
         if proxy_value is None:
             entity_value = None
         else:
@@ -188,12 +197,10 @@ class RefField(AnyField):
     def proxy_type(self):
         return self.ref_property.proxy_type
 
-    def to_uuid(self, value, *, proxy, **kwargs):
+    def to_uuid(self, value, **kwargs):
         if not isinstance(value, self.proxy_type):
             raise ValueError(f"Expected {self.proxy_type.__name__}")
         assert isinstance(value.proxy_id, UUID)
-        if proxy.proxy_registry.catalog is not value.proxy_registry.catalog:
-            raise ValueError(f"Value corresponds to different client")
         return value.proxy_id, True
 
     def convert_to_proxy(self, value: str, **kwargs) -> UUID:

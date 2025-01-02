@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any
 from uuid import UUID
 from datetime import datetime
-
+import re
 
 class FieldValidator:
     """Provide simple validation and conversion for entity fields. 
@@ -171,6 +171,20 @@ class StrField(BasicField):
     """A string field validator"""
     def __init__(self, **kwargs):
         super().__init__(ftype=str, **kwargs)
+
+class NameField(StrField):
+    """Name fields are non-nullable string fields whose value
+       must follow a pattern.
+    """
+    def __init__(self, **kwargs):
+        super().__init__(nullable=False, minimum_len=2, **kwargs)
+        self.add_check(self.check_name, 7)
+
+    NAME_PATTERN=re.compile(r"[a-z0-9-_]+")
+    def check_name(self, value: str, **kwargs):
+        if self.NAME_PATTERN.fullmatch(value) is None:
+            raise ValueError("Name must be a string of lowercase alphanumerics, - and _ only, of size at least 2")
+        return value, False
 
 
 class IntField(BasicField):

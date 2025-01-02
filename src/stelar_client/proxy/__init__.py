@@ -8,7 +8,7 @@ Entities include Data Catalog entities, authorization entities, etc.
 from .decl import ProxyState
 from .exceptions import EntityError, ProxyError, InvalidationError, ConflictError, ProxyOperationError
 from .fieldvalidation import (
-    AnyField, BoolField, IntField, StrField, DateField, UUIDField
+    AnyField, BoolField, IntField, StrField, DateField, UUIDField, NameField
 )
 from .property import (
     Property, Id, Reference, RefList
@@ -30,6 +30,7 @@ __all__ = [
     'StrField',
     'DateField',
     'UUIDField',
+    'NameField',
 
     'Property',
     'Id',

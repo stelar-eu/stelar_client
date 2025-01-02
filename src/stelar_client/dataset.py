@@ -3,9 +3,7 @@ from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
 from .resource import Resource
-from .proxy import (Proxy, ProxyCursor, 
-                    Property, Id, Reference, RefList, DateField, StrField, BoolField, 
-                    ProxyOperationError)
+from .proxy import Property, Id, Reference, RefList, DateField, StrField, BoolField, NameField
 from .apicall import api_call, GenericProxy
 
 class Dataset(GenericProxy):
@@ -14,7 +12,7 @@ class Dataset(GenericProxy):
     """
 
     id = Id()
-    name = Property()
+    name = Property(validator=NameField)
     metadata_created = Property(validator=DateField)
     metadata_modified = Property(validator=DateField)
     state = Property()

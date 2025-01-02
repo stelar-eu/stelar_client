@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Type, TypeVar, Generic, Iterator
 from .backdoor import CKAN
 from functools import wraps
+from uuid import UUID
 from .proxy import Proxy, ProxyOperationError, ProxyCursor
 
 if TYPE_CHECKING:
@@ -167,12 +168,13 @@ class GenericProxy(Proxy, entity=False):
             else:
                 return val
 
-        index = [
+        
+        index = [self.proxy_schema.id.name] + [
             name for name in self.proxy_schema.properties
         ]
         data = [
             simplified(getattr(self, name))
-            for name in self.proxy_schema.properties
+            for name in index
         ]
         return repr(pd.Series(index=index, data=data))
 
