@@ -7,6 +7,9 @@ from .fieldvalidation import AnyField, BasicField, UUIDField
 from .proxy import Proxy, ProxyList
 from .registry import Registry
 
+if TYPE_CHECKING:
+    from ..client import Client
+
 class Property:
     """A Python descriptor for implementing access and updating of
        fields of proxy objects.
@@ -171,13 +174,44 @@ class Id(Property):
 
 
 
+
+class RefField(AnyField):
+    """This field validator is specialized for reference properties"""
+
+    def __init__(self, ref_property: Reference, ref_typename:str, **kwargs):
+        super().__init__(**kwargs)
+        self.ref_property = ref_property
+        self.ref_typename = ref_typename
+        self.add_check(self.to_uuid, 5)
+
+    @property
+    def proxy_type(self):
+        return self.ref_property.proxy_type
+
+    def to_uuid(self, value, *, proxy, **kwargs):
+        if not isinstance(value, self.proxy_type):
+            raise ValueError(f"Expected {self.proxy_type.__name__}")
+        assert isinstance(value.proxy_id, UUID)
+        if proxy.proxy_registry.catalog is not value.proxy_registry.catalog:
+            raise ValueError(f"Value corresponds to different client")
+        return value.proxy_id, True
+
+    def convert_to_proxy(self, value: str, **kwargs) -> UUID:
+        return UUID(value)
+
+    def convert_to_entity(self, value: UUID, **kwargs) -> str:
+        return str(value)
+
+    def repr_type(self):
+        return self.ref_typename
+
+
 class Reference(Property):
     """A proxy property which is a reference to an entity.
-       
     """
     def __init__(self, proxy_type, nullable=False, *args, **kwargs):
         ptn = self.property_type_name(proxy_type)
-        val = AnyField(ptn, nullable=nullable)
+        val = RefField(self, ptn, nullable=nullable)
         super().__init__(*args, validator=val, **kwargs)
         self.__proxy_type = proxy_type
         self.nullable = nullable
@@ -201,75 +235,22 @@ class Reference(Property):
         """Return the registry for the referrent, given owner"""
         return obj.proxy_registry.catalog.registry_for(self.proxy_type)
 
-    def convert_entity_to_proxy(self, proxy, entity):
-        refid = entity[self.entity_name]
-        if not refid:
-            refproxy = None
+    def get(self, obj):
+        """Low-level getter """
+        if obj.proxy_attr is None:
+            obj.proxy_sync()
+        if obj.proxy_attr[self.name] is None:
+            return None
         else:
-            refproxy = self.registry_for(proxy).fetch_proxy(refid)
-        proxy.proxy_attr[self.name] = refproxy
+            return self.registry_for(obj).fetch_proxy(obj.proxy_attr[self.name])
 
-    def convert_proxy_to_entity(self, proxy, entity):
-        refproxy = proxy.proxy_attr[self.name]
-        if refproxy is None:
-            refid = None
-        else:
-            refid = str(refproxy.proxy_id)
-        entity[self.entity_name] = refid
+    def __get__(self, obj, objtype=None):
+        val = self.get(obj)
 
-    def convert_to_create(self, client: Client, proxy_type, create_props, entity_props):
-        """Convert a value to be used for entity creation.
-        
-        Args:
-            client (Client): The client used for creation.
-            proxy_type (ProxyClass): The entity type being created.
-            create_props: The object passed to the create client call
-            entity_props: The entity object given to the create API call.
-        """
-        if self.name not in create_props:
-            if self.create_default is not None:
-                entity_props[self.entity_name] = self.create_default
-        else:
-            refproxy = create_props[self.name]
-            if refproxy is None:
-                refid = None
-            else:
-                refid = str(refproxy.proxy_id)
-            entity_props[self.entity_name] = refid
-
-    def set(self, obj, value):
-        """Low-level setter"""
-        
-        # Validate
-        if value is None:
-            if not self.nullable:
-                raise ValueError("The property cannot be set to None")
-        else:
-            if not isinstance(value, self.proxy_type):
-                # Transform or fail
-                if isinstance(value, (UUID,str)):
-                    value = self.registry_for(obj).fetch_proxy(value)
-                else:
-                    raise ValueError(f"Cannot convert value to {self.proxy_type.__name__}")
-
-        if obj.proxy_changed is None:   
-            if obj.proxy_attr is None:  # Actually EMPTY, make CLEAN
-                obj.proxy_sync()
-            # Initialize proxy_changed on CLEAN object
-            obj.proxy_changed = {self.name: obj.proxy_attr[self.name]}
-        elif self.name not in obj.proxy_changed:
-            # Record only first change
-            obj.proxy_changed[self.name] = obj.proxy_attr[self.name]
-        
-        # update the value
-        obj.proxy_attr[self.name] = value
-
-    def __set__(self, obj, value):
-        if value is ...:
-            raise ValueError("Properties cannot be set to '...'")
-        if not self.updatable:
-            raise AttributeError(f"Property '{self.name}' is read-only")
-        self.set(obj, value)
+        # The attribute is deleted
+        if val is ...:
+            raise AttributeError(f"Property '{self.name}' is not present")
+        return val
         
 
 class RefList(Reference):
@@ -284,6 +265,12 @@ class RefList(Reference):
         ptnb = super().property_type_name(proxy_type)
         return f"List[{ptnb}]"
 
+    def get(self, obj):
+        """Low-level getter """
+        if obj.proxy_attr is None:
+            obj.proxy_sync()
+        return obj.proxy_attr[self.name]
+
     def __get__(self, obj, obj_type=None):
         if obj.proxy_attr is None:
             obj.proxy_sync()
@@ -293,11 +280,12 @@ class RefList(Reference):
         entities = entity[self.entity_name]
         # entities is a list of entities, we need to fetch them from
         # our proxy's client.
-        registry = self.registry_for(proxy)
-        proxies = [registry.fetch_proxy_for_entity(e)
-                   for e in entities
-                  ]
-        proxy.proxy_attr[self.name] = proxies
+        entity_id_name = self.proxy_type.proxy_schema.id.entity_name
+        proxy_ids = [
+            e.get(entity_id_name)
+            for e in entities
+        ]
+        proxy.proxy_attr[self.name] = proxy_ids
 
     def convert_proxy_to_entity(self, proxy, entity):
         pass

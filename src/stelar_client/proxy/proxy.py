@@ -272,6 +272,7 @@ class ProxyList:
     def __init__(self, property: RefList, owner: Proxy):
         self.property = property
         self.owner = owner
+        self.registry = owner.proxy_registry.catalog.registry_for(property.proxy_type)
 
     @property
     def __coll(self):
@@ -284,7 +285,7 @@ class ProxyList:
         return len(self.__coll)
 
     def __getitem__(self, key):
-        return self.__coll[key]
+        return self.registry.fetch_proxy(self.__coll[key])
     
     def __delitem__(self, key):
         raise NotImplementedError(f"delitem  {self.property.owner.__name__}.{self.property.name}")

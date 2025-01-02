@@ -64,7 +64,7 @@ class FieldValidator:
         self.prioritized_checks.sort(key= lambda p: p[1])
         self.checks = [p[0] for p in self.prioritized_checks]
 
-    def check_null(self, value):
+    def check_null(self, value, **kwargs):
         if value is None:
             if self.nullable:
                 return None, True
@@ -73,7 +73,7 @@ class FieldValidator:
         else:
             return value, False
         
-    def check_length(self, value):
+    def check_length(self, value, **kwargs):
         value_len = len(value)
         if self.minimum_len is not None and value_len < self.minimum_len:
             raise ValueError(f"The length ({value_len}) is less than the minimum ({self.minimum_len})")
@@ -81,21 +81,21 @@ class FieldValidator:
             raise ValueError(f"The length ({value_len}) is greater that the maximum ({self.maximum_len})")
         return value, False
 
-    def check_minimum(self, value):
+    def check_minimum(self, value, **kwargs):
         if value < self.minimum_value:
             raise ValueError(f"Value ({value}) too low (minimum={self.minimum_value})")
         return value, False
 
-    def check_maximum(self, value):
+    def check_maximum(self, value, **kwargs):
         if value > self.maximum_value:
             raise ValueError(f"Value ({value}) too high (maximum={self.maximum_value})")
         return value, False
 
-    def validate(self, value):
+    def validate(self, value, **kwargs):
         done = False
         try:
             for check in self.checks:
-                value, done = check(value)
+                value, done = check(value, **kwargs)
                 if done:
                     return value
         except ValueError:
@@ -108,9 +108,9 @@ class FieldValidator:
         else:
             return value
         
-    def convert_to_proxy(self, value):
+    def convert_to_proxy(self, value, **kwargs):
         raise NotImplementedError()
-    def convert_to_entity(self, value):
+    def convert_to_entity(self, value, **kwargs):
         raise NotImplementedError()
 
     def repr_constraints(self):
@@ -138,9 +138,9 @@ class AnyField(FieldValidator):
         super().__init__(*args, **kwargs)
         self._repr_type = repr_type
 
-    def convert_to_proxy(self, value):
+    def convert_to_proxy(self, value, **kwargs):
         return value
-    def convert_to_entity(self, value):
+    def convert_to_entity(self, value, **kwargs):
         return value
     def repr_type(self):
         return self._repr_type
@@ -158,7 +158,8 @@ class BasicField(AnyField):
         self.ftype = ftype
         self.add_check(self.to_ftype, 5)
 
-    def to_ftype(self, value):
+    def to_ftype(self, value, **kwargs):
+        """Validator stage for BasicField"""
         if not isinstance(value, self.ftype):
             value = self.ftype(value)
         return value, False
@@ -189,7 +190,8 @@ class DateField(FieldValidator):
         super().__init__(**kwargs)
         self.add_check(self.to_date, 5)
 
-    def to_date(self, value: Any) -> tuple[datetime, bool]:
+    def to_date(self, value: Any, **kwargs) -> tuple[datetime, bool]:
+        """Validation stage for dates."""
         if isinstance(value, str):
             return datetime.fromisoformat(value), False
         elif isinstance(value, datetime):
@@ -197,9 +199,9 @@ class DateField(FieldValidator):
         else:
             raise ValueError("Invalid type, expected datetime or string")
 
-    def convert_to_entity(self, value: datetime) -> str:
+    def convert_to_entity(self, value: datetime, **kwargs) -> str:
         return value.isoformat()
-    def convert_to_proxy(self, value: str) -> datetime:
+    def convert_to_proxy(self, value: str, **kwargs) -> datetime:
         return datetime.fromisoformat(value)
 
     def repr_type(self):
@@ -209,9 +211,9 @@ class DateField(FieldValidator):
 class UUIDField(BasicField):
     def __init__(self, **kwargs):
         super().__init__(ftype=UUID, **kwargs)
-    def convert_to_proxy(self, value: str) -> UUID:
+    def convert_to_proxy(self, value: str, **kwargs) -> UUID:
         return UUID(value)
-    def convert_to_entity(self, value: UUID) -> str:
+    def convert_to_entity(self, value: UUID, **kwargs) -> str:
         return str(value)
 
     def repr_type(self):
