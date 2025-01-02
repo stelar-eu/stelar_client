@@ -3,7 +3,6 @@
     This is useful for debugging and testing.
 """
 
-from stelar_client import Client
 from urllib.parse import urljoin
 import requests
 
@@ -35,6 +34,7 @@ class CKAN:
     ... etc. Use 
     """
     def __init__(self, context='apitest', client=None):
+        from .client import Client
         if client is None:
             self.client = Client(context)
         else:
@@ -87,6 +87,7 @@ class CKAN:
         ckan_call.__name__ = name
         ckan_call.__doc__ = doc
         setattr(self, name, ckan_call)
+
         return ckan_call
 
     def __repr__(self):

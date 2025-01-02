@@ -1,8 +1,9 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any
 from uuid import UUID
+from io import StringIO
 from .exceptions import EntityError
-from .fieldvalidation import AnyField, UUIDField
+from .fieldvalidation import AnyField, BasicField, UUIDField
 from .proxy import Proxy, ProxyList
 from .registry import Registry
 
@@ -10,7 +11,7 @@ class Property:
     """A Python descriptor for implementing access and updating of
        fields of proxy objects.
     """
-    def __init__(self, *, validator=None, updatable=False, optional=False, entity_name=None, doc=None):
+    def __init__(self, *, validator=None, updatable=False, optional=False, entity_name=None, doc=None, create_default=None):
         """Constructs a proxy proerty descriptor"""
         self.updatable = updatable
         self.isId = False
@@ -23,8 +24,25 @@ class Property:
             self.validator = validator
         self.entity_name = entity_name
         self.owner = self.name = None
+        self.create_default = create_default
+        self.__doc__ = self.autodoc(doc, self.validator.repr_type(), self.validator.repr_constraints())
+
+    def autodoc(self, doc, repr_type, repr_constraints):
+        INDENT = '    '
+        out = StringIO()
         if doc is not None:
-            self.__doc__ = doc
+            print(doc, file=out)
+        print(INDENT, f"Type: {repr_type}", file=out)
+        for c in repr_constraints:
+            print(INDENT, c, file=out)
+        if self.updatable:
+            print(INDENT, "updtatable", file=out)
+        if self.optional:
+            print(INDENT, "deletable", file=out)
+        if self.entity_name != self.name:
+            print(INDENT, "JSON field:", self.entity_name, file=out)
+
+        return out.getvalue()
 
     def __set_name__(self, owner, name):
         if not issubclass(owner, Proxy):
@@ -86,6 +104,27 @@ class Property:
         else:
             entity[self.entity_name] = self.validator.convert_to_entity(proxy_value)
 
+    def convert_to_create(self, client: Client, proxy_type, create_props, entity_props):
+        """Convert a value to be used for entity creation.
+        
+        Args:
+            client (Client): The client used for creation.
+            proxy_type (ProxyClass): The entity type being created.
+            create_props: The object passed to the create client call
+            entity_props: The entity object given to the create API call.
+        """
+        if self.name not in create_props:
+            if self.create_default is not None:
+                entity_props[self.entity_name] = self.create_default
+            return
+        proxy_value = create_props[self.name]
+        proxy_value = self.validator.validate(proxy_value)
+        if proxy_value is None:
+            entity_value = None
+        else:
+            entity_value = self.validator.convert_to_entity(proxy_value)
+        entity_props[self.entity_name] = entity_value
+
     def __get__(self, obj, objtype=None):
         val = self.get(obj)
 
@@ -137,9 +176,18 @@ class Reference(Property):
        
     """
     def __init__(self, proxy_type, nullable=False, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        ptn = self.property_type_name(proxy_type)
+        val = AnyField(ptn, nullable=nullable)
+        super().__init__(*args, validator=val, **kwargs)
         self.__proxy_type = proxy_type
         self.nullable = nullable
+
+    @classmethod
+    def property_type_name(cls, proxy_type) -> str:
+        if isinstance(proxy_type, str):
+            return proxy_type
+        else:
+            return proxy_type.__name__
 
     @property
     def proxy_type(self):
@@ -168,6 +216,26 @@ class Reference(Property):
         else:
             refid = str(refproxy.proxy_id)
         entity[self.entity_name] = refid
+
+    def convert_to_create(self, client: Client, proxy_type, create_props, entity_props):
+        """Convert a value to be used for entity creation.
+        
+        Args:
+            client (Client): The client used for creation.
+            proxy_type (ProxyClass): The entity type being created.
+            create_props: The object passed to the create client call
+            entity_props: The entity object given to the create API call.
+        """
+        if self.name not in create_props:
+            if self.create_default is not None:
+                entity_props[self.entity_name] = self.create_default
+        else:
+            refproxy = create_props[self.name]
+            if refproxy is None:
+                refid = None
+            else:
+                refid = str(refproxy.proxy_id)
+            entity_props[self.entity_name] = refid
 
     def set(self, obj, value):
         """Low-level setter"""
@@ -210,6 +278,11 @@ class RefList(Reference):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+    @classmethod
+    def property_type_name(cls, proxy_type) -> str:
+        ptnb = super().property_type_name(proxy_type)
+        return f"List[{ptnb}]"
 
     def __get__(self, obj, obj_type=None):
         if obj.proxy_attr is None:

@@ -13,9 +13,14 @@ from stelar_client import Client
 
 
 @pytest.fixture()
-def testcli() -> Client:
-    cli = Client('apitest')
+def testcontext() -> str:
+    return 'local'
+
+@pytest.fixture()
+def testcli(testcontext) -> Client:
+    cli = Client(testcontext)
     yield cli
 
     # No logout yet. Once it is implemented,
     # here a logout must be posted.
+

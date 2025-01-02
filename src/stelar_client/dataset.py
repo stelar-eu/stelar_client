@@ -3,10 +3,12 @@ from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
 from .resource import Resource
-from .proxy import Proxy, Property, Id, Reference, RefList, DateField, StrField, BoolField
-    
+from .proxy import (Proxy, ProxyCursor, 
+                    Property, Id, Reference, RefList, DateField, StrField, BoolField, 
+                    ProxyOperationError)
+from .apicall import api_call, GenericProxy
 
-class Dataset(Proxy):
+class Dataset(GenericProxy):
     """
     A proxy of a STELAR dataset.
     """
@@ -32,9 +34,7 @@ class Dataset(Proxy):
     version = Property(validator=StrField(maximum_len=100), updatable=True)
 
     resources = RefList(Resource)
-
-    organization = Reference('Organization', entity_name='owner_org')
-
+    organization = Reference('Organization', entity_name='owner_org', create_default='stelar-klms')
 
     # *tags: list[str]
     # extras: dict[str,str]
@@ -42,34 +42,6 @@ class Dataset(Proxy):
     # *groups
     # relationships_as_object
     # relationships_as subject
-
-    #def __init__(self, *args, **kwargs):
-    #    # We treat the case where just the name is provided specially
-    #    super().__init__(self, *args, **kwargs)
-
-    def proxy_GET(self):
-        dc = self.proxy_registry.catalog.DC
-        resp = dc.package_show(id=str(self.proxy_id))
-        if not resp['success']:
-            raise RuntimeError(resp['error']['message'])
-        return resp['result']
-    
-    def proxy_PATCH(self, updates):
-        dc = self.proxy_registry.catalog.DC
-        breakpoint()
-        resp = dc.package_patch(id=str(self.proxy_id), **updates)
-        if not resp['success']:
-            raise RuntimeError(resp['error']['message'])
-        return resp['result']
-
-    def proxy_sync(self, entity=None):
-        if self.proxy_changed is not None:
-            updates = self.proxy_to_entity(self.proxy_changed)
-            entity = self.proxy_PATCH(updates)
-            self.proxy_changed = None
-        if entity is None:
-            entity = self.proxy_GET()
-        self.proxy_from_entity(entity)
 
     def _repr_html_(self):
         """
@@ -191,3 +163,5 @@ class Dataset(Proxy):
         else:
             dataset_info += "\tNo Resources Associated"
         return dataset_info
+
+

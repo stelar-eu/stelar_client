@@ -40,11 +40,18 @@ class Registry(Generic[ProxyClass]):
             self.registry[proxy.proxy_id] = proxy
             proxy.proxy_sync(entity)
         else:
-            if proxy.proxy_state is ProxyState.CLEAN:
+            if proxy.proxy_state in (ProxyState.EMPTY, ProxyState.CLEAN):
                 proxy.proxy_sync(entity)
             else:
-                raise ConflictError("Proxy fetched with new entity on dirty state")
+                raise ConflictError(f"Proxy fetched with new entity on state {proxy.proxy_state}")
         return proxy
+
+    def delete_proxy(self, proxy):
+        if proxy.proxy_id is None:
+            # Not an error to delete something in proxy state
+            return 
+        self.registry.pop(proxy.proxy_id, None)
+        
 
 
 class RegistryCatalog:
@@ -68,3 +75,10 @@ class RegistryCatalog:
         """Return the registry for the given type.
         """
         return self.registry_catalog[cls]
+
+    def registry_stats(self):
+        """Return a Series with the number of proxies held for each entity type."""
+        import pandas as pd
+        return pd.Series({
+            r.proxy_type.__name__: len(r.registry) for r in self.registry_catalog.values()
+        })

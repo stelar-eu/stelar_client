@@ -113,13 +113,37 @@ class FieldValidator:
     def convert_to_entity(self, value):
         raise NotImplementedError()
 
+    def repr_constraints(self):
+        nn = [ "nullable" if self.nullable else "not null" ]
+
+        if self.minimum_len is not None and self.maximum_len is not None:
+            nn.append(f"{self.minimum_len} <= length <= {self.maximum_len}")
+        elif self.minimum_len is not None:
+            nn.append(f"{self.minimum_len} <= length")
+        elif self.maximum_len is not None:
+            nn.append(f"length <= {self.maximum_len}")
+
+        if self.minimum_value is not None and self.maximum_value is not None:
+            nn.append(f"{self.minimum_value} <= value <={self.maximum_value}")
+        elif self.minimum_value is not None:
+            nn.append(f"{self.minimum_value} <= value")
+        elif self.maximum_value is not None:
+            nn.append(f"value <= {self.maximum_value}")
+
+        return nn
 
 class AnyField(FieldValidator):
     """A very promiscuous basic validator."""
+    def __init__(self, repr_type='Any', *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._repr_type = repr_type
+
     def convert_to_proxy(self, value):
         return value
     def convert_to_entity(self, value):
         return value
+    def repr_type(self):
+        return self._repr_type
 
 
 class BasicField(AnyField):
@@ -139,6 +163,8 @@ class BasicField(AnyField):
             value = self.ftype(value)
         return value, False
 
+    def repr_type(self):
+        return self.ftype.__name__
 
 class StrField(BasicField):
     """A string field validator"""
@@ -176,6 +202,9 @@ class DateField(FieldValidator):
     def convert_to_proxy(self, value: str) -> datetime:
         return datetime.fromisoformat(value)
 
+    def repr_type(self):
+        return "datetime"
+
 
 class UUIDField(BasicField):
     def __init__(self, **kwargs):
@@ -184,3 +213,7 @@ class UUIDField(BasicField):
         return UUID(value)
     def convert_to_entity(self, value: UUID) -> str:
         return str(value)
+
+    def repr_type(self):
+        return "UUID"
+

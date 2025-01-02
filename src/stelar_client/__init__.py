@@ -19,9 +19,13 @@ finally:
 from .client import Client
 from .dataset import Dataset
 from .resource import Resource
+from .organization import Organization
+from .proxy import ProxyState
 
 __all__ = [
     'Client',
     'Dataset',
     'Resource',
+    'Organization',
+    'ProxyState',
 ]

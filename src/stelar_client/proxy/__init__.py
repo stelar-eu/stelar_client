@@ -6,7 +6,7 @@ Entities include Data Catalog entities, authorization entities, etc.
 """
 
 from .decl import ProxyState
-from .exceptions import EntityError, ProxyError, InvalidationError, ConflictError
+from .exceptions import EntityError, ProxyError, InvalidationError, ConflictError, ProxyOperationError
 from .fieldvalidation import (
     AnyField, BoolField, IntField, StrField, DateField, UUIDField
 )
@@ -14,7 +14,7 @@ from .property import (
     Property, Id, Reference, RefList
 )
 from .schema import Schema
-from .proxy import Proxy
+from .proxy import Proxy, ProxyCursor, ProxyList
 from .registry import Registry, RegistryCatalog
 
 __all__ = [
@@ -22,6 +22,7 @@ __all__ = [
     'ProxyError',
     'InvalidationError',
     'ConflictError',
+    'ProxyOperationError',
 
     'AnyField',
     'BoolField',
@@ -39,6 +40,8 @@ __all__ = [
 
     'Proxy',
     'ProxyState',
+    'ProxyCursor',
+    'ProxyList',
 
     'Registry',
     'RegistryCatalog',

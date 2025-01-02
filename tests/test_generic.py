@@ -1,0 +1,59 @@
+import pytest
+from stelar_client import Client, ProxyState
+
+
+def test_standard_orgganization(testcli):
+    org = testcli.organizations['stelar-klms']
+    assert org.name == 'stelar-klms'
+
+def test_create_org(testcli):
+    for i in range(5):
+        try:
+            # Use the API to delete
+            testcli.DC.organization_purge(id=f"test_org_{i}")
+        except:
+            pass
+
+    assert len(testcli.organizations[::])==1
+
+    orgs = []
+    for i in range(5):
+        print(i)
+        o = testcli.organizations.create(name=f"test_org_{i}")
+        orgs.append(o) 
+
+    for i in range(5):
+        assert testcli.organizations[f"test_org_{i}"] is orgs[i]
+            
+    for o in orgs:
+        o.delete(purge=True)
+
+    assert len(testcli.organizations[::])==1
+
+
+def test_generic_proxy_create(testcontext):
+    c = Client(testcontext)
+    org = c.organizations['stelar-klms']
+
+    if 'test_dataset' in c.datasets:
+        c.datasets['test_dataset'].delete(purge=True)
+
+    d = c.datasets.create(name='test_dataset',
+                          title="Test dataset",
+                          notes="A very simple dataset to test",
+                          author="Alan Turing",
+                          maintainer="Alonso Church",
+                          url="https://stelar.tuc.gr/data")
+
+    assert d.name == 'test_dataset'
+    assert d.title == 'Test dataset'
+    assert d.notes == "A very simple dataset to test"
+    assert d.author == "Alan Turing"
+    assert d.maintainer == "Alonso Church"
+    assert d.url == "https://stelar.tuc.gr/data"
+
+    assert d.organization is c.organizations['stelar-klms']
+    assert len(d.resources) == 0
+
+    d.delete(purge=True)
+    assert d.proxy_state is ProxyState.ERROR

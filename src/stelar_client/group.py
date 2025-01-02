@@ -6,9 +6,9 @@ from .resource import Resource
 from .proxy import Proxy, Property, Id, RefList, DateField, StrField, BoolField
 from .apicall import GenericProxy
 
-class Organization(GenericProxy):
+class Group(GenericProxy):
     """
-    Proxy for a STELAR Data Catalog organization
+    Proxy for a STELAR Data Catalog group
     """
 
     id = Id()
@@ -24,8 +24,4 @@ class Organization(GenericProxy):
     description = Property(validator=StrField, updatable=True)
     image_url = Property(validator=StrField(), updatable=True)
     image_display_url = Property(validator=StrField(), updatable=True)
-
-    # extras
-    # tags
-    # packages
-    # users
+    

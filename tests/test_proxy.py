@@ -134,7 +134,7 @@ def test_empty_proxy_obj_given_key_with_args():
     assert x.proxy_schema.id.name == 'myid'
     assert x.myid == eid 
     assert x.proxy_schema.id.entity_name == 'entity_id'
-    assert x.proxy_schema.id.__doc__ == 'The ID doc'
+    assert x.proxy_schema.id.__doc__.startswith('The ID doc')
 
 
 

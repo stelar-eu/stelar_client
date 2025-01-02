@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any
+from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any, Iterator, Type
 from uuid import UUID
 from weakref import WeakValueDictionary
 from .exceptions import InvalidationError
@@ -56,24 +56,49 @@ class Proxy:
 
     Proxy objects are managed by Registry. The primary implementation
     of Registry is Client.
+    
+    A proxy can be in one of four states:
+      - EMPTY: there is no entity data in the proxy
+      - CLEAN: the data loaded by the last proxy_sync() operation is not changed
+      - DIRTY: the data loaded by the last proxy_sync() operation has been changed
+      - ERROR: the proxy is illegal! This state can be the result of deleting entity
+
 
     Attributes are used to hold property values:
     proxy_registry: The Registry instance that this proxy belongs to
     proxy_id: The UUID of the proxies entity
     proxy_attr:
         A dict of all loaded attributes. When None, the entity has
-        not yet been loaded
+        not yet been loaded. The state is EMPTY
     proxy_changed:
         A dict of all changed attributes (loaded values of updated attributes) 
-        since last upload. When None, the entity is clean.
+        since last upload. When None, the entity is CLEAN (or EMPTY), else the
+        entity is DIRTY.
 
     To initialize a proxy object, one must supply either an entity id or
-    an entity JSON body.
+    an entity JSON body. The proxy_id is never changed. When an entity is deleted,
+    set the proxy_id to None, to mark the proxy state as ERROR.
 
-    A proxy can be in one of four states:
-    EMPTY, CLEAN, DIRTY, ERROR
+    After initialization, the state of a proxy is EMPTY.
 
+    Proxies are handlers for _entities_ of the Stelar Service API. Entities are manipulated
+    by a CRUD-like API. Besides creation and deletion, entities are manipulated by two additional
+    I/O API operations:
+    - FETCH: which returns an entity data from the API
+    - UPDATE: which accepts a spec of the updates to apply to an entity. This operation often returns
+    the updated object after updates are applied.
 
+    The following operations operate on proxies:
+    proxy_sync(entity=None): Save any pending updates to make the state CLEAN. Load the proxy data 
+    from the Stelar Service API, to make sure the proxy has the latest. When `entity` is not None,
+    use it to avoid a fetch.
+
+    proxy_invalidate(force=False):  Make the object EMPTY. If the proxy is DIRTY, an IvalidationError
+    is raised, unless `force` is specified as True.
+
+    proxy_reset():  Make a DIRTY object to CLEAN, by restoring the property values of the last sync().
+
+    proxy_sync(entity=None):  Make an entity CLEAN.
     """
 
     def __init__(self, registry: Registry, eid: Optional[str|UUID] = None, entity=None):
@@ -114,6 +139,18 @@ class Proxy:
     @classmethod
     def get_entity_id(cls, entity) -> str:
         return cls.proxy_schema.get_id(entity)
+
+    def delete(self):
+        """Delete the entity and mark the proxy as invalid.
+           Entity classes can overload this method, to perform the
+           actual API delete. When successful, they can then 
+           invoke Proxy.delete() to mark this proxy as invalid.
+        """
+        if self.proxy_id is None:
+            return
+        self.proxy_registry.delete_proxy(self)
+        self.proxy_deleted_id = self.proxy_id
+        self.proxy_id = self.proxy_attr = self.proxy_changed = None
 
     @property
     def proxy_state(self) -> ProxyState:
@@ -221,6 +258,10 @@ class Proxy:
         raise NotImplementedError(self.__class__.__name__ + ".proxy_sync")
 
 
+
+ProxyClass = TypeVar('ProxyClass', bound=Proxy)
+
+
 class ProxyList:
     """A proxy class that translates collection operations to operations
        on an entity sub-collection.
@@ -252,3 +293,53 @@ class ProxyList:
         raise NotImplementedError(f"iadd {self.property.owner.__name__}.{self.property.name}")
 
 
+class ProxyCursor(Generic[ProxyClass]):
+
+    MAX_FETCH=1000
+
+    def __init__(self, client: Client, proxy_type: Type[ProxyClass]):
+        self.client = client
+        self.proxy_type = proxy_type
+
+    def create(self, **updates) -> ProxyClass:
+        raise NotImplementedError
+    
+    def fetch(self, *, limit, offset) -> Iterator[ProxyClass]:
+        raise NotImplementedError
+
+    def get(self, name_or_id, default=None) -> ProxyClass:
+        raise NotImplementedError
+
+    def __getitem__(self, item: str|UUID|slice) -> ProxyClass|list[ProxyClass]:
+        if isinstance(item, slice):
+            offset = item.start if item.start is not None else 0
+            if offset < 0:
+                raise ValueError("Bad offset")
+            if item.step is not None:
+                limit = item.step
+            elif item.stop is not None:
+                limit = item.stop - offset
+            else:
+                limit = self.MAX_FETCH
+            if limit < 0:
+                raise ValueError("Bad limit")
+            # CUT OFF
+            if limit > self.MAX_FETCH:
+                limit = self.MAX_FETCH
+            return list(self.fetch(limit=limit, offset=offset))
+        
+        elif isinstance(item, (str,UUID)):
+            proxy = self.get(item)
+            if proxy is None:
+                raise KeyError(f"Entity not found")
+            return proxy
+        else:
+            raise TypeError(f"Cannot fetch {self.proxy_type.__name__} by {item}: string or UUID is expected")
+        
+    def __contains__(self, item) -> bool:
+        if isinstance(item, self.proxy_type):
+            return item.proxy_state is not ProxyState.ERROR
+        elif isinstance(item, (str, UUID)):
+            return self.get(item) is not None
+        else:
+            return False

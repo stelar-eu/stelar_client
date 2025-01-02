@@ -2,9 +2,10 @@
 from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
-from .proxy import Proxy, Id, Property, Registry, Reference, StrField, IntField, DateField
+from .proxy import Proxy, Id, Property, Registry, Reference, StrField, IntField, DateField, ProxyOperationError
+from .apicall import api_call, GenericProxy
 
-class Resource(Proxy):
+class Resource(GenericProxy):
     """
     A proxy for a STELAR resource with metadata and additional details.
     """
@@ -24,31 +25,6 @@ class Resource(Proxy):
     created = Property(validator=DateField, updatable=True)
     last_modified = Property(validator=DateField, updatable=True)
     cache_last_updated = Property(validator=DateField, updatable=True)
-
-
-    def proxy_sync(self, entity=None):
-        if self.proxy_changed is not None:
-            updates = self.proxy_to_entity(self.proxy_changed)
-
-            
-            dc = self.proxy_registry.catalog.DC
-            response = dc.resource_patch(id=str(self.proxy_id), **updates)
-
-            if not response['success']:
-                raise RuntimeError(response['error']['message'])
-            entity = response['result']
-            self.proxy_changed = None
-
-        if entity is None:
-            dc = self.proxy_registry.catalog.DC
-            response = dc.resource_show(id=str(self.proxy_id))
-            if not response['success']:
-                raise RuntimeError(response['error']['message'])
-            entity = response['result']
-
-        self.proxy_from_entity(entity)
-
-
 
 
     def __str__(self):
