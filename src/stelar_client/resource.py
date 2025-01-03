@@ -10,7 +10,7 @@ class Resource(GenericProxy):
     A proxy for a STELAR resource with metadata and additional details.
     """
 
-    dataset = Reference('Dataset', entity_name='package_id')
+    dataset = Reference('Dataset', entity_name='package_id', trigger_sync=True)
     metadata_modified = Property(validator=DateField)
     state = Property(validator=StrField)
 

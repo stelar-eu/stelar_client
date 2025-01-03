@@ -2,13 +2,14 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any, Iterator, Type
 from uuid import UUID
 from weakref import WeakValueDictionary
-from .exceptions import InvalidationError
+from .exceptions import InvalidationError, ErrorState
 from .decl import ProxyState
 
 if TYPE_CHECKING:
     from ..client import Client
     from .property import RefList
     from .registry import Registry
+    from pandas import Series
 
 """
     Introduction
@@ -142,18 +143,18 @@ class Proxy:
     def get_entity_id(cls, entity) -> str:
         return cls.proxy_schema.get_id(entity)
 
-    def delete(self):
+    def delete(self, purge=False):
         """Delete the entity and mark the proxy as invalid.
            Entity classes can overload this method, to perform the
            actual API delete. When successful, they can then 
            invoke Proxy.delete() to mark this proxy as invalid.
         """
-        if self.proxy_id is None:
-            return
-        self.proxy_registry.delete_proxy(self)
-        self.proxy_deleted_id = self.proxy_id
-        self.proxy_id = self.proxy_attr = self.proxy_changed = None
-
+        if self.proxy_state is ProxyState.ERROR:
+            return   # Not an error to call delete on purged entity
+        if purge:
+            self.proxy_is_purged()
+        else:
+            self.proxy_invalidate(force=True)
 
     def update(self, **updates):
         """Update a bunch of attributes in a single operation.
@@ -191,6 +192,8 @@ class Proxy:
         Raises:
             InvalidationError: If called on a DIRTY proxy with `force` being False
         """
+        if self.proxy_id is None:
+            raise ErrorState()
         if self.proxy_changed is not None and not force:
             raise InvalidationError()
         self.proxy_attr = self.proxy_changed = None
@@ -200,6 +203,8 @@ class Proxy:
            If the proxy is DIRTY, make it CLEAN by restoring the
            values changed since the last sync.
         """
+        if self.proxy_id is None:
+            raise ErrorState()
         if self.proxy_changed is not None:
             for name,value in self.proxy_changed.items():
                 self.proxy_attr[name] = value
@@ -207,6 +212,8 @@ class Proxy:
 
     def proxy_from_entity(self, entity: Any):
         """Update the proxy_attr dictionary from a given entity."""
+        if self.proxy_id is None:
+            raise ErrorState()
         if self.proxy_attr is None:
             self.proxy_attr = dict()
         for prop in self.proxy_schema.properties.values():
@@ -233,6 +240,8 @@ class Proxy:
             entity (dict): An entity dict containing all values 
                 specified.
         """
+        if self.proxy_id is None:
+            raise ErrorState()
         entity = dict()
         for prop in self.proxy_schema.properties.values():
             if prop.isId or (attrset is not None and prop.name not in attrset):
@@ -240,6 +249,17 @@ class Proxy:
             prop.convert_proxy_to_entity(self, entity)
         return entity
 
+    def proxy_is_purged(self):
+        """Called to designate that this proxy is referring to a non-existent
+           entity and should be marked as such. 
+
+           This type of marking happens when an entity is purged.
+        """
+        if self.proxy_state is ProxyState.ERROR:
+            return
+        self.proxy_purged_id = self.proxy_id
+        self.proxy_registry.purge_proxy(self)
+        self.proxy_attr = self.proxy_changed = None
 
     def proxy_sync(self, entity=None):
         """Sync the data between the proxy and the API entity.
@@ -272,16 +292,24 @@ class Proxy:
         raise NotImplementedError(self.__class__.__name__ + ".proxy_sync")
 
     def __repr__(self):
-        if self.proxy_schema.name_id is not None:
+        typename = type(self).__name__
+        state = self.proxy_state.name
+        if self.proxy_state is ProxyState.ERROR:
+            nid = f"deleted ({getattr(self, 'proxy_purged_id', '**unknown**')})"
+        elif self.proxy_state is ProxyState.EMPTY:
+            nid = str(self.proxy_id)
+        elif self.proxy_schema.name_id is not None:
             nid = self.name
         else:
             nid = str(self.proxy_id)
-        typename = type(self).__name__
-        return f"<{typename} {nid}>"
+        return f"<{typename} {nid} {state}>"
 
     @property
-    def s(self):
+    def s(self) -> Series:
         import pandas as pd
+        name = f"{type(self).__name__} ({self.proxy_state.name})"
+        if s.proxy_state is ProxyState.ERROR:
+            return pd.Series(name=name)
         def simplified(val):
             if isinstance(val, Proxy):
                 if val.proxy_schema.name_id is not None:
@@ -299,7 +327,7 @@ class Proxy:
             simplified(getattr(self, name))
             for name in index
         ]
-        return pd.Series(index=index, data=data, name=type(self).__name__, dtype='object')
+        return pd.Series(index=index, data=data, name=name, dtype='object')
 
 
 from contextlib import contextmanager

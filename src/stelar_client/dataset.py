@@ -31,7 +31,7 @@ class Dataset(GenericProxy):
     url = Property(validator=StrField, updatable=True)
     version = Property(validator=StrField(maximum_len=100), updatable=True)
 
-    resources = RefList(Resource)
+    resources = RefList(Resource, trigger_sync=True)
     organization = Reference('Organization', entity_name='owner_org', create_default='stelar-klms')
 
     # *tags: list[str]
@@ -53,7 +53,6 @@ class Dataset(GenericProxy):
                 f"""
                 <tr style="background-color: {('rgba(255, 255, 255, 0.8)' if i % 2 == 0 else 'rgba(230, 179, 255, 0.8)')};">
                     <td style="text-align: left; padding: 5px; border: 1px solid #ddd;">{resource.id or 'N/A'}</td>
-                    <td style="text-align: left; padding: 5px; border: 1px solid #ddd;">{resource.relation}</td>
                     <td style="text-align: left; padding: 5px; border: 1px solid #ddd;">{resource.name}</td>
                     <td style="text-align: left; padding: 5px; border: 1px solid #ddd;"><a href="{resource.url}" target="_blank">{resource.url}</a></td>
                     <td style="text-align: left; padding: 5px; border: 1px solid #ddd;">{resource.format}</td>
@@ -105,11 +104,11 @@ class Dataset(GenericProxy):
                     </tr>
                     <tr style="background-color: rgba(230, 179, 255, 0.8);">
                         <td style="text-align: left; padding: 5px; border: 1px solid #ddd; font-weight: bold;">Tags:</td>
-                        <td style="text-align: left; padding: 5px; border: 1px solid #ddd;">{', '.join(self.tags)}</td>
+                        <td style="text-align: left; padding: 5px; border: 1px solid #ddd;">{', '.join(['self.tags'])}</td>
                     </tr>
                     <tr style="background-color: rgba(255, 255, 255, 0.8);">
                         <td style="text-align: left; padding: 5px; border: 1px solid #ddd; font-weight: bold;">Modified Date:</td>
-                        <td style="text-align: left; padding: 5px; border: 1px solid #ddd;">{self.modified_date or 'N/A'}</td>
+                        <td style="text-align: left; padding: 5px; border: 1px solid #ddd;">{self.metadata_modified or 'N/A'}</td>
                     </tr>
                 </tbody>
             </table>

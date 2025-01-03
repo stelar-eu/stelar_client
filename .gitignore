@@ -60,3 +60,6 @@ MANIFEST
 .venv*/
 .conda*/
 .python-version
+
+# Ignore this folder
+nb/*

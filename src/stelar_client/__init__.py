@@ -22,6 +22,9 @@ from .resource import Resource
 from .organization import Organization
 from .group import Group
 from .proxy import ProxyState
+from .proxy.exceptions import *
+
+
 
 __all__ = [
     'Client',
@@ -30,4 +33,10 @@ __all__ = [
     'Organization',
     'Group',
     'ProxyState',
+
 ]
+
+from .proxy.exceptions import __all__ as _exceptions
+__all__ += _exceptions
+del _exceptions
+

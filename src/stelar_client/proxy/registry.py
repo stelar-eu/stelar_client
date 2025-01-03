@@ -46,11 +46,12 @@ class Registry(Generic[ProxyClass]):
                 raise ConflictError(f"Proxy fetched with new entity on state {proxy.proxy_state}")
         return proxy
 
-    def delete_proxy(self, proxy):
+    def purge_proxy(self, proxy):
         if proxy.proxy_id is None:
             # Not an error to delete something in proxy state
             return 
         self.registry.pop(proxy.proxy_id, None)
+        proxy.proxy_id = None
         
 
 

@@ -9,7 +9,10 @@ from typing import TYPE_CHECKING, Type, TypeVar, Generic, Iterator
 from .backdoor import CKAN
 from functools import wraps
 from uuid import UUID
-from .proxy import Proxy, ProxyOperationError, ProxyCursor, ProxyList, Reference, RefList, ProxySynclist
+from .proxy import (Proxy, ProxyOperationError, ProxyCursor, 
+                    ProxyList, Reference, RefList, ProxySynclist, EntityNotFound, 
+                    ErrorState,
+                    ProxyState)
 
 if TYPE_CHECKING:
     from .client import Client
@@ -46,33 +49,58 @@ class api_call:
         def wrapped_call(*args, **kwargs):
             response = func(*args, **kwargs)
             if not response['success']:
-                raise ProxyOperationError(self.proxy_type, self.proxy_id, name, response['error'])
+                err = response['error']
+                if err['__type'] == 'Not Found Error':
+                    raise EntityNotFound(self.proxy_type, self.proxy_id, name)
+                else:
+                    # Generic 
+                    raise ProxyOperationError(self.proxy_type, self.proxy_id, name, response['error'])
             return response['result']
         return wrapped_call
 
-
-_map_to_ckan = {
-    'Dataset': 'package',
-    'Resource': 'resource',
-    'Organization': 'organization',
-    'Group': 'group',
-}
+    def get_call(self, proxy_type, op):
+        _map_to_ckan = {
+            'Dataset': 'package',
+            'Resource': 'resource',
+            'Organization': 'organization',
+            'Group': 'group',
+        }
+        ckan_type = _map_to_ckan[proxy_type.__name__]
+        if ckan_type == 'package' and op=='purge':
+            call_name = 'dataset_purge'
+        else:
+            call_name = f"{ckan_type}_{op}"
+        return getattr(self, call_name)
 
 
 def generic_proxy_sync(proxy: Proxy, entity):
     proxy_type = type(proxy)
-    ckan_type = _map_to_ckan[proxy_type.__name__]
     ac = api_call(proxy)
+
+    if proxy.proxy_state is ProxyState.ERROR:
+        raise ErrorState(proxy)
 
     if proxy.proxy_changed is not None:
         updates = proxy.proxy_to_entity(proxy.proxy_changed)
-        patch = getattr(ac, f"{ckan_type}_patch")
-        entity = patch(id=str(proxy.proxy_id), **updates)
+        patch = ac.get_call(proxy_type, 'patch')
+
+        try:
+            entity = patch(id=str(proxy.proxy_id), **updates)
+        except EntityNotFound as e:
+            proxy.proxy_is_purged()
+            raise  # We have updates that are lost
+
         proxy.proxy_changed = None
     if entity is None:
-        show = getattr(ac, f"{ckan_type}_show")
-        entity = show(id=str(proxy.proxy_id))
+        show = ac.get_call(proxy_type, 'show')
+        try:
+            entity = show(id=str(proxy.proxy_id))
+        except EntityNotFound as e:
+            proxy.proxy_is_purged()
+            return  # Not an error!
     proxy.proxy_from_entity(entity)
+    
+    
 
 
 def generic_create(client: Client, proxy_type: Type[ProxyClass], **properties) -> ProxyClass:
@@ -87,8 +115,8 @@ def generic_create(client: Client, proxy_type: Type[ProxyClass], **properties) -
 
     # Create the entity
     ac = api_call(client)
-    ckan_type = _map_to_ckan[proxy_type.__name__]
-    create = getattr(ac, f"{ckan_type}_create")
+
+    create = ac.get_call(proxy_type, "create")
     new_entity = create(**entity_properties)
     registry = client.registry_for(proxy_type)
     new_proxy = registry.fetch_proxy_for_entity(new_entity)
@@ -100,29 +128,24 @@ def generic_create(client: Client, proxy_type: Type[ProxyClass], **properties) -
 
 def generic_get(client: Client, proxy_type: Type[ProxyClass], name_or_id, default=None) -> ProxyClass:
     ac = api_call(client)
-    ckan_type = _map_to_ckan[proxy_type.__name__]
-    show = getattr(ac, f"{ckan_type}_show")
+    show = ac.get_call(proxy_type, "show")
     try:
         entity = show(id=str(name_or_id))
-        return client.registry_for(proxy_type).fetch_proxy_for_entity(entity)
-    except ProxyOperationError as e:
-        if e.args[0]['__type']=='Not Found Error':
-            return default
-        else:
-            raise
+    except EntityNotFound as e:
+        return default
+    return client.registry_for(proxy_type).fetch_proxy_for_entity(entity)
+
 
 def generic_fetch_list(client: Client, proxy_type: Type[ProxyClass], *, limit: int, offset: int) -> list[str]:
     ac = api_call(client)
-    ckan_type = _map_to_ckan[proxy_type.__name__]
-    _list = getattr(ac, f"{ckan_type}_list")
+    _list = ac.get_call(proxy_type, "list")
     result = _list(limit=limit, offset=offset)
 
     return result
 
 def generic_fetch(client: Client, proxy_type: Type[ProxyClass], *, limit: int, offset: int) -> Iterator[ProxyClass]:
     ac = api_call(client)
-    ckan_type = _map_to_ckan[proxy_type.__name__]
-    _list = getattr(ac, f"{ckan_type}_list")
+    _list = ac.get_call(proxy_type, "list")
     result = _list(limit=limit, offset=offset)
     show = getattr(ac, f"{ckan_type}_show")
     registry = client.registry_for(proxy_type)
@@ -137,11 +160,8 @@ def generic_delete(proxy: Proxy, purge=False):
     psl.on_delete(proxy)
 
     ac = api_call(proxy)
-    ckan_type = _map_to_ckan[type(proxy).__name__]
-    if purge:
-        delete = getattr(ac, f"{ckan_type}_purge")
-    else:
-        delete = getattr(ac, f"{ckan_type}_delete")
+    
+    delete = ac.get_call(type(proxy), 'purge' if purge else 'delete')
     delete(id=str(proxy.proxy_id))
     psl.sync()
 
@@ -155,16 +175,17 @@ class GenericProxy(Proxy, entity=False):
         """
         Delete the entity proxied by this proxy.
 
-        After the deletion, the proxy is left in the ERROR state.
-
         If the entity is purged then the deletion is permanent.
-        Otherwise, the deletion removes the entity from the active
-        ones, but the entity can still be reclaimed.
+        After the purge deletion, the proxy is left in the ERROR state.
 
-        TODO: document reclamation        
+        Otherwise, the deletion removes the entity from the active
+        ones, but the entity can still be accessed. Searches will
+        not return the entity.
+
+        TODO: Implement entity reclamation for non-purged entities!
         """
-        generic_delete(self)
-        super().delete()
+        generic_delete(self, purge=purge)
+        super().delete(purge=purge)
 
     def proxy_sync(self, entity=None):
         """Sync the proxy with the entity in the API."""

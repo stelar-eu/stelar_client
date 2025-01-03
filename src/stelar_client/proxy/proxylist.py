@@ -55,6 +55,14 @@ class ProxyList(Generic[ProxyClass]):
     def __repr__(self):
         return f"{self.proxy_type.__name__}{repr(self.coll)}"
 
+    def __eq__(self, other):
+        try:
+            return len(self)==len(other) and (
+                all(p==q for p,q in zip(self, other))
+            )
+        except:
+            return False
+
     @property
     def ids(self):
         return list(self.coll)

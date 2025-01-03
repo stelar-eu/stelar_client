@@ -51,9 +51,7 @@ class ProxySynclist:
             self.add(newref)
 
     def sync(self):
-        breakpoint()
         for prx in self.tosync:
-            print("Syncing", prx)
             prx.proxy_sync()
         self.tosync.clear()
 
