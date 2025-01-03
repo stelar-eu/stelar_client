@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any
 from uuid import UUID
 from io import StringIO
 from .exceptions import EntityError
-from .fieldvalidation import AnyField, BasicField, UUIDField
+from .fieldvalidation import AnyField, UUIDField, NameField
 from .proxy import Proxy
 from .proxylist import ProxySublist
 from .registry import Registry
@@ -45,6 +45,7 @@ class Property:
         """
         self.updatable = updatable
         self.isId = False
+        self.isName = False
         self.optional = optional
         if validator is None:
             self.validator = AnyField()
@@ -194,7 +195,6 @@ class Id(Property):
             doc = "The ID"
         super().__init__(validator=UUIDField(nullable=False), entity_name=entity_name, doc=doc)
         self.isId = True
-        self.types = UUID
     
     def __get__(self, obj, objtype=None):
         return obj.proxy_id
@@ -206,6 +206,12 @@ class Id(Property):
         raise AttributeError("Entity ID attribute cannot be deleted")
 
 
+class NameId(Property):
+    def __init__(self, entity_name=None, doc=None):
+        if doc is None:
+            doc = "The name field, which is a unique string identifying the entity."
+        super().__init__(validator=NameField, entity_name=entity_name, doc=doc)
+        self.isName = True
 
 
 class RefField(AnyField):
@@ -240,12 +246,13 @@ class RefField(AnyField):
 class Reference(Property):
     """A proxy property which is a reference to an entity.
     """
-    def __init__(self, proxy_type, nullable=False, *args, **kwargs):
+    def __init__(self, proxy_type, nullable=False, trigger_sync=False, *args, **kwargs):
         ptn = self.property_type_name(proxy_type)
         val = RefField(self, ptn, nullable=nullable)
         super().__init__(*args, validator=val, **kwargs)
         self.__proxy_type = proxy_type
         self.nullable = nullable
+        self.trigger_sync = trigger_sync
 
     @classmethod
     def property_type_name(cls, proxy_type) -> str:
@@ -282,7 +289,9 @@ class Reference(Property):
         if val is ...:
             raise AttributeError(f"Property '{self.name}' is not present")
         return val
-        
+
+
+
 
 class RefList(Reference):
     """A proxy property that manages a sub-schema (a sub-collection of other properties)

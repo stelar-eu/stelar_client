@@ -12,10 +12,14 @@ class Resource(GenericProxy):
 
     dataset = Reference('Dataset', entity_name='package_id')
     metadata_modified = Property(validator=DateField)
-    
+    state = Property(validator=StrField)
+
     url = Property(validator=StrField, updatable=True)
     format = Property(validator=StrField, updatable=True)
+    description = Property(validator=StrField, updatable=True)
     hash = Property(validator=StrField, updatable=True)
+
+
     name = Property(validator=StrField, updatable=True)
     resource_type = Property(validator=StrField, updatable=True)
     mimetype = Property(validator=StrField, updatable=True)
@@ -25,6 +29,7 @@ class Resource(GenericProxy):
     created = Property(validator=DateField, updatable=True)
     last_modified = Property(validator=DateField, updatable=True)
     cache_last_updated = Property(validator=DateField, updatable=True)
+    url_type = Property(validator=StrField, updatable=True)
 
 
     def __str__(self):

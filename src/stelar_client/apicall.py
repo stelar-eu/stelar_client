@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Type, TypeVar, Generic, Iterator
 from .backdoor import CKAN
 from functools import wraps
 from uuid import UUID
-from .proxy import Proxy, ProxyOperationError, ProxyCursor, ProxyList
+from .proxy import Proxy, ProxyOperationError, ProxyCursor, ProxyList, Reference, RefList, ProxySynclist
 
 if TYPE_CHECKING:
     from .client import Client
@@ -78,15 +78,24 @@ def generic_proxy_sync(proxy: Proxy, entity):
 def generic_create(client: Client, proxy_type: Type[ProxyClass], **properties) -> ProxyClass:
     schema = proxy_type.proxy_schema
     entity_properties = {}
-    for property in schema.properties.values():
+    for property in schema.properties.values():        
         property.convert_to_create(client, proxy_type, properties, entity_properties)
 
+    # Populate the sync list
+    psl = ProxySynclist()
+    psl.on_create(proxy_type, properties)
+
+    # Create the entity
     ac = api_call(client)
     ckan_type = _map_to_ckan[proxy_type.__name__]
     create = getattr(ac, f"{ckan_type}_create")
     new_entity = create(**entity_properties)
     registry = client.registry_for(proxy_type)
-    return registry.fetch_proxy_for_entity(new_entity)
+    new_proxy = registry.fetch_proxy_for_entity(new_entity)
+    
+    # Sync around
+    psl.sync()
+    return new_proxy
     
 
 def generic_get(client: Client, proxy_type: Type[ProxyClass], name_or_id, default=None) -> ProxyClass:
@@ -124,6 +133,9 @@ def generic_fetch(client: Client, proxy_type: Type[ProxyClass], *, limit: int, o
 
 
 def generic_delete(proxy: Proxy, purge=False):
+    psl = ProxySynclist()
+    psl.on_delete(proxy)
+
     ac = api_call(proxy)
     ckan_type = _map_to_ckan[type(proxy).__name__]
     if purge:
@@ -131,9 +143,10 @@ def generic_delete(proxy: Proxy, purge=False):
     else:
         delete = getattr(ac, f"{ckan_type}_delete")
     delete(id=str(proxy.proxy_id))
+    psl.sync()
 
-
-#  The generic base classes for proxy and cursor
+# 
+# The generic base classes for proxy and cursor
 #  
 
 class GenericProxy(Proxy, entity=False):

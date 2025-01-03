@@ -11,11 +11,12 @@ from .fieldvalidation import (
     AnyField, BoolField, IntField, StrField, DateField, UUIDField, NameField
 )
 from .property import (
-    Property, Id, Reference, RefList
+    Property, Id, NameId, Reference, RefList
 )
 from .schema import Schema
 from .proxy import Proxy
 from .proxylist import ProxyCursor, ProxyList, ProxySublist
+from .proxysync import ProxySynclist
 from .registry import Registry, RegistryCatalog
 
 __all__ = [
@@ -35,6 +36,7 @@ __all__ = [
 
     'Property',
     'Id',
+    'NameId',
     'Reference',
     'RefList',
 
@@ -45,6 +47,7 @@ __all__ = [
     'ProxyCursor',
     'ProxyList',
     'ProxySublist',
+    'ProxySynclist',
 
     'Registry',
     'RegistryCatalog',

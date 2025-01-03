@@ -3,7 +3,7 @@ from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
 from .resource import Resource
-from .proxy import Proxy, Property, Id, RefList, DateField, StrField, BoolField, NameField
+from .proxy import Proxy, Property, Id, NameId, RefList, DateField, StrField, BoolField, NameField
 from .apicall import GenericProxy
 
 class Organization(GenericProxy):
@@ -12,7 +12,7 @@ class Organization(GenericProxy):
     """
 
     id = Id()
-    name = Property(validator=NameField)
+    name = NameId()
     type = Property(validator=StrField(nullable=False))
 
     state = Property(validator=StrField(nullable=False))

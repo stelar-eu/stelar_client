@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any
 from .proxy import Proxy
-from .property import Property, Id
+from .property import Property, Id, NameId
 
 
 #----------------------------------------------------------
@@ -34,6 +34,7 @@ class Schema:
         self.cls = cls
         self.properties = {}
         self.id = None
+        self.name_id = None
 
         # Initialize the properties list
         # N.B. This does not check the superclasses
@@ -44,6 +45,13 @@ class Schema:
                     if self.id is not None:
                         raise TypeError(f"Multiple ID attributes defined for {cls.__qualname__}")
                     self.id = prop
+                elif prop.isName:
+                    assert isinstance(prop, NameId)
+                    if self.name_id is not None:
+                        raise TypeError(f"Multiple nameID attributes defined for {cls.__qualname__}")
+                    self.name_id = prop
+                    # Name is added to the properties !
+                    self.properties[name] = prop
                 else:
                     self.properties[name] = prop
 

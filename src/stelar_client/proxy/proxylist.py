@@ -10,6 +10,8 @@ if TYPE_CHECKING:
     from ..client import Client
     from .property import RefList
     from .registry import Registry
+    from .schema import Schema
+    from .property import RefList
 
 
 ProxyClass = TypeVar('ProxyClass', bound=Proxy)
@@ -106,6 +108,7 @@ class ProxySublist(ProxyList):
         return self.property.get(self.owner)
 
 
+
 class ProxyCursor(Generic[ProxyClass]):
 
     MAX_FETCH=1000
@@ -162,3 +165,4 @@ class ProxyCursor(Generic[ProxyClass]):
             return self.get(item) is not None
         else:
             return False
+

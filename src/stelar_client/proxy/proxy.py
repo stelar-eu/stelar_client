@@ -272,18 +272,19 @@ class Proxy:
         raise NotImplementedError(self.__class__.__name__ + ".proxy_sync")
 
     def __repr__(self):
-        if hasattr(self, 'name'):
+        if self.proxy_schema.name_id is not None:
             nid = self.name
         else:
             nid = str(self.proxy_id)
         typename = type(self).__name__
         return f"<{typename} {nid}>"
 
-    def __repr__(self):
+    @property
+    def s(self):
         import pandas as pd
         def simplified(val):
             if isinstance(val, Proxy):
-                if hasattr(val,'name'):
+                if val.proxy_schema.name_id is not None:
                     return val.name
                 else:
                     return val.proxy_id
@@ -298,7 +299,7 @@ class Proxy:
             simplified(getattr(self, name))
             for name in index
         ]
-        return repr(pd.Series(index=index, data=data, name=type(self).__name__, dtype='object'))
+        return pd.Series(index=index, data=data, name=type(self).__name__, dtype='object')
 
 
 from contextlib import contextmanager
@@ -325,6 +326,3 @@ def deferred_sync(* proxies):
         if p.proxy_state is not ProxyState.ERROR:
             p.proxy_sync()
         
-
-
-
