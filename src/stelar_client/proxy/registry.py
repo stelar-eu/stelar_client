@@ -13,6 +13,26 @@ ProxyClass = TypeVar('ProxyClass', bound=Proxy)
 
 
 class Registry(Generic[ProxyClass]):
+    """A registry is a factory and collection of proxies.
+
+        The registry maintains a weak reference to its elements, so that
+        a proxy which is not referenced any more, is deleted from the registry.
+
+        Registries are crucial as they are used to maintain the following important
+        invariant:
+            'For each entity, there exists no more than one proxy (under the same client)
+            at any time'.
+
+        This invariant guarantees that, any updates to an entity (via a client)
+        can only happen on a uniquely defined object. This solution saves on memory
+        and avoids complex state synchronization problems.
+
+        Registries are typed: only proxies of the same type belong to a registry.
+
+        A collection of registries of different types form a 'catalog' (of type RegistryCatalog).
+
+    """
+
     def __init__(self, catalog: RegistryCatalog, proxy_type):
         self.catalog = catalog
         self.registry = WeakValueDictionary()
@@ -21,6 +41,16 @@ class Registry(Generic[ProxyClass]):
             self.catalog.add_registry_for(proxy_type, self)
     
     def fetch_proxy(self, eid: UUID) -> ProxyClass:
+        """Return a proxy for the provided entity id.
+
+           If a proxy needs to be created, it will be initialized in the
+           EMPTY state by the provided entity object.
+
+           Args:
+            eid: The provided entity ID.
+           Returns:
+            a proxy initialized with the provided entity.
+        """
         if not isinstance(eid, UUID):
             eid = UUID(eid)
         proxy = self.registry.get(eid, None)
@@ -31,7 +61,18 @@ class Registry(Generic[ProxyClass]):
         return proxy
 
     def fetch_proxy_for_entity(self, entity) -> ProxyClass:
-        eid = UUID(self.proxy_type.get_entity_id(entity))
+        """Return a proxy for the entity object provided.
+
+           The returned proxy will be created if needed, and
+           it will be initialized in the CLEAN state by the
+           provided entity object.
+
+           Args:
+            entity: The provided entity object.
+           Returns:
+            a proxy initialized with the provided entity.
+        """
+        eid = UUID(self.proxy_type.proxy_schema.get_id(entity))
         proxy: Proxy = self.registry.get(eid, None)
         if proxy is None:
             proxy = self.proxy_type(registry=self, entity=entity)

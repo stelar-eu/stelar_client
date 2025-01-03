@@ -27,7 +27,7 @@ class ProxyTestObj(Proxy, entity=False):
     patch = {}
 
     def proxy_sync(self, entity=None):
-        myid = self.proxy_schema.get_id(self)
+        myid = self.proxy_id
         if self.proxy_changed is not None:
             entity = self.proxy_to_entity()
             self.data[myid] = entity

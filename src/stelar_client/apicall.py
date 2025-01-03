@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Type, TypeVar, Generic, Iterator
 from .backdoor import CKAN
 from functools import wraps
 from uuid import UUID
+from .utils import *
 from .proxy import (Proxy, ProxyOperationError, ProxyCursor, 
                     ProxyList, Reference, RefList, ProxySynclist, EntityNotFound, 
                     ErrorState,
@@ -33,7 +34,7 @@ class api_call:
         from .client import Client
         if isinstance(arg, Proxy):
             self.proxy = arg
-            self.client = self.proxy.proxy_registry.catalog
+            self.client = client_for(self.proxy)
             self.proxy_id = self.proxy.proxy_id
             self.proxy_type = type(self.proxy)
         elif isinstance(arg, Client):

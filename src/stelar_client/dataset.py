@@ -2,6 +2,7 @@ from uuid import UUID
 from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
+from .utils import *
 from .resource import Resource
 from .proxy import Property, Id, NameId, Reference, RefList, DateField, StrField, BoolField, NameField
 from .apicall import api_call, GenericProxy
@@ -33,6 +34,18 @@ class Dataset(GenericProxy):
 
     resources = RefList(Resource, trigger_sync=True)
     organization = Reference('Organization', entity_name='owner_org', create_default='stelar-klms')
+
+    def add_resource(self, **properties):
+        """Add a new resource with the given properties.
+
+        Example:  new_rsrc = d.add_resource(name="Profile", url="s3://datasets/a.json", 
+            format="json", mimetype="application/json")
+
+        Args:
+            **properties: The arguments to pass. See 'Resource' for details.
+        """
+        return client_for(self).resources.create(dataset=self, **properties)
+
 
     # *tags: list[str]
     # extras: dict[str,str]

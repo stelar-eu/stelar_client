@@ -139,9 +139,6 @@ class Proxy:
             # there are no properties defined on it
             Schema.check_non_entity(cls)
 
-    @classmethod
-    def get_entity_id(cls, entity) -> str:
-        return cls.proxy_schema.get_id(entity)
 
     def delete(self, purge=False):
         """Delete the entity and mark the proxy as invalid.
@@ -308,7 +305,7 @@ class Proxy:
     def s(self) -> Series:
         import pandas as pd
         name = f"{type(self).__name__} ({self.proxy_state.name})"
-        if s.proxy_state is ProxyState.ERROR:
+        if self.proxy_state is ProxyState.ERROR:
             return pd.Series(name=name)
         def simplified(val):
             if isinstance(val, Proxy):

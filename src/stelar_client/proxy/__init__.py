@@ -16,7 +16,7 @@ from .proxy import Proxy
 from .proxylist import ProxyCursor, ProxyList, ProxySublist
 from .proxysync import ProxySynclist
 from .registry import Registry, RegistryCatalog
-
+from .extras import ExtrasProperty, ExtrasProxy
 
 __all__ = []
 
@@ -45,6 +45,9 @@ __all__ += [
     'ProxyList',
     'ProxySublist',
     'ProxySynclist',
+
+    'ExtrasProperty',
+    'ExtrasProxy',
 
     'Registry',
     'RegistryCatalog',

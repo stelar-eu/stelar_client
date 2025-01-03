@@ -46,6 +46,7 @@ class Property:
         self.updatable = updatable
         self.isId = False
         self.isName = False
+        self.isExtras = False
         self.optional = optional
         if validator is None:
             self.validator = AnyField()
@@ -97,9 +98,13 @@ class Property:
             obj.proxy_sync()
         return obj.proxy_attr[self.name]
 
-    def set(self, obj, value):
-        """Low-level setter"""
-        value = self.validator.validate(value)
+    def touch(self, obj):
+        """Transition the initial value of a clean proxy to the
+            'proxy_changed' dictionary.
+
+            This is done only on the first update to an attribute,
+            in order to allow for the proxy_reset() functionality.
+        """
         if obj.proxy_changed is None:
             # Initialize proxy_changed on clean object
             if obj.proxy_attr is None:
@@ -108,7 +113,11 @@ class Property:
         elif self.name not in obj.proxy_changed:
             # Record only first change
             obj.proxy_changed[self.name] = obj.proxy_attr[self.name]
-        
+
+    def set(self, obj, value):
+        """Low-level setter"""
+        value = self.validator.validate(value)
+        self.touch(obj)
         # update the value
         obj.proxy_attr[self.name] = value
 
@@ -168,22 +177,21 @@ class Property:
         return val
 
     def __set__(self, obj, value):
-        if value is ...:
-            raise ValueError("Properties cannot be set to '...'")
         if not self.updatable:
             raise AttributeError(f"Property '{self.name}' is read-only")
+        if value is ...:
+            raise ValueError("Properties cannot be set to '...'")
         self.set(obj, value)
         if obj.proxy_autosync:
             obj.proxy_sync()
 
-
     def __delete__(self, obj):
+        if not self.optional:
+            raise AttributeError(f"Property '{self.name}' is not optional")
         if obj.proxy_attr is None:
             obj.proxy_sync()
         if obj.proxy_attr[self.name] is ...:
             raise AttributeError(f"{self.name} is not present")
-        if not self.optional:
-            raise AttributeError(f"Property '{self.name}' is not optional")
         self.set(obj, ...)
 
 

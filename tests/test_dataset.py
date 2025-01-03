@@ -105,3 +105,24 @@ def test_dataset_purge(testcli):
 
     assert r1.proxy_state is ProxyState.ERROR
     assert r2.proxy_state is ProxyState.ERROR
+
+
+def test_dataset_add_resource(testcli):
+    c = testcli
+
+    d = c.datasets.create(name="test_dataset_add_resources")
+    r1 = d.add_resource(name="my name")
+
+    # With more attributes and an extra field
+    r2 = d.add_resource(name="my name also", url="http://foo", foo="bar")
+
+    assert r1.dataset is d
+    assert r1.name == 'my name'
+
+    assert r2.dataset is d
+    assert r2.name == 'my name also'
+    assert r2.url == "http://foo"
+    assert r2.foo == "bar"
+
+
+

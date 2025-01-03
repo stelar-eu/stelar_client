@@ -22,8 +22,6 @@ from .resource import Resource
 from .organization import Organization
 from .group import Group
 from .proxy import ProxyState
-from .proxy.exceptions import *
-
 
 
 __all__ = [
@@ -36,7 +34,14 @@ __all__ = [
 
 ]
 
+# Include all proxy exceptions
+from .proxy.exceptions import *
 from .proxy.exceptions import __all__ as _exceptions
 __all__ += _exceptions
 del _exceptions
 
+# Include all utility functions
+from .utils import *
+from .utils import __all__ as _utils
+__all__ += _utils
+del _utils

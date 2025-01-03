@@ -17,24 +17,38 @@ class Schema:
         This includes the list of proxied properties, and other information
     """
 
-    entity_schema = dict()
+    # Declare attributes
+    properties: dict[str, Property]
+
+    # Class attribute, registers schemas for entity names.
+    entity_schema: dict[str, Schema] = dict()
+
 
     @classmethod
     def for_entity(cls, name: str) -> Schema:
-        """Return the schema for the given named entity"""
+        """Return the schema for the given named entity
+        
+        Args:
+            name (str): the name of an entity (e.g. 'Dataset', 'Group', etc)
+        Returns:
+            the schema for the give entity, or None.
+        """
         return cls.entity_schema.get(name)
 
     @property
     def class_name(self):
+        """Return the class name for the"""
         return self.cls.__name__
 
-    properties: dict[str, Property]
-
     def __init__(self, cls):
+        """The proxy class for this schema.
+        """
         self.cls = cls
         self.properties = {}
         self.id = None
         self.name_id = None
+        self.extras = None
+        self.all_fields = dict()
 
         # Initialize the properties list
         # N.B. This does not check the superclasses
@@ -52,8 +66,17 @@ class Schema:
                     self.name_id = prop
                     # Name is added to the properties !
                     self.properties[name] = prop
+                elif prop.isExtras:
+                    if self.extras is not None:
+                        raise TypeError(f"Multiple nameID attributes defined for {cls.__qualname__}")
+                    self.extras = prop
+                    # Extras is added to the properties !
+                    self.properties[name] = prop
                 else:
                     self.properties[name] = prop
+
+                # Add the name to all_fields
+                self.all_fields[name] = prop
 
         # check that we have specified an ID attribute, and add a default
         # ID attribute otherwise
@@ -79,6 +102,11 @@ class Schema:
     }
 
     def short_list(self, additional={}):
+        """Return a 'short list' of important field names.
+
+        The main purpose for this is to provide a reduced set of names to
+        use in visual representations of proxy instances.
+        """
         return [self.id.name]+[name
             for name, prop in self.properties.items()
             if (prop.short is True 
