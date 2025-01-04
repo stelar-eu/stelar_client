@@ -3,10 +3,11 @@ from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
 from .resource import Resource
-from .proxy import Proxy, Property, Id, NameId, RefList, DateField, StrField, BoolField, NameField
+from .proxy import (Property, Id, NameId, RefList, DateField, StrField, 
+                    BoolField, NameField, ExtrasProxy, ExtrasProperty)
 from .apicall import GenericProxy
 
-class Group(GenericProxy):
+class Group(GenericProxy, ExtrasProxy):
     """
     Proxy for a STELAR Data Catalog group
     """
@@ -24,4 +25,6 @@ class Group(GenericProxy):
     description = Property(validator=StrField, updatable=True)
     image_url = Property(validator=StrField(), updatable=True)
     image_display_url = Property(validator=StrField(), updatable=True)
+    
+    extras = ExtrasProperty()
     

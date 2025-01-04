@@ -17,14 +17,14 @@ def test_extras_proxy():
 
     Foo.data = {
         uuids[0]: {
-            "id": uuids[0],
+            "id": str(uuids[0]),
             "a":10,
             "b":20,
             "extras": []
         },
 
         uuids[1]: {
-            "id": uuids[1],
+            "id": str(uuids[1]),
             "a": 100,
             "b": 200,
             "extras": [
@@ -32,7 +32,6 @@ def test_extras_proxy():
             ]
         }
     }
-
 
     c = TPCatalog().registry_for(Foo)
 
@@ -42,6 +41,7 @@ def test_extras_proxy():
     assert p.proxy_attr['extras'] == {}
 
     q = c.fetch_proxy(uuids[1])
+    assert q.foo == 'bar'
     assert q.a == 100
     assert q.b == 200
 
@@ -57,6 +57,8 @@ def test_extras_proxy():
         {"key":"foo", "value":"baz"},
         {"key": "fozz", "value":"bozz"}
     ]
+    assert q.extras == {"foo": "baz", "fozz": "bozz"}
+    assert q.extras is not q.proxy_attr["extras"]
 
     p.foo = q.fozz
     assert p.foo == q.fozz
@@ -70,4 +72,49 @@ def test_extras_proxy():
     with pytest.raises(AttributeError):
         del q.a
     
-    
+def test_extras_create():
+
+    class Foo(ProxyTestObj, ExtrasProxy):
+
+        a = Property(validator=IntField, updatable=True)
+        b = Property(validator=StrField, updatable=True)
+        extras = ExtrasProperty()
+
+    uuids = [uuid4() for i in range(3)]
+    Foo.data = {
+        uuids[0]: {
+            "id": str(uuids[0]),
+            "a":10,
+            "b": 'b20',
+            "extras": []
+        },
+
+        uuids[1]: {
+            "id": str(uuids[1]),
+            "a": 100,
+            "b": 'b200',
+            "extras": [
+                {"key": "foo", "value": "bar"}
+            ]
+        }
+    }
+
+    c = TPCatalog().registry_for(Foo)
+
+    Foo.data[uuids[2]] = Foo.new(a=5, b="hello", skey="sval", ukey="uval")
+
+    assert Foo.data[uuids[2]]['a'] == 5
+    assert Foo.data[uuids[2]]['b'] == "hello"
+    assert Foo.data[uuids[2]]['extras'] == [
+        {"key": "skey", "value": "sval"},
+        {"key": "ukey", "value": "uval"},
+    ]
+
+    p = c.fetch_proxy(uuids[2])
+
+    assert p.a == 5
+    assert p.b == "hello"
+    assert p.skey == "sval"
+    assert p.ukey == "uval"
+
+

@@ -4,10 +4,13 @@ from IPython.core.display import HTML
 from IPython.display import display
 from .utils import *
 from .resource import Resource
-from .proxy import Property, Id, NameId, Reference, RefList, DateField, StrField, BoolField, NameField
+from .proxy import (Property, Id, NameId, Reference, RefList, 
+                    DateField, StrField, BoolField, NameField,
+                    ExtrasProxy, ExtrasProperty)
+
 from .apicall import api_call, GenericProxy
 
-class Dataset(GenericProxy):
+class Dataset(GenericProxy, ExtrasProxy):
     """
     A proxy of a STELAR dataset.
     """
@@ -35,6 +38,15 @@ class Dataset(GenericProxy):
     resources = RefList(Resource, trigger_sync=True)
     organization = Reference('Organization', entity_name='owner_org', create_default='stelar-klms')
 
+    extras = ExtrasProperty()
+
+    # *tags: list[str]
+    # extras: dict[str,str]
+    # profile
+    # *groups
+    # relationships_as_object
+    # relationships_as subject
+
     def add_resource(self, **properties):
         """Add a new resource with the given properties.
 
@@ -47,12 +59,6 @@ class Dataset(GenericProxy):
         return client_for(self).resources.create(dataset=self, **properties)
 
 
-    # *tags: list[str]
-    # extras: dict[str,str]
-    # profile
-    # *groups
-    # relationships_as_object
-    # relationships_as subject
 
     def _repr_html_(self):
         """

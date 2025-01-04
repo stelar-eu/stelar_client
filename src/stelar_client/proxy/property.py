@@ -11,6 +11,8 @@ from .registry import Registry
 if TYPE_CHECKING:
     from ..client import Client
 
+Entity = dict[str,Any]
+
 class Property:
     """A Python descriptor for implementing access and updating of
        fields of proxy objects.
@@ -147,7 +149,7 @@ class Property:
         else:
             entity[self.entity_name] = self.validator.convert_to_entity(proxy_value)
 
-    def convert_to_create(self, client: Client, proxy_type, create_props, entity_props):
+    def convert_to_create(self, create_props: Entity, entity_props: Entity):
         """Convert a value to be used for entity creation.
         
         Args:

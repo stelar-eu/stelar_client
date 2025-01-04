@@ -124,5 +124,40 @@ def test_dataset_add_resource(testcli):
     assert r2.url == "http://foo"
     assert r2.foo == "bar"
 
+def test_dataset_extras(testcli):
+    c = testcli
+
+    d = c.datasets.create(name="test_dataset_add_resources")
+    r1 = d.add_resource(name="my name")
+
+    assert d.extras == {}
+
+    d.msg1 = "This is a message"
+    assert d.extras == {"msg1": "This is a message"}
+
+    d.proxy_invalidate()
+
+    assert d.msg1 == "This is a message"
+    del d.msg1
+    assert not hasattr(d, 'msg1')
+
+
+def test_resource_extras(testcli):
+    c = testcli
+    d = c.datasets.create(name="test_dataset_add_resources")
+    r = d.add_resource(name="my name")
+
+    jcs = [
+        {'a': 10, 'b':['hello', 'world']},
+        "foobar",
+        "",
+        3.14,
+        ['hello', {'type':'good'}, 'world'],
+    ]
+
+    for v in jcs:
+        r.foo = v
+        r.proxy_invalidate
+        assert r.foo == v
 
 

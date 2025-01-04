@@ -74,7 +74,17 @@ class api_call:
         return getattr(self, call_name)
 
 
-def generic_proxy_sync(proxy: Proxy, entity):
+def generic_proxy_sync(proxy: Proxy, entity, update_method='patch'):
+    """Perform proxy_sync(entity) using the api_call class.
+
+    Args:
+        proxy (Proxy): the proxy to sync
+        entity (Entity|None): the entity to sync from
+        update_method: one of 'update' or 'patch'    
+    """
+    if update_method not in ('update', 'patch'):
+        raise ValueError("Update method must be either 'patch' or 'update'")
+
     proxy_type = type(proxy)
     ac = api_call(proxy)
 
@@ -82,11 +92,15 @@ def generic_proxy_sync(proxy: Proxy, entity):
         raise ErrorState(proxy)
 
     if proxy.proxy_changed is not None:
-        updates = proxy.proxy_to_entity(proxy.proxy_changed)
-        patch = ac.get_call(proxy_type, 'patch')
+        if update_method == 'patch':
+            updates = proxy.proxy_to_entity(proxy.proxy_changed)
+            update_call = ac.get_call(proxy_type, 'patch')
+        elif update_method == 'update':
+            updates = proxy.proxy_to_entity()
+            update_call = ac.get_call(proxy_type, 'update')
 
         try:
-            entity = patch(id=str(proxy.proxy_id), **updates)
+            entity = update_call(id=str(proxy.proxy_id), **updates)
         except EntityNotFound as e:
             proxy.proxy_is_purged()
             raise  # We have updates that are lost
@@ -105,10 +119,7 @@ def generic_proxy_sync(proxy: Proxy, entity):
 
 
 def generic_create(client: Client, proxy_type: Type[ProxyClass], **properties) -> ProxyClass:
-    schema = proxy_type.proxy_schema
-    entity_properties = {}
-    for property in schema.properties.values():        
-        property.convert_to_create(client, proxy_type, properties, entity_properties)
+    entity_properties = proxy_type.new(**properties) 
 
     # Populate the sync list
     psl = ProxySynclist()
@@ -144,11 +155,13 @@ def generic_fetch_list(client: Client, proxy_type: Type[ProxyClass], *, limit: i
 
     return result
 
+
 def generic_fetch(client: Client, proxy_type: Type[ProxyClass], *, limit: int, offset: int) -> Iterator[ProxyClass]:
     ac = api_call(client)
-    _list = ac.get_call(proxy_type, "list")
+    _list = ac.get_call(proxy_type, 'list')
     result = _list(limit=limit, offset=offset)
-    show = getattr(ac, f"{ckan_type}_show")
+
+    show = ac.get_call(proxy_type, 'show')
     registry = client.registry_for(proxy_type)
 
     for name in result:

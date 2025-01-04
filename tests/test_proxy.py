@@ -1,7 +1,9 @@
 import pytest
 from stelar_client.proxy import (Proxy, Property, Id,
-                                 Schema, IntField, StrField, ProxyState, InvalidationError)
-from uuid import uuid4
+                                 Schema, IntField, StrField, DateField, BoolField, UUIDField,
+                                 ProxyState, InvalidationError)
+from uuid import uuid4, UUID
+from datetime import datetime
 from proxy_utils import TPCatalog
 
 
@@ -517,4 +519,34 @@ def test_autosync2():
         x.update(a=20, b="aa")
     assert x.a == 10
     assert x.b == 20
+
+def test_proxy_new():
+    class Foo(TestProxy):
+        
+        a = Property(validator=IntField, updatable=True, optional=True)
+        b = Property(validator=StrField, updatable=True, optional=True)
+        c = Property(validator=BoolField, updatable=True, optional=True)
+        d = Property(validator=DateField, updatable=True, optional=True)
+        e = Property(validator=UUIDField, updatable=True, optional=True)
+
+        data = {}
+
+    uu = uuid4()
+
+    Foo.data = Foo.new(a=10, b="hello", c=False, d=datetime(2005,9,18, 23,55), e=uu)
+    
+    assert Foo.data['a'] == 10
+    assert Foo.data['b'] == 'hello'
+    assert Foo.data['c'] == False
+    assert Foo.data['d'] == datetime(2005, 9, 18, 23, 55).isoformat()
+    assert Foo.data['e'] == str(uu)
+
+    eid = uuid4()
+    x = TPCatalog().registry_for(Foo).fetch(eid)
+
+    assert x.a == 10
+    assert x.b == "hello"
+    assert x.c is False
+    assert x.d == datetime(2005, 9, 18, 23, 55)
+    assert x.e == uu
 

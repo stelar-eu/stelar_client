@@ -48,8 +48,8 @@ are available as normal attributes.
         ]
         entity[self.entity_name] = entity_extras
 
-    def convert_to_create(self, client: Client, proxy_type, create_props, entity_props):
-        schema = proxy_type.proxy_schema
+    def convert_to_create(self, create_props, entity_props):
+        schema = self.owner.proxy_schema
 
         # Collect all entries that do not appear in the schema
         entity_extras = [
@@ -58,7 +58,6 @@ are available as normal attributes.
             if key not in schema.all_fields and value is not None
         ]
         entity_props[self.entity_name] = entity_extras
-
 
 
 class ExtrasProxy(Proxy, entity=False):
@@ -90,7 +89,6 @@ class ExtrasProxy(Proxy, entity=False):
     #        object.__setattr__(self, a, None)
 
     def __getattr__(self, attr):
-        print("getattr called ", attr)
         try:
             return self.proxy_schema.extras.get(self)[attr]
         except KeyError as e:

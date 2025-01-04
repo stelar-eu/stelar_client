@@ -50,7 +50,7 @@ if TYPE_CHECKING:
 #
 #----------------------------------------------------------
 
-
+Entity = dict[str, Any]
 
 class Proxy:
     """Base class for all proxy objects of the STELAR entities.
@@ -140,7 +140,21 @@ class Proxy:
             Schema.check_non_entity(cls)
 
 
-    def delete(self, purge=False):
+    @classmethod
+    def new(cls, **fields) -> Entity:
+        """Return a set of fields for creating a new entity.
+
+        Args
+        ----
+            fields: dict[str,Any]
+        """
+        entity_fields = {}
+        for property in cls.proxy_schema.properties.values():
+            property.convert_to_create(fields, entity_fields)
+        return entity_fields
+
+
+    def delete(self, purge: bool = False):
         """Delete the entity and mark the proxy as invalid.
            Entity classes can overload this method, to perform the
            actual API delete. When successful, they can then 
@@ -153,7 +167,8 @@ class Proxy:
         else:
             self.proxy_invalidate(force=True)
 
-    def update(self, **updates):
+
+    def update(self, **updates: Any):
         """Update a bunch of attributes in a single operation.
         """
         with deferred_sync(self):
@@ -217,7 +232,7 @@ class Proxy:
             if not prop.isId:
                 prop.convert_entity_to_proxy(self, entity)
     
-    def proxy_to_entity(self, attrset: set[str]|dict[str,Any]|None = None):
+    def proxy_to_entity(self, attrset: set[str]|dict[str,Any]|None = None) -> Entity:
         """Return an entity from the proxy values. 
 
         Note that the entity returned will not contain the id attribute.
@@ -288,7 +303,7 @@ class Proxy:
         """
         raise NotImplementedError(self.__class__.__name__ + ".proxy_sync")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         typename = type(self).__name__
         state = self.proxy_state.name
         if self.proxy_state is ProxyState.ERROR:
