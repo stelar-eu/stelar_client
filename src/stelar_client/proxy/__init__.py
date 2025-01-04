@@ -9,8 +9,9 @@ from .decl import ProxyState
 from .exceptions import *
 from .fieldvalidation import *
 from .property import (
-    Property, Id, NameId, Reference, RefList
+    Property, Id, NameId
 )
+from .refs import Reference, RefList
 from .schema import Schema
 from .proxy import Proxy
 from .proxylist import ProxyCursor, ProxyList, ProxySublist

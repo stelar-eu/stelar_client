@@ -41,9 +41,8 @@ class Dataset(GenericProxy, ExtrasProxy):
     extras = ExtrasProperty()
 
     # *tags: list[str]
-    # extras: dict[str,str]
-    # profile
     # *groups
+    # profile
     # relationships_as_object
     # relationships_as subject
 

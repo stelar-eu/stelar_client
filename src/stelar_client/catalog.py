@@ -7,6 +7,7 @@ from .dataset import Dataset
 from .resource import Resource
 from .organization import Organization
 from .group import Group
+from .tag import Vocabulary, Tag
 from requests.exceptions import HTTPError
 from urllib.parse import urljoin, urlencode
 
@@ -27,6 +28,8 @@ class CatalogAPI(BaseAPI):
         resource_registry = Registry(self, Resource)
         organization_registry = Registry(self, Organization)
         group_registry = Registry(self, Group)
+        vocabulary_registry = Registry(self, Vocabulary)
+        tag_registry = Registry(self, Tag)
 
     @property
     def datasets(self):
@@ -48,4 +51,8 @@ class CatalogAPI(BaseAPI):
         """The groups cursor"""
         return GenericCursor(self, Group)
 
-    
+    @property
+    def vocabularies(self):
+        """The vocabulary cursor"""
+        return GenericCursor(self, Vocabulary)
+

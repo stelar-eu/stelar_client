@@ -65,6 +65,8 @@ class api_call:
             'Resource': 'resource',
             'Organization': 'organization',
             'Group': 'group',
+            'Vocabulary': 'vocabulary',
+            'Tag': 'tag',
         }
         ckan_type = _map_to_ckan[proxy_type.__name__]
         if ckan_type == 'package' and op=='purge':

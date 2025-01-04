@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any, Iterator, Type
 from .proxy import Proxy
 from .proxylist import ProxyList, ProxySublist
-from .property import Reference, RefList
+from .refs import Reference, RefList
 
 if TYPE_CHECKING:
     from ..client import Client
