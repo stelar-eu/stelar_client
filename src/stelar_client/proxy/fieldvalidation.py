@@ -49,6 +49,7 @@ class FieldValidator:
     def __init__(self, *, 
                  strict: bool=False, 
                  nullable: bool = True, 
+                 default: Any = ...,
                  minimum_value: Any = None, maximum_value: Any = None,
                  maximum_len: Optional[int]=None, minimum_len: Optional[int]=None):
         
@@ -56,6 +57,8 @@ class FieldValidator:
         self.checks = []
         self.strict = strict
         self.nullable = nullable
+        if default is not ...:
+            self.default = default
         self.minimum_value = minimum_value
         self.maximum_value = maximum_value
         self.maximum_len = maximum_len
@@ -124,6 +127,8 @@ class FieldValidator:
         raise NotImplementedError()
     def convert_to_entity(self, value, **kwargs):
         raise NotImplementedError()
+    def default_value(self):
+        raise NotImplementedError
 
     def repr_constraints(self):
         nn = [ "nullable" if self.nullable else "not null" ]
@@ -154,6 +159,15 @@ class AnyField(FieldValidator):
         return value
     def convert_to_entity(self, value, **kwargs):
         return value
+
+    def default_value(self):
+        if hasattr(self, 'default'):
+            return self.default
+        elif self.nullable:
+            return None 
+        else:
+            raise NotImplementedError()
+            
     def repr_type(self):
         return self._repr_type
 
@@ -199,8 +213,10 @@ class NameField(StrField):
             raise ValueError(f"Name must be a string matching '{self.NAME_PATTERN.pattern}'")
         return value, False
 
+
 class TagNameField(NameField):
     NAME_PATTERN = re.compile(r"[A-Za-z0-9 ._-]+")
+
 
 class IntField(BasicField):
     """An int field validator"""
@@ -244,7 +260,6 @@ class UUIDField(BasicField):
         return UUID(value)
     def convert_to_entity(self, value: UUID, **kwargs) -> str:
         return str(value)
-
     def repr_type(self):
         return "UUID"
 

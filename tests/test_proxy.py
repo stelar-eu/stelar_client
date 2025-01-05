@@ -4,8 +4,8 @@ from stelar_client.proxy import (Proxy, Property, Id,
                                  ProxyState, InvalidationError)
 from uuid import uuid4, UUID
 from datetime import datetime
-from proxy_utils import TPCatalog
-
+from proxy_utils import TPCatalog, ProxyTestObj
+from stelar_client import deferred_sync
 
 ##################################################
 #  An 'abstract' subclass of Proxy which does
@@ -521,28 +521,27 @@ def test_autosync2():
     assert x.b == 20
 
 def test_proxy_new():
-    class Foo(TestProxy):
+    class Foo(ProxyTestObj):
         
         a = Property(validator=IntField, updatable=True, optional=True)
-        b = Property(validator=StrField, updatable=True, optional=True)
-        c = Property(validator=BoolField, updatable=True, optional=True)
+        b = Property(validator=StrField(default='world'), updatable=True, optional=True)
+        c = Property(validator=BoolField(default=True), updatable=True, optional=True)
         d = Property(validator=DateField, updatable=True, optional=True)
-        e = Property(validator=UUIDField, updatable=True, optional=True)
+        e = Property(validator=UUIDField(default=uuid4()), updatable=True, optional=True)
 
         data = {}
 
     uu = uuid4()
+    Foo.data[uu] = Foo.new_entity(a=10, b="hello", c=False, d=datetime(2005,9,18, 23,55), e=uu)
 
-    Foo.data = Foo.new_entity(a=10, b="hello", c=False, d=datetime(2005,9,18, 23,55), e=uu)
-    
-    assert Foo.data['a'] == 10
-    assert Foo.data['b'] == 'hello'
-    assert Foo.data['c'] == False
-    assert Foo.data['d'] == datetime(2005, 9, 18, 23, 55).isoformat()
-    assert Foo.data['e'] == str(uu)
+    assert Foo.data[uu]['a'] == 10
+    assert Foo.data[uu]['b'] == 'hello'
+    assert Foo.data[uu]['c'] == False
+    assert Foo.data[uu]['d'] == datetime(2005, 9, 18, 23, 55).isoformat()
+    assert Foo.data[uu]['e'] == str(uu)
 
-    eid = uuid4()
-    x = TPCatalog().registry_for(Foo).fetch(eid)
+    c = TPCatalog()
+    x = c.registry_for(Foo).fetch(uu)
 
     assert x.a == 10
     assert x.b == "hello"
@@ -550,3 +549,46 @@ def test_proxy_new():
     assert x.d == datetime(2005, 9, 18, 23, 55)
     assert x.e == uu
 
+    dnow = datetime.now()
+    y = Foo.new(c, a=25, b='vsam', c=True, d=dnow, e=uu)
+
+    assert y.id != UUID(int=0)
+    assert y.a == 25
+    assert y.b == 'vsam'
+    assert y.c is True
+    assert y.d == dnow
+    assert y.e == uu
+
+    y.proxy_invalidate()
+    assert y.proxy_state is ProxyState.EMPTY
+
+    # Reloads
+    assert y.a == 25
+    assert y.b == 'vsam'
+    assert y.c is True
+    assert y.d == dnow
+    assert y.e == uu
+
+    z = Foo.new(c, a=25, autosync=False)
+    assert z.id == UUID(int=0)
+    assert z.a == 25
+    assert z.proxy_state is ProxyState.DIRTY
+
+    with pytest.raises(NotImplementedError):
+        z.proxy_sync()
+
+    assert z.proxy_autosync
+
+    with deferred_sync(z):
+        assert z.id == UUID(int=0)
+        z.d = dnow
+        assert z.id == UUID(int=0)
+
+    assert z.id != UUID(int=0)
+    assert z.proxy_state is ProxyState.CLEAN
+
+
+
+
+
+    

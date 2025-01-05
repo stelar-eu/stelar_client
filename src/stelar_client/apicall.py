@@ -153,7 +153,6 @@ def generic_create(client: Client, proxy_type: Type[ProxyClass], **properties) -
 
     # Create the entity
     ac = api_call(client)
-
     create = ac.get_call(proxy_type, "create")
     new_entity = create(**entity_properties)
     registry = client.registry_for(proxy_type)

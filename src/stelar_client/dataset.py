@@ -5,7 +5,7 @@ from IPython.display import display
 from .utils import *
 from .resource import Resource
 from .proxy import (Property, Id, NameId, Reference, RefList, 
-                    DateField, StrField, BoolField, NameField,
+                    DateField, StrField, BoolField, NameField, UUIDField,
                     ExtrasProxy, ExtrasProperty)
 
 from .apicall import api_call, GenericProxy
@@ -17,23 +17,23 @@ class Dataset(GenericProxy, ExtrasProxy):
 
     id = Id()
     name = NameId()
-    metadata_created = Property(validator=DateField)
+    metadata_created = Property(validator=DateField, create_default='')
     metadata_modified = Property(validator=DateField)
     state = Property(validator=StrField)
     type = Property(validator=StrField)
 
-    private = Property(validator=BoolField, updatable=True)
+    private = Property(validator=BoolField(nullable=False, default=False), updatable=True)
     title = Property(validator=StrField, updatable=True)
-    notes = Property(validator=StrField, updatable=True)
-    author = Property(validator=StrField, updatable=True)
-    author_email = Property(validator=StrField, updatable=True)
-    maintainer = Property(validator=StrField, updatable=True)
-    maintainer_email = Property(validator=StrField, updatable=True)
+    notes = Property(validator=StrField(nullable=True), updatable=True)
+    author = Property(validator=StrField(nullable=True), updatable=True)
+    author_email = Property(validator=StrField(nullable=True), updatable=True)
+    maintainer = Property(validator=StrField(nullable=True), updatable=True)
+    maintainer_email = Property(validator=StrField(nullable=True), updatable=True)
 
     # weird ones
-    license_id = Property(updatable=True)
-    url = Property(validator=StrField, updatable=True)
-    version = Property(validator=StrField(maximum_len=100), updatable=True)
+    license_id = Property(validator=UUIDField(nullable=True), updatable=True)
+    url = Property(validator=StrField(nullable=True), updatable=True)
+    version = Property(validator=StrField(nullable=True, maximum_len=100), updatable=True)
 
     resources = RefList(Resource, trigger_sync=True)
     organization = Reference('Organization', entity_name='owner_org', create_default='stelar-klms')

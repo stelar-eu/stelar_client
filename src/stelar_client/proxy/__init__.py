@@ -13,7 +13,7 @@ from .property import (
 )
 from .refs import Reference, RefList
 from .schema import Schema
-from .proxy import Proxy
+from .proxy import Proxy, deferred_sync
 from .proxylist import ProxyCursor, ProxyList, ProxySublist
 from .proxysync import ProxySynclist
 from .registry import Registry, RegistryCatalog
@@ -41,6 +41,7 @@ __all__ += [
     'Schema',
 
     'Proxy',
+    'deferred_sync',
     'ProxyState',
     'ProxyCursor',
     'ProxyList',

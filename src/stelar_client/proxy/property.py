@@ -40,8 +40,8 @@ class Property:
                 the same as the property name.
             doc (str|None): A piece of text that describes the property. This is
                 used to form the full documentation for the property.
-            create_default (Any): used to initialize new entities, when the user does not
-                provide a value.
+            create_default (Any): If provided, it is used to initialize new entities, 
+                when the user does not provide a value. Note: this is an entity value!
             short (bool|None): Denotes whether this property is included in "short presentations"
                 of the entity. If None, a heuristic based on the name and type is used.
         """
@@ -95,6 +95,7 @@ class Property:
         
         print(INDENT, *f, file=out)
         return out.getvalue()
+
 
     def __set_name__(self, owner, name):
         if not issubclass(owner, Proxy):

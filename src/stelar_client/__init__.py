@@ -17,7 +17,7 @@ from .resource import Resource
 from .organization import Organization
 from .group import Group
 from .tag import Tag, Vocabulary
-from .proxy import ProxyState
+from .proxy import ProxyState, deferred_sync
 
 
 __all__ = [
@@ -29,6 +29,8 @@ __all__ = [
     'ProxyState',
     'Tag',
     'Vocabulary',
+
+    'deferred_sync'
 ]
 
 # Include all proxy exceptions

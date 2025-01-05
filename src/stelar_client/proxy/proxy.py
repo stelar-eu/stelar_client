@@ -8,7 +8,7 @@ from .decl import ProxyState
 if TYPE_CHECKING:
     from ..client import Client
     from .property import RefList
-    from .registry import Registry
+    from .registry import Registry, RegistryCatalog
     from pandas import Series
 
 """
@@ -147,8 +147,8 @@ class Proxy:
 
 
     @classmethod
-    def new(cls, registry: Registry, autosync: bool =True, **fields):
-        """Return a non-affiliated proxy instance.
+    def new(cls, regspec: Registry|RegistryCatalog, *, autosync: bool =True, **fields):
+        """Return a non-affiliated proxy instance, i.e. a 'creation proxy'.
 
         This proxy instance's id is UUID(int=0), which is indicative
         of a non-valid id. The purpose of such an object is to
@@ -161,7 +161,12 @@ class Proxy:
         registry.
 
         Args:
-            registry (Registry): the registry for the new object.
+            cls (Type[ProxyClass]): the proxy type for the new proxy.
+
+            regspec (Registry|RegistryCatalog): Registry spec for the new object. 
+               If regspec is a Registry, its catalog is used to locate a suitable registry
+               for the 'cls' proxy type, via regspec.catalog.registry_for(cls). 
+               If regspec is a catalog, it provides the registry via regspec.registry_for(cls).
 
             autosync (bool, default: True): When True, the new entity is created (by calling
                 proxy_sync() on the proxy) before returning. When False, the new entity
@@ -173,8 +178,17 @@ class Proxy:
             fields (dict[str][Any]):  values to initialize the new entity from
 
         Returns:
-            a proxy to a new entity (which may not have been created yet)
+            A proxy to a new entity. If autosync if False, the new proxy does not yet correspond
+            to an entity.
         """
+        from .registry import Registry, RegistryCatalog
+        if isinstance(regspec, RegistryCatalog):
+            registry = regspec.registry_for(cls)
+        elif isinstance(regspec, Registry):
+            registry = regspec.catalog.regisry_for(cls)
+        else:
+            raise TypeError(f"Expected Registry or RegistryCatalog for regspec")
+
         schema = cls.proxy_schema
         proxy = cls(registry, eid=UUID(int=0))
 
@@ -197,8 +211,8 @@ class Proxy:
         # Set up the dictionaries of the proxy
         proxy.proxy_attr = validated_fields
         proxy.proxy_changed = dict()
-        
-        if proxy.proxy_autosync:
+
+        if autosync:
             proxy.proxy_sync()
         return proxy
 
