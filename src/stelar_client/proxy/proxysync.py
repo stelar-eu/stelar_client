@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any, Iterator, Type
 from .proxy import Proxy
 from .proxylist import ProxyList, ProxySublist
+from .property import Property
 from .refs import Reference, RefList
 
 if TYPE_CHECKING:
@@ -9,6 +10,8 @@ if TYPE_CHECKING:
     from .property import RefList
     from .registry import Registry
     from .schema import Schema
+
+ProxyClass = TypeVar('ProxyClass', bound=Proxy)
 
 class ProxySynclist:
     """A container for the proxies that need to be sync'd after
@@ -39,6 +42,10 @@ class ProxySynclist:
     def on_create(self, proxy_type: Type[ProxyClass], properties: dict[str, Any]):
         for p in self.trigger_properties(proxy_type.proxy_schema):
             self.add(properties.get(p.name))
+
+    def on_create_proxy(self, proxy: ProxyClass):
+        for p in self.trigger_properties(proxy.proxy_schema):
+            self.add(p.get(proxy))
 
     def on_delete(self, proxy: Proxy):
         for p in proxy.proxy_schema.properties.values():

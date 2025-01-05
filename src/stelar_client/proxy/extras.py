@@ -42,6 +42,8 @@ are available as normal attributes.
 
     def convert_proxy_to_entity(self, proxy: Proxy, entity: dict):
         proxy_extras = proxy.proxy_attr[self.name]
+        if proxy_extras is ...:
+            return
         entity_extras = [
             {"key": key, "value": value}
             for key,value in proxy_extras.items()
@@ -98,10 +100,10 @@ class ExtrasProxy(Proxy, entity=False):
         if attr.startswith('proxy_') or attr in self.proxy_schema.all_fields:
             return object.__setattr__(self, attr, value)
 
-        prop = self.proxy_schema.extras
-        value = prop.item_validator.validate(value)
-        prop.touch(self)
-        self.proxy_schema.extras.get(self)[attr] = value
+        extras_property = self.proxy_schema.extras
+        value = extras_property.item_validator.validate(value)
+        extras_property.touch(self)
+        extras_property.get(self)[attr] = value
         if self.proxy_autosync:
             self.proxy_sync()
 
@@ -109,10 +111,10 @@ class ExtrasProxy(Proxy, entity=False):
         if attr.startswith('proxy_') or attr in self.proxy_schema.all_fields:
             return object.__delattr__(self, attr)
 
-        prop = self.proxy_schema.extras
-        extras = prop.get(self)
+        extras_property = self.proxy_schema.extras
+        extras = extras_property.get(self)
         if attr in extras:
-            prop.touch(self)
+            extras_property.touch(self)
             del extras[attr]
             if self.proxy_autosync:
                 self.proxy_sync()

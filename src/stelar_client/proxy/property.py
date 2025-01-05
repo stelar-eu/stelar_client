@@ -234,10 +234,10 @@ class Id(Property):
 
 
 class NameId(Property):
-    def __init__(self, entity_name=None, doc=None):
+    def __init__(self, entity_name=None, doc=None, validator=NameField):
         if doc is None:
             doc = "The name field, which is a unique string identifying the entity."
-        super().__init__(validator=NameField, entity_name=entity_name, doc=doc)
+        super().__init__(validator=validator, entity_name=entity_name, doc=doc)
         self.isName = True
 
 

@@ -86,42 +86,66 @@ def generic_proxy_sync(proxy: Proxy, entity, update_method='patch'):
     """
     if update_method not in ('update', 'patch'):
         raise ValueError("Update method must be either 'patch' or 'update'")
-
     proxy_type = type(proxy)
     ac = api_call(proxy)
 
     if proxy.proxy_state is ProxyState.ERROR:
         raise ErrorState(proxy)
 
-    if proxy.proxy_changed is not None:
-        if update_method == 'patch':
-            updates = proxy.proxy_to_entity(proxy.proxy_changed)
-            update_call = ac.get_call(proxy_type, 'patch')
-        elif update_method == 'update':
-            updates = proxy.proxy_to_entity()
-            update_call = ac.get_call(proxy_type, 'update')
+    if proxy.proxy_id == UUID(int=0):
+        # Create the entity !
+        entity_properties = proxy.proxy_to_entity()
+        # Populate sync list
+        psl = ProxySynclist()
+        psl.on_create_proxy(proxy)
 
-        try:
-            entity = update_call(id=str(proxy.proxy_id), **updates)
-        except EntityNotFound as e:
-            proxy.proxy_is_purged()
-            raise  # We have updates that are lost
+        # Create the entity
+        create = ac.get_call(type(proxy), "create")
+        entity = create(**entity_properties)
 
+        # We add this proxy to its registry!
+        # This will call proxy_sync recursively !
+        proxy.proxy_registry.register_proxy_for_entity(proxy, entity)
+        proxy.proxy_from_entity(entity)
         proxy.proxy_changed = None
-    if entity is None:
-        show = ac.get_call(proxy_type, 'show')
-        try:
-            entity = show(id=str(proxy.proxy_id))
-        except EntityNotFound as e:
-            proxy.proxy_is_purged()
-            return  # Not an error!
-    proxy.proxy_from_entity(entity)
+
+        # Sync around
+        psl.sync()
+
+    else:
+        # The entity exists, make a normal sync
+
+        if proxy.proxy_changed is not None:
+            # A proper update is needed
+            if update_method == 'patch':
+                updates = proxy.proxy_to_entity(proxy.proxy_changed)
+                update_call = ac.get_call(proxy_type, 'patch')
+            elif update_method == 'update':
+                updates = proxy.proxy_to_entity()
+                update_call = ac.get_call(proxy_type, 'update')
+
+            try:
+                entity = update_call(id=str(proxy.proxy_id), **updates)
+            except EntityNotFound as e:
+                proxy.proxy_is_purged()
+                raise  # We have updates that are lost
+            proxy.proxy_changed = None
+
+        if entity is None:
+            show = ac.get_call(proxy_type, 'show')
+            try:
+                entity = show(id=str(proxy.proxy_id))
+            except EntityNotFound as e:
+                proxy.proxy_is_purged()
+                return  # Not an error!
+
+        proxy.proxy_from_entity(entity)
     
     
 
 
 def generic_create(client: Client, proxy_type: Type[ProxyClass], **properties) -> ProxyClass:
-    entity_properties = proxy_type.new(**properties) 
+    entity_properties = proxy_type.new_entity(**properties) 
 
     # Populate the sync list
     psl = ProxySynclist()

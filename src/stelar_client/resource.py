@@ -17,7 +17,7 @@ class ExtrasResourceProperty(ExtrasProperty):
 
     def convert_entity_to_proxy(self, proxy: Proxy, entity: Any):
         # to recognize extras fields, use the schema
-        all_fields = self.owner.proxy_schema.all_fields        
+        all_fields = self.owner.proxy_schema.all_entity_fields
         proxy_extras = {
             p: v
             for p, v in entity.items()
@@ -48,14 +48,14 @@ class Resource(GenericProxy):
 
     id = Id()
     dataset = Reference('Dataset', entity_name='package_id', trigger_sync=True)
-    metadata_modified = Property(validator=DateField)
+    position = Property(validator=IntField)
     state = Property(validator=StrField)
+    metadata_modified = Property(validator=DateField)
 
     url = Property(validator=StrField, updatable=True)
     format = Property(validator=StrField, updatable=True)
     description = Property(validator=StrField, updatable=True)
     hash = Property(validator=StrField, updatable=True)
-
 
     name = Property(validator=StrField, updatable=True)
     resource_type = Property(validator=StrField, updatable=True)

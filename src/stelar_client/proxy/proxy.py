@@ -102,6 +102,12 @@ class Proxy:
     proxy_sync(entity=None):  Make an entity CLEAN.
     """
 
+    proxy_registry: Registry
+    proxy_id: Optional[UUID]
+    proxy_autosync: bool
+    proxy_attr: doc[str, Any]|None
+    proxy_changed: doc[str, Any]|None
+
     def __init__(self, registry: Registry, eid: Optional[str|UUID] = None, entity=None):
         self.proxy_registry = registry
         self.proxy_autosync = True
@@ -141,7 +147,64 @@ class Proxy:
 
 
     @classmethod
-    def new(cls, **fields) -> Entity:
+    def new(cls, registry: Registry, autosync: bool =True, **fields):
+        """Return a non-affiliated proxy instance.
+
+        This proxy instance's id is UUID(int=0), which is indicative
+        of a non-valid id. The purpose of such an object is to
+        create a new entity, by calling 'proxy_sync()'.
+        
+        While the UUID is 0, this entity is not registered in
+        the registry. Therefore, multiple such entries can exist.
+        However, once the entity is proxy_sync'd, its id changes
+        to a proper one and the object is registered in the 
+        registry.
+
+        Args:
+            registry (Registry): the registry for the new object.
+
+            autosync (bool, default: True): When True, the new entity is created (by calling
+                proxy_sync() on the proxy) before returning. When False, the new entity
+                is not yet created, a call to proxy_sync() must be done later.
+
+                Note that the proxy_aytosync field of the returned proxy is set to true, regardless
+                of the value of this parameter.
+
+            fields (dict[str][Any]):  values to initialize the new entity from
+
+        Returns:
+            a proxy to a new entity (which may not have been created yet)
+        """
+        schema = cls.proxy_schema
+        proxy = cls(registry, eid=UUID(int=0))
+
+        # Validate the given fields
+        validated_fields = {
+            name: schema.properties[name].validator.validate(value)
+            for name, value in fields.items()
+        }
+
+        # For the missing fields, add the default, or ...
+        # Adding ..., implies somehow that the field has been deleted (!)
+        for name, prop in schema.properties.items():
+            if prop.isId: continue
+            if name not in validated_fields:
+                if prop.create_default is not None:
+                    validated_fields[name] = prop.create_default
+                else:
+                    validated_fields[name] = ...
+
+        # Set up the dictionaries of the proxy
+        proxy.proxy_attr = validated_fields
+        proxy.proxy_changed = dict()
+        
+        if proxy.proxy_autosync:
+            proxy.proxy_sync()
+        return proxy
+
+
+    @classmethod
+    def new_entity(cls, **fields) -> Entity:
         """Return a set of fields for creating a new entity.
 
         Args
@@ -285,13 +348,13 @@ class Proxy:
 
         1. If the proxy is DIRTY: 
             - updates are sent to the API. 
-            - The API optionally returns a new entity object. If so, set 
-        `entity` to the new object. 
+            - The API optionally returns a new entity object. If so, override 
+              the `entity` parameter.
             - Make object CLEAN (by setting proxy_changed to None)
 
         2. If `entity` is None: load `entity` from API
 
-        3. Update the proxy data from the new entity. This may involve
+        3. Update the proxy data from `entity`. This may involve
            updating additional proxies with data contained in the given
            entity.
 
@@ -316,30 +379,87 @@ class Proxy:
             nid = str(self.proxy_id)
         return f"<{typename} {nid} {state}>"
 
-    @property
-    def s(self) -> Series:
+    def proxy_to_Series(self, *,
+        sync_empty:bool = True,
+        include_null:bool = False, 
+        include_extras:bool = False, 
+        simplify: bool=True
+    ) -> Series:
+        """Return a pandas Series for this entity.
+
+        The pandas Series index will contain entity fields. The values will be simplified,
+        to reflect
+
+        Arguments:
+            sync_empty (bool, default=True): call proxy_sync() if state is EMPTY
+            include_null (bool, default=False): include fields that evaluate to False
+            include_extras (bool, default=False): also include any extras fields
+            simplify (bool, default=True): return a more printable, simpler representation
+        """
         import pandas as pd
         name = f"{type(self).__name__} ({self.proxy_state.name})"
-        if self.proxy_state is ProxyState.ERROR:
+        if self.proxy_state is ProxyState.ERROR or (
+            not sync_empty and self.proxy_state is ProxyState.EMPTY
+        ):
             return pd.Series(name=name)
-        def simplified(val):
-            if isinstance(val, Proxy):
-                if val.proxy_schema.name_id is not None:
-                    return val.name
-                else:
-                    return val.proxy_id
-            else:
-                return val
 
-        index = [self.proxy_schema.id.name] + [
-            name for name in self.proxy_schema.properties
-            if getattr(self, name, None)
+        schema = self.proxy_schema
+
+        def report_field(name):
+            return include_null or bool(getattr(self, name, False))
+
+        all_fields = [
+            schema.id.name,
+            * schema.properties
         ]
+        if include_extras and schema.extras is not None:
+            extras = schema.extras.get(self)
+            if extras is not ...:
+                all_fields.remove(schema.extras.name)
+                all_fields.extend(extras.keys())
+
+        index = [
+            name for name in all_fields
+            if report_field(name)
+        ]
+
+        def simplified(val):
+            match val:
+                case Proxy(proxy_schema=schema) if schema.name_id is not None:
+                    return val.name
+                case Proxy():
+                    return val.proxy_id
+                case _: return val
+
         data = [
-            simplified(getattr(self, name))
+            simplified(getattr(self, name)) if simplify else getattr(self, name)
             for name in index
         ]
         return pd.Series(index=index, data=data, name=name, dtype='object')
+
+    @property
+    def s(self) -> Series:
+        return self.proxy_to_Series()
+
+    @property
+    def ss(self) -> Series:
+        return self.proxy_to_Series(sync_empty=False)
+
+    @property
+    def sl(self) -> Series:
+        return self.proxy_to_Series(include_null=True)
+
+    @property
+    def sx(self) -> Series:
+        return self.proxy_to_Series(include_extras=True)
+
+    @property
+    def sxl(self) -> Series:
+        return self.proxy_to_Series(include_null=True, include_extras=True)
+
+    @property
+    def sraw(self) -> Series:
+        return self.proxy_to_Series(include_null=True, include_extras=True, simplify=False)
 
 
 from contextlib import contextmanager

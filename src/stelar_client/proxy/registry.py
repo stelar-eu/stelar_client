@@ -87,6 +87,33 @@ class Registry(Generic[ProxyClass]):
                 raise ConflictError(f"Proxy fetched with new entity on state {proxy.proxy_state}")
         return proxy
 
+
+    def register_proxy_for_entity(self, proxy: Proxy, entity: Entity):
+        """Register an existing proxy ebject for the given entity.
+
+           For success, 
+           1. the proxy id must be UUID(int=0)
+           2. the entity must contain an id 
+           3. the id must not exist in the registry already.
+
+           On success, the entity id is copied into the proxy and the
+           proxy is registered.
+
+           On failure, a conflict error is raised.
+        """
+        if proxy.proxy_id is None:
+            raise ConflictError(f"Cannot register deleted proxy")
+        if proxy.proxy_id != UUID(int=0):
+            raise ConflictError(f"Cannot register proxy with ID = {proxy.proxy_id}")
+        eid = UUID(self.proxy_type.proxy_schema.get_id(entity))
+        if eid in self.registry:
+            raise ConflictError(f"Proxy for entity {eid} is already registered")
+
+        # Success:
+        proxy.proxy_id = eid
+        self.registry[eid] = proxy
+
+
     def purge_proxy(self, proxy):
         if proxy.proxy_id is None:
             # Not an error to delete something in proxy state

@@ -101,7 +101,7 @@ def test_extras_create():
 
     c = TPCatalog().registry_for(Foo)
 
-    Foo.data[uuids[2]] = Foo.new(a=5, b="hello", skey="sval", ukey="uval")
+    Foo.data[uuids[2]] = Foo.new_entity(a=5, b="hello", skey="sval", ukey="uval")
 
     assert Foo.data[uuids[2]]['a'] == 5
     assert Foo.data[uuids[2]]['b'] == "hello"

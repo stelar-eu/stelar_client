@@ -533,7 +533,7 @@ def test_proxy_new():
 
     uu = uuid4()
 
-    Foo.data = Foo.new(a=10, b="hello", c=False, d=datetime(2005,9,18, 23,55), e=uu)
+    Foo.data = Foo.new_entity(a=10, b="hello", c=False, d=datetime(2005,9,18, 23,55), e=uu)
     
     assert Foo.data['a'] == 10
     assert Foo.data['b'] == 'hello'

@@ -49,6 +49,7 @@ class Schema:
         self.name_id = None
         self.extras = None
         self.all_fields = dict()
+        self.all_entity_fields = set()
 
         # Initialize the properties list
         # N.B. This does not check the superclasses
@@ -77,6 +78,7 @@ class Schema:
 
                 # Add the name to all_fields
                 self.all_fields[name] = prop
+                self.all_entity_fields.add(prop.entity_name)
 
         # check that we have specified an ID attribute, and add a default
         # ID attribute otherwise

@@ -21,13 +21,14 @@ import re
 
 __all__ = [
     'FieldValidator',
-    'AnyField', 
-    'BoolField', 
-    'IntField', 
+    'AnyField',
+    'BoolField',
+    'IntField',
     'StrField', 
     'DateField', 
     'UUIDField', 
-    'NameField'
+    'NameField',
+    'TagNameField',
 ]
 
 class FieldValidator:
@@ -183,6 +184,7 @@ class StrField(BasicField):
     def __init__(self, **kwargs):
         super().__init__(ftype=str, **kwargs)
 
+
 class NameField(StrField):
     """Name fields are non-nullable string fields whose value
        must follow a pattern.
@@ -191,12 +193,14 @@ class NameField(StrField):
         super().__init__(nullable=False, minimum_len=2, **kwargs)
         self.add_check(self.check_name, 7)
 
-    NAME_PATTERN=re.compile(r"[a-z0-9-_]+")
+    NAME_PATTERN=re.compile(r"[a-z0-9_-]+")
     def check_name(self, value: str, **kwargs):
         if self.NAME_PATTERN.fullmatch(value) is None:
-            raise ValueError("Name must be a string of lowercase alphanumerics, - and _ only, of size at least 2")
+            raise ValueError(f"Name must be a string matching '{self.NAME_PATTERN.pattern}'")
         return value, False
 
+class TagNameField(NameField):
+    NAME_PATTERN = re.compile(r"[A-Za-z0-9 ._-]+")
 
 class IntField(BasicField):
     """An int field validator"""

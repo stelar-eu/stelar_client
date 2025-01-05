@@ -91,6 +91,7 @@ class Reference(Property):
             raise AttributeError(f"Property '{self.name}' is not present")
         return val
 
+    # set and delete are inherited from Property
 
 
 class RefList(Reference):
@@ -116,6 +117,9 @@ class RefList(Reference):
             obj.proxy_sync()
         return ProxySublist(self, obj)
 
+    def set(self, obj, value):
+        raise NotImplementedError("Cannot set value of RefList field")
+
     def convert_entity_to_proxy(self, proxy, entity):
         entities = entity[self.entity_name]
         # entities is a list of entities, we need to fetch them from
@@ -129,5 +133,8 @@ class RefList(Reference):
 
 
     def convert_proxy_to_entity(self, proxy, entity):
+        proxy_value = proxy.proxy_attr[self.name]
+        if proxy_value is ...:
+            return
         raise NotImplementedError
 
