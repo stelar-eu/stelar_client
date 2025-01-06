@@ -1,9 +1,10 @@
 from __future__ import annotations
+import re
 from uuid import UUID
 from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
-from .proxy import (Id, NameId, RefList, StrField, Reference,
+from .proxy import (Id, NameId, RefList, StrField, Reference, Property,
                     TagNameField, derived_property)
 from .apicall import GenericProxy, api_call, GenericCursor
 from .utils import client_for
@@ -65,3 +66,47 @@ class VocabularyCursor(GenericCursor):
             yield registry.fetch_proxy_for_entity(entity)
 
 
+
+def tag_split(tagspec: str) -> Tuple[str|None, str]:
+    m = re.fullmatch(r'((.{2,})\:)?([a-z0-9_-]{2,})', tagspec)
+    if m is None:
+        raise ValueError("Invalid tag specification")
+    return m.groups()[1:]
+
+
+class TagEncoding:
+    """This is a component to be included as part of Client. It is responsible
+    for translating tag lists quickly and correctly.
+
+    To do this, it maintains two dictionaries which map vocabulary names to
+    ids and conversely. This map is refreshed
+    """
+    def __init__(self, *args, **kwargs):
+        self.client = client
+        self.dirty = True
+        self.voc_name_map = {}
+        self.voc_id_map = {}
+
+    def refresh_tag_vocabularies(self):
+        ac = api_call(self)
+        self.voc_name_map.clear()
+        self.voc_id_map.clear()
+        for voc in ac.vocabulary_list():
+            self.voc_name_map[voc['id']] = voc['name']
+            self.voc_id_map[voc['name']] = voc['id']
+        self.dirty = False
+
+    def taglist_to_entity(self, tags: list[str]) -> list[dict]:
+        if self.dirty:
+            self.refresh_tag_vocabularies()
+
+        raise NotImplementedError
+        
+
+
+class TagList(Property):
+    def __init__(self, doc="The tag list", short=True, **kwargs):
+        super().__init__(self, validator=TLField, updatable=True, optional=False, 
+                            doc=doc, short=short, **kwargs)
+
+    
