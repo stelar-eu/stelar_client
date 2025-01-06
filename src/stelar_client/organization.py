@@ -27,6 +27,8 @@ class Organization(GenericProxy, ExtrasProxy):
 
     extras = ExtrasProperty()
 
+    users = RefList('User')
+    groups = RefList('Group')
+
     # tags
     # packages
-    # users

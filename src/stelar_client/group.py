@@ -24,7 +24,9 @@ class Group(GenericProxy, ExtrasProxy):
     title = Property(validator=StrField, updatable=True)
     description = Property(validator=StrField, updatable=True)
     image_url = Property(validator=StrField(), updatable=True)
-    
     extras = ExtrasProperty()
 
-    #id, name, title, type, description, image_url, created, is_organization, approval_status, state, extras
+    users = RefList('User')
+    groups = RefList('Group')
+
+    

@@ -458,10 +458,14 @@ class Proxy:
                     return val.proxy_id
                 case _: return val
 
-        data = [
-            simplified(getattr(self, name)) if simplify else getattr(self, name)
-            for name in index
-        ]
+        def propvalue(name):
+            value = getattr(self, name, ...)
+            if value is not ... and simplify:
+                value = simplified(value)
+            return value
+
+
+        data = [ propvalue(name) for name in index ]
         return pd.Series(index=index, data=data, name=name, dtype='object')
 
     @property

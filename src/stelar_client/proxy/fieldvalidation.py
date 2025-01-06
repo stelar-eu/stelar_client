@@ -232,7 +232,7 @@ class NameField(StrField):
        must follow a pattern.
     """
     def __init__(self, **kwargs):
-        super().__init__(nullable=False, minimum_len=2, **kwargs)
+        super().__init__(nullable=False, minimum_len=2, maximum_len=100, **kwargs)
         self.add_check(self.check_name, 7)
 
     NAME_PATTERN=re.compile(r"[a-z0-9_-]+")

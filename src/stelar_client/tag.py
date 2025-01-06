@@ -56,11 +56,12 @@ class VocabularyCursor(GenericCursor):
     def fetch_list(self, *, limit: int, offset: int) -> list[str]:
         return [v.name for v in self.fetch(limit=limit, offset=offset)]
 
-    def fetch(self, *, limit: int, offset: int) -> Iterator[ProxyClass]:
+    def fetch(self, *, limit: int, offset: int) -> Iterator[Vocabulary]:
         registry = self.client.registry_for(Vocabulary)
         ac = api_call(self.client)
         result = ac.vocabulary_list()
 
         for entity in result:
             yield registry.fetch_proxy_for_entity(entity)
+
 

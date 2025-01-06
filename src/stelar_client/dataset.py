@@ -21,6 +21,7 @@ class Dataset(GenericProxy, ExtrasProxy):
     metadata_modified = Property(validator=DateField)
     state = Property(validator=StateField)
     type = Property(validator=StrField)
+    creator = Property(validator=UUIDField, entity_name='creator_user_id')
 
     private = Property(validator=BoolField(nullable=False, default=False), updatable=True)
     title = Property(validator=StrField, updatable=True)
@@ -38,12 +39,10 @@ class Dataset(GenericProxy, ExtrasProxy):
     resources = RefList(Resource, trigger_sync=True)
     organization = Reference('Organization', entity_name='owner_org', create_default='stelar-klms')
 
-    groups = RefList('Group', trigger_sync=True)
-
+    groups = RefList('Group', trigger_sync=False)
     extras = ExtrasProperty()
 
     # *tags: list[str]
-    # *groups
     # profile
     # relationships_as_object
     # relationships_as subject

@@ -16,6 +16,7 @@ from .dataset import Dataset
 from .resource import Resource
 from .organization import Organization
 from .group import Group
+from .user import User
 from .tag import Tag, Vocabulary
 from .proxy import ProxyState, deferred_sync
 
@@ -29,6 +30,7 @@ __all__ = [
     'ProxyState',
     'Tag',
     'Vocabulary',
+    'User',
 
     'deferred_sync'
 ]
