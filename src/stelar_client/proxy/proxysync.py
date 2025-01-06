@@ -52,7 +52,7 @@ class ProxySynclist:
             self.add( getattr(proxy, p.name) )
 
     def on_update(self, proxy: Proxy, prop: Property, newref: Proxy):
-        if isinstance(prop, Reference) and prop.triger_sync:
+        if isinstance(prop, Reference) and prop.trigger_sync:
             oldref = getattr(proxy, prop.name)
             self.add(oldref)
             self.add(newref)

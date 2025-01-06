@@ -22,6 +22,8 @@ import re
 __all__ = [
     'FieldValidator',
     'AnyField',
+    'EnumeratedField',
+    'StateField',
     'BoolField',
     'IntField',
     'StrField', 
@@ -159,7 +161,6 @@ class AnyField(FieldValidator):
         return value
     def convert_to_entity(self, value, **kwargs):
         return value
-
     def default_value(self):
         if hasattr(self, 'default'):
             return self.default
@@ -170,6 +171,31 @@ class AnyField(FieldValidator):
             
     def repr_type(self):
         return self._repr_type
+
+
+class EnumeratedField(AnyField):
+    """Fields with a fixed set of legal values.
+    
+       Subclasses can redefine the VALUES class attribute.
+    """
+    VALUES = []
+    def __init__(self, *args, **kwargs):
+        super().__init__(**kwargs)
+        self.add_check(self.oneof, 5)
+
+    def oneof(self, value):
+        if value not in self.VALUES:
+            raise ValueError(f"Not one of {self.VALUES}")
+        return value, False
+
+    def repr_type(self):
+        return f"OneOf{self.VALUES}"
+
+
+class StateField(EnumeratedField):
+    VALUES = ['active', 'deleted']
+    def __init__(self):
+        super().__init__(nullable=False)
 
 
 class BasicField(AnyField):
@@ -193,11 +219,13 @@ class BasicField(AnyField):
     def repr_type(self):
         return self.ftype.__name__
 
+
+
 class StrField(BasicField):
     """A string field validator"""
     def __init__(self, **kwargs):
         super().__init__(ftype=str, **kwargs)
-
+    
 
 class NameField(StrField):
     """Name fields are non-nullable string fields whose value
@@ -216,6 +244,7 @@ class NameField(StrField):
 
 class TagNameField(NameField):
     NAME_PATTERN = re.compile(r"[A-Za-z0-9 ._-]+")
+
 
 
 class IntField(BasicField):

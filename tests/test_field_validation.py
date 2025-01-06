@@ -135,3 +135,15 @@ def test_uuid_field():
     assert v.convert_to_entity(u) == str(u)
     assert v.convert_to_proxy(str(u)) == u
     
+
+def test_state_field():
+    v = StateField()
+
+    assert v.validate('active')
+    assert v.validate('deleted')
+    
+    for val in ('', 'ACTIVE', 4, None):
+        with pytest.raises(ValueError):
+            assert v.validate(val)
+
+    

@@ -7,7 +7,7 @@ from .dataset import Dataset
 from .resource import Resource
 from .organization import Organization
 from .group import Group
-from .tag import Vocabulary, Tag
+from .tag import Vocabulary, Tag, VocabularyCursor
 from requests.exceptions import HTTPError
 from urllib.parse import urljoin, urlencode
 
@@ -54,5 +54,5 @@ class CatalogAPI(BaseAPI):
     @property
     def vocabularies(self):
         """The vocabulary cursor"""
-        return GenericCursor(self, Vocabulary)
+        return VocabularyCursor(self)
 

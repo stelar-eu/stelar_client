@@ -3,6 +3,7 @@
 #----------------------------------------------------------
 __all__ = [
     'EntityError',
+    'ConversionError',
 
     'ProxyError',
     'InvalidationError',
@@ -13,9 +14,16 @@ __all__ = [
     'EntityNotFound',
 ]
 
+
 class EntityError(ValueError):
     """Raised when the system encounters a malformed entity"""
     pass
+
+class ConversionError(EntityError):
+    """A problem with conversion to and from entity"""
+    def __init__(self, property, conv_type):
+        super().__init__(f"Conversion failed for {property} {conv_type}")
+
 
 class ProxyError(RuntimeError):
     """The proxying state is not consistent or an illegal proxying command was issued"""
@@ -32,7 +40,6 @@ class InvalidationError(ProxyError):
 class ErrorState(ProxyError):
     """Operation on proxy in ERROR state"""
     pass
-
 
 class ProxyOperationError(ProxyError):
     """An error occurred during an API operation"""

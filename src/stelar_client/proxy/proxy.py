@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any, Iterator, Type
 from uuid import UUID
 from weakref import WeakValueDictionary
-from .exceptions import InvalidationError, ErrorState
+from .exceptions import *
 from .decl import ProxyState
 
 if TYPE_CHECKING:
@@ -185,7 +185,7 @@ class Proxy:
         if isinstance(regspec, RegistryCatalog):
             registry = regspec.registry_for(cls)
         elif isinstance(regspec, Registry):
-            registry = regspec.catalog.regisry_for(cls)
+            registry = regspec.catalog.registry_for(cls)
         else:
             raise TypeError(f"Expected Registry or RegistryCatalog for regspec")
 
@@ -196,17 +196,27 @@ class Proxy:
         validated_fields = {
             name: schema.properties[name].validator.validate(value)
             for name, value in fields.items()
+            if name in schema.all_fields
         }
 
         # For the missing fields, add the default, or ...
         # Adding ..., implies somehow that the field has been deleted (!)
         for name, prop in schema.properties.items():
-            if prop.isId: continue
+            if prop.isId or prop.isExtras: continue
             if name not in validated_fields:
                 if prop.create_default is not None:
                     validated_fields[name] = prop.create_default
                 else:
                     validated_fields[name] = ...
+
+        # Finally, if we have extras, use extras field for any unrecognized
+        # items in fields
+        if schema.extras is not None:
+            validated_fields[schema.extras.name] = {
+                ename: schema.extras.item_validator.validate(evalue)
+                for ename, evalue in fields.items()
+                if ename not in validated_fields
+            }
 
         # Set up the dictionaries of the proxy
         proxy.proxy_attr = validated_fields
@@ -335,7 +345,10 @@ class Proxy:
         for prop in self.proxy_schema.properties.values():
             if prop.isId or (attrset is not None and prop.name not in attrset):
                 continue
-            prop.convert_proxy_to_entity(self, entity)
+            try:
+                prop.convert_proxy_to_entity(self, entity)
+            except Exception as e:
+                raise ConversionError(prop, 'convert_proxy_to_entity')
         return entity
 
     def proxy_is_purged(self):

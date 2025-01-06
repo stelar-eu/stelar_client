@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 class ExtrasProperty(Property):
     
     def __init__(self, **kwargs):
-        super().__init__(updatable=False, optional=False, validator=AnyField, **kwargs)
+        super().__init__(updatable=False, optional=False, validator=AnyField(default={}), **kwargs)
         self.isExtras = True
         self.item_validator = StrField(nullable=False)
 

@@ -5,7 +5,7 @@ from IPython.display import display
 from .utils import *
 from .resource import Resource
 from .proxy import (Property, Id, NameId, Reference, RefList, 
-                    DateField, StrField, BoolField, NameField, UUIDField,
+                    DateField, StrField, BoolField, NameField, UUIDField, StateField,
                     ExtrasProxy, ExtrasProperty)
 
 from .apicall import api_call, GenericProxy
@@ -17,9 +17,9 @@ class Dataset(GenericProxy, ExtrasProxy):
 
     id = Id()
     name = NameId()
-    metadata_created = Property(validator=DateField, create_default='')
+    metadata_created = Property(validator=DateField)
     metadata_modified = Property(validator=DateField)
-    state = Property(validator=StrField)
+    state = Property(validator=StateField)
     type = Property(validator=StrField)
 
     private = Property(validator=BoolField(nullable=False, default=False), updatable=True)
@@ -31,12 +31,14 @@ class Dataset(GenericProxy, ExtrasProxy):
     maintainer_email = Property(validator=StrField(nullable=True), updatable=True)
 
     # weird ones
-    license_id = Property(validator=UUIDField(nullable=True), updatable=True)
+    license_id = Property(validator=StrField(nullable=True), updatable=True)
     url = Property(validator=StrField(nullable=True), updatable=True)
     version = Property(validator=StrField(nullable=True, maximum_len=100), updatable=True)
 
     resources = RefList(Resource, trigger_sync=True)
     organization = Reference('Organization', entity_name='owner_org', create_default='stelar-klms')
+
+    groups = RefList('Group', trigger_sync=True)
 
     extras = ExtrasProperty()
 

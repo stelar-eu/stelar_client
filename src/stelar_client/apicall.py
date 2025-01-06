@@ -251,7 +251,7 @@ class GenericProxyList(ProxyList):
 
 class GenericCursor(ProxyCursor[ProxyClass]):
     def create(self, **prop) -> ProxyClass:
-        return generic_create(self.client, self.proxy_type, **prop)
+        return self.proxy_type.new(self.client, **prop)
     
     def get(self, name_or_id: str|UUID, default: ProxyClass=None) -> ProxyClass:
         return generic_get(self.client, self.proxy_type, name_or_id, default=default)

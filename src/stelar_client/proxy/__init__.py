@@ -16,6 +16,7 @@ from .schema import Schema
 from .proxy import Proxy, deferred_sync
 from .proxylist import ProxyCursor, ProxyList, ProxySublist
 from .proxysync import ProxySynclist
+from .derived import derived_property
 from .registry import Registry, RegistryCatalog
 from .extras import ExtrasProperty, ExtrasProxy
 
@@ -50,6 +51,7 @@ __all__ += [
 
     'ExtrasProperty',
     'ExtrasProxy',
+    'derived_property',
 
     'Registry',
     'RegistryCatalog',

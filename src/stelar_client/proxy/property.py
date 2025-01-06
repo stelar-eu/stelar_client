@@ -96,6 +96,15 @@ class Property:
         print(INDENT, *f, file=out)
         return out.getvalue()
 
+    @property
+    def qualname(self):
+        return f"{self.owner.__name__}.{self.name}"
+
+    def __repr__(self):
+        return f"<Property {self.qualname}>"
+
+    def __str__(self):
+        return self.qualname
 
     def __set_name__(self, owner, name):
         if not issubclass(owner, Proxy):

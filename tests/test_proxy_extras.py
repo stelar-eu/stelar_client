@@ -118,3 +118,31 @@ def test_extras_create():
     assert p.ukey == "uval"
 
 
+def test_extras_proxy_creation():
+
+    class Foo(ProxyTestObj, ExtrasProxy):
+        a = Property(validator=IntField(nullable=False, default=0), updatable=True)
+        b = Property(validator=StrField(nullable=True), updatable=True)
+        extras = ExtrasProperty()
+
+
+    c = TPCatalog()
+
+    x = Foo.new(c)
+    assert x.a==0
+    assert x.b is None
+    assert x.extras == {}
+
+    x = Foo.new(c, a=10, hehe='hihi')
+    assert x.a==10
+    assert x.b is None
+    assert x.hehe == 'hihi'
+    assert x.extras == {'hehe': 'hihi'}
+
+    x.proxy_invalidate()
+    assert x.a==10
+    assert x.b is None
+    assert x.hehe == 'hihi'
+    assert x.extras == {'hehe': 'hihi'}
+
+    
