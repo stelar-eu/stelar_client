@@ -11,20 +11,23 @@ from .proxy import (
     ExtrasProperty,
     ExtrasProxy,
     Id,
-    NameField,
     NameId,
     Property,
     RefList,
     StateField,
     StrField,
+    TaggableProxy,
+    TagList,
     derived_property,
 )
 from .resource import Resource
 
 
-class Group(GenericProxy, ExtrasProxy):
+class GroupBase(GenericProxy, ExtrasProxy, TaggableProxy, entity=False):
     """
-    Proxy for a STELAR Data Catalog group
+    Proxy for a STELAR Data Catalog group and organization.
+    This is an abstract class. The group subclass is
+    defined later.
     """
 
     id = Id()
@@ -40,7 +43,16 @@ class Group(GenericProxy, ExtrasProxy):
     description = Property(validator=StrField, updatable=True)
     image_url = Property(validator=StrField(), updatable=True)
     extras = ExtrasProperty()
+    tags = TagList()
 
     # users
     # groups
     # datasets
+
+
+class Group(GroupBase):
+    pass
+
+
+class Organization(GroupBase):
+    pass

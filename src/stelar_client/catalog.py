@@ -6,14 +6,13 @@ from .apicall import GenericCursor, api_call
 from .base import BaseAPI
 from .dataset import Dataset, DatasetCursor
 from .endpoints import APIEndpointsV1
-from .group import Group
+from .group import Group, Organization
 from .model import (
     DuplicateEntryError,
     EntityNotFoundError,
     MissingParametersError,
     STELARUnknownError,
 )
-from .organization import Organization
 from .proxy import Registry, RegistryCatalog
 from .resource import Resource
 from .user import User, UserCursor

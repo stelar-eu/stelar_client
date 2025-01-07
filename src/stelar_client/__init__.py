@@ -13,8 +13,7 @@ finally:
 
 from .client import Client
 from .dataset import Dataset
-from .group import Group
-from .organization import Organization
+from .group import Group, Organization
 from .proxy import ProxyState, deferred_sync
 from .resource import Resource
 from .user import User
