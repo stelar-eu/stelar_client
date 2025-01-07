@@ -25,11 +25,11 @@ class Property:
          proxy classes
      -   Holds a number of metadata that determine the behaviour of the proxy
          (validation, conversion to entity, nullabilty, updatability, optionality,
-         view, etc)
+         view, default values at creation, etc)
      -   Performs internalization/externalization for the data.
 
-
-
+    Properties are the mechanism for most of the functionality of the
+    STELAR client.
     """
 
     def __init__(
@@ -53,8 +53,10 @@ class Property:
                 the same as the property name.
             doc (str|None): A piece of text that describes the property. This is
                 used to form the full documentation for the property.
-            create_default (Any): If provided, it is used to initialize new entities,
-                when the user does not provide a value. Note: this is an entity value!
+            create_default (Any): If provided, it specifies an attribute on the entity's registry
+                (typically implemented as a 'functools.cached_property') that is used to initialize
+                new entities, when the user does not provide a value for this property.
+                Note: this is an entity value!
             short (bool|None): Denotes whether this property is included in "short presentations"
                 of the entity. If None, a heuristic based on the name and type is used.
         """
@@ -130,10 +132,24 @@ class Property:
             self.doc, self.validator.repr_type(), self.validator.repr_constraints()
         )
 
-    def check_value(self, value):
-        if value is ... and not self.optional:
-            raise ValueError(f"Property '{self.name}' is not optional")
-        return value
+    # def check_value(self, value):
+    #    if value is ... and not self.optional:
+    #        raise ValueError(f"Property '{self.name}' is not optional")
+    #    return value
+
+    def missing(self, *, proxy=None, registry=None, **kwargs):
+        """Provides missing values during entity creation.
+
+        Args:
+        proxy (a 'create proxy' is ok) or registry, one muste be provided.
+        """
+        if registry is None:
+            registry = proxy.proxy_registry
+        if self.create_default:
+            return getattr(registry, self.create_default, ...)
+        if hasattr(self.validator, "default"):
+            return self.validator.default
+        return ...
 
     def get(self, obj):
         """Low-level getter"""
@@ -209,9 +225,13 @@ class Property:
             entity_props: The entity object given to the create API call.
         """
         if self.name not in create_props:
-            if self.create_default is not None:
-                entity_props[self.entity_name] = self.create_default
+            defval = self.missing(**kwargs)
+            if defval is not ...:
+                entity_props[self.entity_name] = self.validator.convert_to_entity(
+                    defval, **kwargs
+                )
             return
+
         proxy_value = create_props[self.name]
         proxy_value = self.validator.validate(proxy_value, **kwargs)
         if proxy_value is None:
@@ -221,8 +241,6 @@ class Property:
         entity_props[self.entity_name] = entity_value
 
     def __get__(self, obj, objtype=None):
-        if obj is None:
-            return self
         val = self.get(obj)
 
         # The attribute is deleted

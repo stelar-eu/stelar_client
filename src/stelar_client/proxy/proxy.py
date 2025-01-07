@@ -218,13 +218,19 @@ class Proxy:
         # For the missing fields, add the default, or ...
         # Adding ..., implies somehow that the field has been deleted (!)
         for name, prop in schema.properties.items():
-            if prop.isId or prop.isExtras:
-                continue
-            if name not in validated_fields:
-                if prop.create_default is not None:
-                    validated_fields[name] = prop.create_default
-                else:
+            if not (prop.isId or prop.isExtras or name in validated_fields):
+                defval = prop.missing(proxy=proxy)
+                if defval is ...:
                     validated_fields[name] = ...
+                else:
+                    try:
+                        validated_fields[name] = prop.validator.validate(defval)
+                    except ValueError as e:
+                        raise ConversionError(prop, "validate") from e
+                # if False:  # prop.create_default is not None:
+                #    validated_fields[name] = prop.create_default
+                # else:
+                #    validated_fields[name] = ...
 
         # Finally, if we have extras, use extras field for any unrecognized
         # items in fields
@@ -255,7 +261,13 @@ class Proxy:
             raise TypeError(f"Class {cls.__name__} is not an entity class")
         entity_fields = {}
         for property in cls.proxy_schema.properties.values():
-            property.convert_to_create(cls, fields, entity_fields, catalog=catalog)
+            property.convert_to_create(
+                cls,
+                fields,
+                entity_fields,
+                catalog=catalog,
+                registry=catalog.registry_for(cls) if catalog else None,
+            )
         return entity_fields
 
     def delete(self, purge: bool = False):

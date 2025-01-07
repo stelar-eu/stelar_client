@@ -35,7 +35,6 @@ class Registry(Generic[ProxyClass]):
     Registries are typed: only proxies of the same type belong to a registry.
 
     A collection of registries of different types form a 'catalog' (of type RegistryCatalog).
-
     """
 
     def __init__(self, catalog: RegistryCatalog, proxy_type):

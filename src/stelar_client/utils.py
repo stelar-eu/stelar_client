@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Tuple
 
-from .proxy import Proxy, ProxyCursor, ProxyList
+from .proxy import Proxy, ProxyCursor, ProxyList, Registry
 
 if TYPE_CHECKING:
     from .client import Client
@@ -24,6 +24,8 @@ def client_for(obj: Any) -> Client:
             return obj.client
         case ProxyCursor():
             return obj.client
+        case Registry():
+            return obj.catalog
         case Client():
             return obj
         case _:

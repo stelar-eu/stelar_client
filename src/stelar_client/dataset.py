@@ -60,7 +60,7 @@ class Dataset(GenericProxy, ExtrasProxy, TaggableProxy):
     organization = Reference(
         "Organization",
         entity_name="owner_org",
-        create_default="stelar-klms",
+        create_default="default_organization",
         updatable=True,
         trigger_sync=True,
     )

@@ -1,10 +1,12 @@
 import pytest
+
 from stelar_client import Client, ProxyState
 
 
 def test_standard_orgganization(testcli):
-    org = testcli.organizations['stelar-klms']
-    assert org.name == 'stelar-klms'
+    org = testcli.organizations["stelar-klms"]
+    assert org.name == "stelar-klms"
+
 
 def test_create_org(testcli):
     for i in range(5):
@@ -14,45 +16,47 @@ def test_create_org(testcli):
         except:
             pass
 
-    assert len(testcli.organizations[::])==1
+    norg = len(testcli.organizations[::])
 
     orgs = []
     for i in range(5):
         print(i)
         o = testcli.organizations.create(name=f"test_org_{i}")
-        orgs.append(o) 
+        orgs.append(o)
 
     for i in range(5):
         assert testcli.organizations[f"test_org_{i}"] is orgs[i]
-            
+
     for o in orgs:
         o.delete(purge=True)
 
-    assert len(testcli.organizations[::])==1
+    assert len(testcli.organizations[::]) == norg
 
 
 def test_generic_proxy_create(testcontext):
     c = Client(testcontext)
-    org = c.organizations['stelar-klms']
+    org = c.organizations["stelar-klms"]
 
-    if 'test_dataset' in c.datasets:
-        c.datasets['test_dataset'].delete(purge=True)
+    if "test_dataset" in c.datasets:
+        c.datasets["test_dataset"].delete(purge=True)
 
-    d = c.datasets.create(name='test_dataset',
-                          title="Test dataset",
-                          notes="A very simple dataset to test",
-                          author="Alan Turing",
-                          maintainer="Alonso Church",
-                          url="https://stelar.tuc.gr/data")
+    d = c.datasets.create(
+        name="test_dataset",
+        title="Test dataset",
+        notes="A very simple dataset to test",
+        author="Alan Turing",
+        maintainer="Alonso Church",
+        url="https://stelar.tuc.gr/data",
+    )
 
-    assert d.name == 'test_dataset'
-    assert d.title == 'Test dataset'
+    assert d.name == "test_dataset"
+    assert d.title == "Test dataset"
     assert d.notes == "A very simple dataset to test"
     assert d.author == "Alan Turing"
     assert d.maintainer == "Alonso Church"
     assert d.url == "https://stelar.tuc.gr/data"
 
-    assert d.organization is c.organizations['stelar-klms']
+    assert d.organization is c.organizations["stelar-klms"]
     assert len(d.resources) == 0
 
     d.delete(purge=True)

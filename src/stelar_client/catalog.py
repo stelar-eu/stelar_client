@@ -1,3 +1,4 @@
+from functools import cached_property
 from urllib.parse import urlencode, urljoin
 
 from requests.exceptions import HTTPError
@@ -16,7 +17,14 @@ from .model import (
 from .proxy import Registry, RegistryCatalog
 from .resource import Resource
 from .user import User, UserCursor
+from .utils import client_for
 from .vocab import Tag, TagCursor, Vocabulary, VocabularyCursor
+
+
+class DefaultsRegistry(Registry):
+    @cached_property
+    def default_organization(self):
+        return client_for(self).organizations["stelar-klms"]
 
 
 class CatalogAPI(RegistryCatalog, BaseAPI):
@@ -32,7 +40,7 @@ class CatalogAPI(RegistryCatalog, BaseAPI):
         super().__init__(*args, **kwargs)
         # Create the registries
         for ptype in [Dataset, Resource, Organization, Group, Vocabulary, Tag, User]:
-            Registry(self, ptype)
+            DefaultsRegistry(self, ptype)
 
     @property
     def datasets(self):
