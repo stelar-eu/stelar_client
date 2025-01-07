@@ -13,36 +13,36 @@ finally:
 
 from .client import Client
 from .dataset import Dataset
-from .resource import Resource
-from .organization import Organization
 from .group import Group
-from .user import User
-from .tag import Tag, Vocabulary
+from .organization import Organization
 from .proxy import ProxyState, deferred_sync
-
+from .resource import Resource
+from .user import User
+from .vocab import Tag, Vocabulary
 
 __all__ = [
-    'Client',
-    'Dataset',
-    'Resource',
-    'Organization',
-    'Group',
-    'ProxyState',
-    'Tag',
-    'Vocabulary',
-    'User',
-
-    'deferred_sync'
+    "Client",
+    "Dataset",
+    "Resource",
+    "Organization",
+    "Group",
+    "ProxyState",
+    "Tag",
+    "Vocabulary",
+    "User",
+    "deferred_sync",
 ]
 
 # Include all proxy exceptions
 from .proxy.exceptions import *
 from .proxy.exceptions import __all__ as _exceptions
+
 __all__ += _exceptions
 del _exceptions
 
 # Include all utility functions
 from .utils import *
 from .utils import __all__ as _utils
+
 __all__ += _utils
 del _utils

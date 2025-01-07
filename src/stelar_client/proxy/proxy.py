@@ -1,15 +1,18 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any, Iterator, Type
+
+from typing import TYPE_CHECKING, Any, Generic, Iterator, Optional, Type, TypeVar
 from uuid import UUID
 from weakref import WeakValueDictionary
-from .exceptions import *
+
 from .decl import ProxyState
+from .exceptions import *
 
 if TYPE_CHECKING:
+    from pandas import Series
+
     from ..client import Client
     from .property import RefList
     from .registry import Registry, RegistryCatalog
-    from pandas import Series
 
 """
     Introduction
@@ -43,21 +46,21 @@ if TYPE_CHECKING:
 """
 
 
-
-#----------------------------------------------------------
+# ----------------------------------------------------------
 #
 # Proxy is the base class for all proxy classes
 #
-#----------------------------------------------------------
+# ----------------------------------------------------------
 
 Entity = dict[str, Any]
+
 
 class Proxy:
     """Base class for all proxy objects of the STELAR entities.
 
     Proxy objects are managed by Registry. The primary implementation
     of Registry is Client.
-    
+
     A proxy can be in one of four states:
       - EMPTY: there is no entity data in the proxy
       - CLEAN: the data loaded by the last proxy_sync() operation is not changed
@@ -72,7 +75,7 @@ class Proxy:
         A dict of all loaded attributes. When None, the entity has
         not yet been loaded. The state is EMPTY
     proxy_changed:
-        A dict of all changed attributes (loaded values of updated attributes) 
+        A dict of all changed attributes (loaded values of updated attributes)
         since last upload. When None, the entity is CLEAN (or EMPTY), else the
         entity is DIRTY.
 
@@ -90,7 +93,7 @@ class Proxy:
     the updated object after updates are applied.
 
     The following operations operate on proxies:
-    proxy_sync(entity=None): Save any pending updates to make the state CLEAN. Load the proxy data 
+    proxy_sync(entity=None): Save any pending updates to make the state CLEAN. Load the proxy data
     from the Stelar Service API, to make sure the proxy has the latest. When `entity` is not None,
     use it to avoid a fetch.
 
@@ -105,28 +108,36 @@ class Proxy:
     proxy_registry: Registry
     proxy_id: Optional[UUID]
     proxy_autosync: bool
-    proxy_attr: doc[str, Any]|None
-    proxy_changed: doc[str, Any]|None
+    proxy_attr: dict[str, Any] | None
+    proxy_changed: dict[str, Any] | None
 
-    def __init__(self, registry: Registry, eid: Optional[str|UUID] = None, entity=None):
+    def __init__(
+        self, registry: Registry, eid: Optional[str | UUID] = None, entity=None
+    ):
         self.proxy_registry = registry
         self.proxy_autosync = True
 
         if eid is None and entity is None:
-            raise ValueError("A proxy must be initialized either with an entity ID" 
-                             " or with an entity JSON object containing the ID")
+            raise ValueError(
+                "A proxy must be initialized either with an entity ID"
+                " or with an entity JSON object containing the ID"
+            )
 
         if entity is not None:
             if eid is None:
                 try:
                     eid = entity[self.proxy_schema.id.entity_name]
                 except KeyError as e:
-                    raise ValueError("A proxy must be initialized either with an entity ID" 
-                                " or with an entity JSON object containing the ID") from e
+                    raise ValueError(
+                        "A proxy must be initialized either with an entity ID"
+                        " or with an entity JSON object containing the ID"
+                    ) from e
             # this is a check which is not really necessary...
             elif self.proxy_schema.id.entity_name in entity:
                 if str(eid) != str(entity[self.proxy_schema.id.entity_name]):
-                    raise ValueError("Mismatch between entity ID provided directly and indirectly")
+                    raise ValueError(
+                        "Mismatch between entity ID provided directly and indirectly"
+                    )
 
         if not isinstance(eid, UUID):
             self.proxy_id = UUID(eid)
@@ -138,34 +149,35 @@ class Proxy:
 
     def __init_subclass__(cls, entity=True):
         from .schema import Schema
+
         if entity:
             cls.proxy_schema = Schema(cls)
         else:
-            # cls is not an entity class, check that 
-            # there are no properties defined on it
+            # cls is not an entity class, check it
             Schema.check_non_entity(cls)
 
-
     @classmethod
-    def new(cls, regspec: Registry|RegistryCatalog, *, autosync: bool =True, **fields):
+    def new(
+        cls, regspec: Registry | RegistryCatalog, *, autosync: bool = True, **fields
+    ):
         """Return a non-affiliated proxy instance, i.e. a 'creation proxy'.
 
         This proxy instance's id is UUID(int=0), which is indicative
         of a non-valid id. The purpose of such an object is to
         create a new entity, by calling 'proxy_sync()'.
-        
+
         While the UUID is 0, this entity is not registered in
         the registry. Therefore, multiple such entries can exist.
         However, once the entity is proxy_sync'd, its id changes
-        to a proper one and the object is registered in the 
+        to a proper one and the object is registered in the
         registry.
 
         Args:
             cls (Type[ProxyClass]): the proxy type for the new proxy.
 
-            regspec (Registry|RegistryCatalog): Registry spec for the new object. 
+            regspec (Registry|RegistryCatalog): Registry spec for the new object.
                If regspec is a Registry, its catalog is used to locate a suitable registry
-               for the 'cls' proxy type, via regspec.catalog.registry_for(cls). 
+               for the 'cls' proxy type, via regspec.catalog.registry_for(cls).
                If regspec is a catalog, it provides the registry via regspec.registry_for(cls).
 
             autosync (bool, default: True): When True, the new entity is created (by calling
@@ -182,6 +194,10 @@ class Proxy:
             to an entity.
         """
         from .registry import Registry, RegistryCatalog
+
+        if not hasattr(cls, "proxy_schema"):
+            raise TypeError(f"Class {cls.__name__} is not an entity class")
+
         if isinstance(regspec, RegistryCatalog):
             registry = regspec.registry_for(cls)
         elif isinstance(regspec, Registry):
@@ -202,7 +218,8 @@ class Proxy:
         # For the missing fields, add the default, or ...
         # Adding ..., implies somehow that the field has been deleted (!)
         for name, prop in schema.properties.items():
-            if prop.isId or prop.isExtras: continue
+            if prop.isId or prop.isExtras:
+                continue
             if name not in validated_fields:
                 if prop.create_default is not None:
                     validated_fields[name] = prop.create_default
@@ -226,45 +243,42 @@ class Proxy:
             proxy.proxy_sync()
         return proxy
 
-
     @classmethod
-    def new_entity(cls, **fields) -> Entity:
+    def new_entity(cls, catalog: RegistryCatalog = None, /, **fields) -> Entity:
         """Return a set of fields for creating a new entity.
 
         Args
         ----
             fields: dict[str,Any]
         """
+        if not hasattr(cls, "proxy_schema"):
+            raise TypeError(f"Class {cls.__name__} is not an entity class")
         entity_fields = {}
         for property in cls.proxy_schema.properties.values():
-            property.convert_to_create(fields, entity_fields)
+            property.convert_to_create(cls, fields, entity_fields, catalog=catalog)
         return entity_fields
-
 
     def delete(self, purge: bool = False):
         """Delete the entity and mark the proxy as invalid.
-           Entity classes can overload this method, to perform the
-           actual API delete. When successful, they can then 
-           invoke Proxy.delete() to mark this proxy as invalid.
+        Entity classes can overload this method, to perform the
+        actual API delete. When successful, they can then
+        invoke Proxy.delete() to mark this proxy as invalid.
         """
         if self.proxy_state is ProxyState.ERROR:
-            return   # Not an error to call delete on purged entity
+            return  # Not an error to call delete on purged entity
         if purge:
             self.proxy_is_purged()
         else:
             self.proxy_invalidate(force=True)
 
-
     def update(self, **updates: Any):
-        """Update a bunch of attributes in a single operation.
-        """
+        """Update a bunch of attributes in a single operation."""
         with deferred_sync(self):
             for name, value in updates.items():
                 if value is ...:
                     delattr(self, name)
                 else:
                     setattr(self, name, value)
-
 
     @property
     def proxy_state(self) -> ProxyState:
@@ -298,16 +312,16 @@ class Proxy:
         self.proxy_attr = self.proxy_changed = None
 
     def proxy_reset(self):
-        """If proxy is EMPTY, do nothing. 
-           If the proxy is DIRTY, make it CLEAN by restoring the
-           values changed since the last sync.
+        """If proxy is EMPTY, do nothing.
+        If the proxy is DIRTY, make it CLEAN by restoring the
+        values changed since the last sync.
         """
         if self.proxy_id is None:
             raise ErrorState()
         if self.proxy_changed is not None:
-            for name,value in self.proxy_changed.items():
+            for name, value in self.proxy_changed.items():
                 self.proxy_attr[name] = value
-            self.proxy_changed = None                        
+            self.proxy_changed = None
 
     def proxy_from_entity(self, entity: Any):
         """Update the proxy_attr dictionary from a given entity."""
@@ -318,25 +332,27 @@ class Proxy:
         for prop in self.proxy_schema.properties.values():
             if not prop.isId:
                 prop.convert_entity_to_proxy(self, entity)
-    
-    def proxy_to_entity(self, attrset: set[str]|dict[str,Any]|None = None) -> Entity:
-        """Return an entity from the proxy values. 
+
+    def proxy_to_entity(
+        self, attrset: set[str] | dict[str, Any] | None = None
+    ) -> Entity:
+        """Return an entity from the proxy values.
 
         Note that the entity returned will not contain the id attribute.
-        
+
         Args:
-            attrset (set of property names, optional): If not None, 
+            attrset (set of property names, optional): If not None,
                 determines the set of names to add to the entity.
 
                 Any type of object, where the expression
                 `name in attrset` is valid, can be used.
-                                
+
                 Use this to only add names of changed properties to
                 an entity:
                 self.proxy_to_entity(self.proxy_changed)
 
         Returns:
-            entity (dict): An entity dict containing all values 
+            entity (dict): An entity dict containing all values
                 specified.
         """
         if self.proxy_id is None:
@@ -348,14 +364,14 @@ class Proxy:
             try:
                 prop.convert_proxy_to_entity(self, entity)
             except Exception as e:
-                raise ConversionError(prop, 'convert_proxy_to_entity')
+                raise ConversionError(prop, "convert_proxy_to_entity") from e
         return entity
 
     def proxy_is_purged(self):
         """Called to designate that this proxy is referring to a non-existent
-           entity and should be marked as such. 
+        entity and should be marked as such.
 
-           This type of marking happens when an entity is purged.
+        This type of marking happens when an entity is purged.
         """
         if self.proxy_state is ProxyState.ERROR:
             return
@@ -367,15 +383,15 @@ class Proxy:
         """Sync the data between the proxy and the API entity.
 
         After a sync, the proxy is CLEAN and consistent with the
-        underlying entity in the Data Catalog.  This method must be 
-        overloaded in subclasses, to cater to the details of different 
+        underlying entity in the Data Catalog.  This method must be
+        overloaded in subclasses, to cater to the details of different
         types of entities.
-        
+
         In order to sync, the method works as follows:
 
-        1. If the proxy is DIRTY: 
-            - updates are sent to the API. 
-            - The API optionally returns a new entity object. If so, override 
+        1. If the proxy is DIRTY:
+            - updates are sent to the API.
+            - The API optionally returns a new entity object. If so, override
               the `entity` parameter.
             - Make object CLEAN (by setting proxy_changed to None)
 
@@ -406,11 +422,13 @@ class Proxy:
             nid = str(self.proxy_id)
         return f"<{typename} {nid} {state}>"
 
-    def proxy_to_Series(self, *,
-        sync_empty:bool = True,
-        include_null:bool = False, 
-        include_extras:bool = False, 
-        simplify: bool=True
+    def proxy_to_Series(
+        self,
+        *,
+        sync_empty: bool = True,
+        include_null: bool = False,
+        include_extras: bool = False,
+        simplify: bool = True,
     ) -> Series:
         """Return a pandas Series for this entity.
 
@@ -424,6 +442,7 @@ class Proxy:
             simplify (bool, default=True): return a more printable, simpler representation
         """
         import pandas as pd
+
         name = f"{type(self).__name__} ({self.proxy_state.name})"
         if self.proxy_state is ProxyState.ERROR or (
             not sync_empty and self.proxy_state is ProxyState.EMPTY
@@ -435,20 +454,14 @@ class Proxy:
         def report_field(name):
             return include_null or bool(getattr(self, name, False))
 
-        all_fields = [
-            schema.id.name,
-            * schema.properties
-        ]
+        all_fields = [schema.id.name, *schema.properties]
         if include_extras and schema.extras is not None:
             extras = schema.extras.get(self)
             if extras is not ...:
                 all_fields.remove(schema.extras.name)
                 all_fields.extend(extras.keys())
 
-        index = [
-            name for name in all_fields
-            if report_field(name)
-        ]
+        index = [name for name in all_fields if report_field(name)]
 
         def simplified(val):
             match val:
@@ -456,7 +469,8 @@ class Proxy:
                     return val.name
                 case Proxy():
                     return val.proxy_id
-                case _: return val
+                case _:
+                    return val
 
         def propvalue(name):
             value = getattr(self, name, ...)
@@ -464,9 +478,8 @@ class Proxy:
                 value = simplified(value)
             return value
 
-
-        data = [ propvalue(name) for name in index ]
-        return pd.Series(index=index, data=data, name=name, dtype='object')
+        data = [propvalue(name) for name in index]
+        return pd.Series(index=index, data=data, name=name, dtype="object")
 
     @property
     def s(self) -> Series:
@@ -490,13 +503,16 @@ class Proxy:
 
     @property
     def sraw(self) -> Series:
-        return self.proxy_to_Series(include_null=True, include_extras=True, simplify=False)
+        return self.proxy_to_Series(
+            include_null=True, include_extras=True, simplify=False
+        )
 
 
 from contextlib import contextmanager
 
+
 @contextmanager
-def deferred_sync(* proxies):
+def deferred_sync(*proxies):
     saved_autosync = [p.proxy_autosync for p in proxies]
     for p in proxies:
         p.proxy_autosync = False
@@ -516,4 +532,3 @@ def deferred_sync(* proxies):
     for p in proxies:
         if p.proxy_state is not ProxyState.ERROR:
             p.proxy_sync()
-        

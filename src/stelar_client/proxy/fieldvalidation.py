@@ -14,33 +14,36 @@ of the classes herein.
 """
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any
-from uuid import UUID
-from datetime import datetime
+
 import re
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
+from uuid import UUID
 
 __all__ = [
-    'FieldValidator',
-    'AnyField',
-    'EnumeratedField',
-    'StateField',
-    'BoolField',
-    'IntField',
-    'StrField', 
-    'DateField', 
-    'UUIDField', 
-    'NameField',
-    'TagNameField',
+    "FieldValidator",
+    "AnyField",
+    "EnumeratedField",
+    "StateField",
+    "BoolField",
+    "IntField",
+    "StrField",
+    "DateField",
+    "UUIDField",
+    "NameField",
+    "TagNameField",
+    "VocabNameField",
 ]
 
+
 class FieldValidator:
-    """Provide simple validation and conversion for entity fields. 
-    
+    """Provide simple validation and conversion for entity fields.
+
         A validation is a sequence of checks. Each check can:
         - Raise an exception of ValueError
         - Apply a value conversion and continue
         - Apply a value conversion and terminate
-    
+
     Any function that takes as input a value, and returns a pair (newvalue, done)
     where `done` is a boolean, can be used as a check.
 
@@ -48,13 +51,17 @@ class FieldValidator:
     is checked. If True, an error is raised, else (the default) conversion succeeds.
     """
 
-    def __init__(self, *, 
-                 strict: bool=False, 
-                 nullable: bool = True, 
-                 default: Any = ...,
-                 minimum_value: Any = None, maximum_value: Any = None,
-                 maximum_len: Optional[int]=None, minimum_len: Optional[int]=None):
-        
+    def __init__(
+        self,
+        *,
+        strict: bool = False,
+        nullable: bool = True,
+        default: Any = ...,
+        minimum_value: Any = None,
+        maximum_value: Any = None,
+        maximum_len: Optional[int] = None,
+        minimum_len: Optional[int] = None,
+    ):
         self.prioritized_checks = []
         self.checks = []
         self.strict = strict
@@ -68,7 +75,7 @@ class FieldValidator:
 
         if nullable is not None:
             self.add_check(self.check_null, -1)
-        
+
         if minimum_value is not None:
             self.add_check(self.check_minimum, 10)
         if maximum_value is not None:
@@ -78,7 +85,7 @@ class FieldValidator:
 
     def add_check(self, check_func, pri: int):
         self.prioritized_checks.append((check_func, pri))
-        self.prioritized_checks.sort(key= lambda p: p[1])
+        self.prioritized_checks.sort(key=lambda p: p[1])
         self.checks = [p[0] for p in self.prioritized_checks]
 
     def check_null(self, value, **kwargs):
@@ -89,13 +96,17 @@ class FieldValidator:
                 raise ValueError("None is not allowed")
         else:
             return value, False
-        
+
     def check_length(self, value, **kwargs):
         value_len = len(value)
         if self.minimum_len is not None and value_len < self.minimum_len:
-            raise ValueError(f"The length ({value_len}) is less than the minimum ({self.minimum_len})")
+            raise ValueError(
+                f"The length ({value_len}) is less than the minimum ({self.minimum_len})"
+            )
         if self.maximum_len is not None and value_len > self.maximum_len:
-            raise ValueError(f"The length ({value_len}) is greater that the maximum ({self.maximum_len})")
+            raise ValueError(
+                f"The length ({value_len}) is greater that the maximum ({self.maximum_len})"
+            )
         return value, False
 
     def check_minimum(self, value, **kwargs):
@@ -119,21 +130,23 @@ class FieldValidator:
             raise
         except Exception as e:
             raise ValueError("Bad value found during validation") from e
-        
+
         if self.strict:
             raise ValueError("Validation failed to match input value")
         else:
             return value
-        
+
     def convert_to_proxy(self, value, **kwargs):
         raise NotImplementedError()
+
     def convert_to_entity(self, value, **kwargs):
         raise NotImplementedError()
+
     def default_value(self):
         raise NotImplementedError
 
     def repr_constraints(self):
-        nn = [ "nullable" if self.nullable else "not null" ]
+        nn = ["nullable" if self.nullable else "not null"]
 
         if self.minimum_len is not None and self.maximum_len is not None:
             nn.append(f"{self.minimum_len} <= length <= {self.maximum_len}")
@@ -151,34 +164,40 @@ class FieldValidator:
 
         return nn
 
+
 class AnyField(FieldValidator):
     """A very promiscuous basic validator."""
-    def __init__(self, repr_type='Any', *args, **kwargs):
+
+    def __init__(self, repr_type="Any", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._repr_type = repr_type
 
     def convert_to_proxy(self, value, **kwargs):
         return value
+
     def convert_to_entity(self, value, **kwargs):
         return value
+
     def default_value(self):
-        if hasattr(self, 'default'):
+        if hasattr(self, "default"):
             return self.default
         elif self.nullable:
-            return None 
+            return None
         else:
             raise NotImplementedError()
-            
+
     def repr_type(self):
         return self._repr_type
 
 
 class EnumeratedField(AnyField):
     """Fields with a fixed set of legal values.
-    
-       Subclasses can redefine the VALUES class attribute.
+
+    Subclasses can redefine the VALUES class attribute.
     """
+
     VALUES = []
+
     def __init__(self, *args, **kwargs):
         super().__init__(**kwargs)
         self.add_check(self.oneof, 5)
@@ -193,7 +212,8 @@ class EnumeratedField(AnyField):
 
 
 class StateField(EnumeratedField):
-    VALUES = ['active', 'deleted']
+    VALUES = ["active", "deleted"]
+
     def __init__(self):
         super().__init__(nullable=False)
 
@@ -203,8 +223,9 @@ class BasicField(AnyField):
     Given ftype T, accept value if it is an instance of T or if T(value) succeeds.
     Conversion to T is performed.
 
-    Subclasses include basic types: str, int, bool 
+    Subclasses include basic types: str, int, bool
     """
+
     def __init__(self, ftype, **kwargs):
         super().__init__(**kwargs)
         self.ftype = ftype
@@ -220,41 +241,50 @@ class BasicField(AnyField):
         return self.ftype.__name__
 
 
-
 class StrField(BasicField):
     """A string field validator"""
+
     def __init__(self, **kwargs):
         super().__init__(ftype=str, **kwargs)
-    
+
 
 class NameField(StrField):
     """Name fields are non-nullable string fields whose value
-       must follow a pattern.
+    must follow a pattern.
     """
+
     def __init__(self, **kwargs):
         super().__init__(nullable=False, minimum_len=2, maximum_len=100, **kwargs)
         self.add_check(self.check_name, 7)
 
-    NAME_PATTERN=re.compile(r"[a-z0-9_-]+")
+    NAME_PATTERN = re.compile(r"[a-z0-9_-]+")
+
     def check_name(self, value: str, **kwargs):
         if self.NAME_PATTERN.fullmatch(value) is None:
-            raise ValueError(f"Name must be a string matching '{self.NAME_PATTERN.pattern}'")
+            raise ValueError(
+                f"Name must be a string matching '{self.NAME_PATTERN.pattern}'"
+            )
         return value, False
+
+
+class VocabNameField(NameField):
+    NAME_PATTERN = re.compile(r".+")
 
 
 class TagNameField(NameField):
     NAME_PATTERN = re.compile(r"[A-Za-z0-9 ._-]+")
 
 
-
 class IntField(BasicField):
     """An int field validator"""
+
     def __init__(self, **kwargs):
         super().__init__(ftype=int, **kwargs)
 
 
 class BoolField(BasicField):
     """A bool field validator"""
+
     def __init__(self, **kwargs):
         super().__init__(ftype=bool, **kwargs)
 
@@ -275,6 +305,7 @@ class DateField(FieldValidator):
 
     def convert_to_entity(self, value: datetime, **kwargs) -> str:
         return value.isoformat()
+
     def convert_to_proxy(self, value: str, **kwargs) -> datetime:
         return datetime.fromisoformat(value)
 
@@ -285,10 +316,12 @@ class DateField(FieldValidator):
 class UUIDField(BasicField):
     def __init__(self, **kwargs):
         super().__init__(ftype=UUID, **kwargs)
+
     def convert_to_proxy(self, value: str, **kwargs) -> UUID:
         return UUID(value)
+
     def convert_to_entity(self, value: UUID, **kwargs) -> str:
         return str(value)
+
     def repr_type(self):
         return "UUID"
-

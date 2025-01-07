@@ -1,11 +1,26 @@
+from typing import Dict, List
 from uuid import UUID
-from typing import List, Dict
+
 from IPython.core.display import HTML
 from IPython.display import display
+
+from .apicall import GenericProxy, api_call
+from .proxy import (
+    BoolField,
+    DateField,
+    ExtrasProperty,
+    ExtrasProxy,
+    Id,
+    NameField,
+    NameId,
+    Property,
+    RefList,
+    StateField,
+    StrField,
+    derived_property,
+)
 from .resource import Resource
-from .proxy import (Property, Id, NameId, RefList, DateField, StrField, StateField,
-                    BoolField, NameField, ExtrasProxy, ExtrasProperty)
-from .apicall import GenericProxy
+
 
 class Group(GenericProxy, ExtrasProxy):
     """
@@ -26,7 +41,6 @@ class Group(GenericProxy, ExtrasProxy):
     image_url = Property(validator=StrField(), updatable=True)
     extras = ExtrasProperty()
 
-    users = RefList('User')
-    groups = RefList('Group')
-
-    
+    # users
+    # groups
+    # datasets

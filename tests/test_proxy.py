@@ -1,11 +1,24 @@
-import pytest
-from stelar_client.proxy import (Proxy, Property, Id,
-                                 Schema, IntField, StrField, DateField, BoolField, UUIDField,
-                                 ProxyState, InvalidationError)
-from uuid import uuid4, UUID
 from datetime import datetime
-from proxy_utils import TPCatalog, ProxyTestObj
+from uuid import UUID, uuid4
+
+import pytest
+from proxy_utils import ProxyTestObj, TPCatalog
+
 from stelar_client import deferred_sync
+from stelar_client.proxy import (
+    BoolField,
+    DateField,
+    Id,
+    IntField,
+    InvalidationError,
+    Property,
+    Proxy,
+    ProxyState,
+    Schema,
+    StrField,
+    UUIDField,
+)
+
 
 ##################################################
 #  An 'abstract' subclass of Proxy which does
@@ -15,6 +28,7 @@ class TestProxy(Proxy, entity=False):
     __test__ = False
 
     data = {}
+
     def proxy_sync(self, entity=None):
         if self.proxy_changed is not None:
             entity = self.data = self.proxy_to_entity()
@@ -39,13 +53,14 @@ def test_abstract():
             super().__init__(*args, **kwargs)
 
         a = Property()
+
         def proxy_sync(self):
-            self.proxy_attr = {'a': None}
+            self.proxy_attr = {"a": None}
             self.proxy_changed = None
 
-    assert not hasattr(Foo, 'proxy_schema')
-    assert not hasattr(Bar, 'proxy_schema')
-    assert hasattr(Baz, 'proxy_schema')
+    assert not hasattr(Foo, "proxy_schema")
+    assert not hasattr(Bar, "proxy_schema")
+    assert hasattr(Baz, "proxy_schema")
 
     catalog = TPCatalog()
     PFoo = catalog.registry_for(Foo)
@@ -53,45 +68,40 @@ def test_abstract():
     PBaz = catalog.registry_for(Baz)
 
     x = PFoo.fetch()
-    assert not hasattr(x, 'id')
+    assert not hasattr(x, "id")
 
     x = PBar.fetch()
-    assert not hasattr(x, 'id')
+    assert not hasattr(x, "id")
 
     x = PBaz.fetch()
-    assert hasattr(x, 'id')
-    assert hasattr(x, 'a')
-    
+    assert hasattr(x, "id")
+    assert hasattr(x, "a")
+
     with pytest.raises(TypeError):
-        class Bad(Bar, entity=False):
+
+        class Bad(Baz):
             a = Property()
 
 
 def test_non_entity_class_property_raises():
     with pytest.raises((RuntimeError, TypeError)):
+
         class Foo:
             a = Property()
 
     with pytest.raises((RuntimeError, TypeError)):
+
         class Foo:
             a = Id()
-
-    with pytest.raises(TypeError):
-        class Foo(Proxy, entity=False):
-            a = Id()
-
-    with pytest.raises(TypeError):
-        class Foo(Proxy, entity=False):
-            a = Property()
-
 
 
 def test_proxy_schema_registration():
     class Foo(Proxy):
         pass
 
-    assert hasattr(Foo, 'proxy_schema')
-    assert Schema.for_entity('Foo') is Foo.proxy_schema
+    assert hasattr(Foo, "proxy_schema")
+    assert Schema.for_entity("Foo") is Foo.proxy_schema
+
 
 def test_empty_proxy_obj_schema():
     class Foo(Proxy):
@@ -100,48 +110,46 @@ def test_empty_proxy_obj_schema():
     PFoo = TPCatalog().registry_for(Foo)
     eid = uuid4()
     x = PFoo.fetch(eid)
-    
-    # 
+
+    #
     assert x.proxy_attr is None
     assert len(x.proxy_schema.properties) == 0
-    assert x.proxy_schema.id.name == 'id'
-    assert x.id == eid 
+    assert x.proxy_schema.id.name == "id"
+    assert x.id == eid
 
 
 def test_empty_proxy_obj_given_key():
-
     class Foo(Proxy):
         myid = Id()
 
     eid = uuid4()
     x = TPCatalog().registry_for(Foo).fetch(eid)
 
-    # 
+    #
     assert x.proxy_attr is None
     assert len(x.proxy_schema.properties) == 0
-    assert x.proxy_schema.id.name == 'myid'
-    assert x.proxy_schema.id.entity_name == 'myid'
-    assert x.myid == eid 
+    assert x.proxy_schema.id.name == "myid"
+    assert x.proxy_schema.id.entity_name == "myid"
+    assert x.myid == eid
+
 
 def test_empty_proxy_obj_given_key_with_args():
     class Foo(Proxy):
-        myid = Id(entity_name='entity_id', doc="The ID doc")
+        myid = Id(entity_name="entity_id", doc="The ID doc")
 
     eid = uuid4()
     x = TPCatalog().registry_for(Foo).fetch(eid)
 
-    # 
+    #
     assert x.proxy_attr is None
     assert len(x.proxy_schema.properties) == 0
-    assert x.proxy_schema.id.name == 'myid'
-    assert x.myid == eid 
-    assert x.proxy_schema.id.entity_name == 'entity_id'
-    assert 'The ID doc' in x.proxy_schema.id.__doc__
-
+    assert x.proxy_schema.id.name == "myid"
+    assert x.myid == eid
+    assert x.proxy_schema.id.entity_name == "entity_id"
+    assert "The ID doc" in x.proxy_schema.id.__doc__
 
 
 def test_property():
-
     class Foo(Proxy):
         aprop = Property()
 
@@ -151,15 +159,14 @@ def test_property():
     # Just checking...
     assert x.proxy_attr is None
     assert len(x.proxy_schema.properties) == 1
-    assert x.proxy_schema.id.name == 'id'
-    assert x.id == eid 
+    assert x.proxy_schema.id.name == "id"
+    assert x.id == eid
 
-    p = x.proxy_schema.properties['aprop']
-    assert p.name == 'aprop'
+    p = x.proxy_schema.properties["aprop"]
+    assert p.name == "aprop"
     assert p.updatable is False
     assert p.optional is False
-    assert p.entity_name == 'aprop'
-
+    assert p.entity_name == "aprop"
 
 
 def test_proxy_obj():
@@ -167,9 +174,9 @@ def test_proxy_obj():
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.data = {
-                'a': 10,
-                'b': "Hello",
-                'c': None,
+                "a": 10,
+                "b": "Hello",
+                "c": None,
             }
 
         a = Property(updatable=True)
@@ -190,8 +197,8 @@ def test_proxy_obj():
     assert x.proxy_attr is None
     assert x.proxy_state is ProxyState.EMPTY
     assert len(x.proxy_schema.properties) == 3
-    assert x.proxy_schema.id.name == 'id'
-    assert x.id == eid 
+    assert x.proxy_schema.id.name == "id"
+    assert x.id == eid
     assert x.proxy_attr is None
     assert x.proxy_changed is None
 
@@ -203,7 +210,7 @@ def test_proxy_obj():
 
     x.proxy_autosync = False
     x.a = 20
-    x.b = "Hi there"    
+    x.b = "Hi there"
     assert x.proxy_changed is not None
     assert x.proxy_state is ProxyState.DIRTY
     x.proxy_sync()
@@ -234,10 +241,9 @@ def test_proxy_obj():
 
 
 def test_attr_read_only():
-
     class Foo(TestProxy):
         a = Property(updatable=False)
-        data = {'a': 20}
+        data = {"a": 20}
 
     eid = uuid4()
     x = TPCatalog().registry_for(Foo).fetch(eid)
@@ -248,14 +254,14 @@ def test_attr_read_only():
 
     with pytest.raises(expected_exception=AttributeError):
         del x.a
-      
+
     y = TPCatalog().registry_for(Foo).fetch()
     with pytest.raises(expected_exception=AttributeError):
         y.a = 10
 
     with pytest.raises(expected_exception=AttributeError):
         del y.a
-    
+
     assert x.a == 20
     assert y.a == 20
 
@@ -273,43 +279,42 @@ def test_prop_optional():
     with pytest.raises(ValueError):
         x.c
 
-    x.data = {'c': 10}
+    x.data = {"c": 10}
     x.proxy_invalidate()
     assert x.c == 10
-    assert not hasattr(x, 'a')
-    assert not hasattr(x, 'b')
+    assert not hasattr(x, "a")
+    assert not hasattr(x, "b")
 
     x.proxy_autosync = False
     x.a = 10
     assert x.a == 10
-    assert hasattr(x, 'a')
-    assert not hasattr(x, 'b')
+    assert hasattr(x, "a")
+    assert not hasattr(x, "b")
 
-    assert 'a' not in x.data
+    assert "a" not in x.data
     x.proxy_sync()
-    assert x.data['a'] == 10
+    assert x.data["a"] == 10
 
     with pytest.raises(AttributeError):
         x.b = 20  # this fails because b is not updatable
 
-    x.data['b'] = 20
+    x.data["b"] = 20
     x.proxy_sync()
     assert x.b == 20
     del x.b
-    assert not hasattr(x,'b')
+    assert not hasattr(x, "b")
     x.proxy_sync()
-    assert 'b' not in x.data
+    assert "b" not in x.data
+
 
 def test_property_validator():
     class Foo(TestProxy):
         a = Property(validator=IntField, updatable=True)
         b = Property(validator=StrField(), updatable=False)
-        data = {'a': -1, 'b': 'one'}
+        data = {"a": -1, "b": "one"}
 
-    
-    assert Foo.proxy_schema.properties['a'].validator.validate(10) == 10
-    assert Foo.proxy_schema.properties['b'].validator.validate('10') == '10'
-
+    assert Foo.proxy_schema.properties["a"].validator.validate(10) == 10
+    assert Foo.proxy_schema.properties["b"].validator.validate("10") == "10"
 
     x = TPCatalog().registry_for(Foo).fetch()
     assert x.a == -1
@@ -323,12 +328,11 @@ def test_missing_values():
         b = Property(updatable=False)
         data = {}
 
-
     x = TPCatalog().registry_for(Foo).fetch()
     with pytest.raises(ValueError):
         x.a
 
-    x.data = {'a':10, 'b': 20}
+    x.data = {"a": 10, "b": 20}
     x.proxy_invalidate()
     assert x.a == 10
     assert x.b == 20
@@ -337,9 +341,8 @@ def test_missing_values():
 def test_set_changed_once():
     class Foo(TestProxy):
         a = Property(updatable=True)
-        data = {'a': 1}
+        data = {"a": 1}
 
-    
     x = TPCatalog().registry_for(Foo).fetch()
     x.proxy_autosync = False
     assert x.a == 1
@@ -348,29 +351,34 @@ def test_set_changed_once():
     x.a = 3
     assert x.a == 3
 
-    assert x.proxy_attr['a'] == 3
-    assert x.proxy_changed['a'] == 1
+    assert x.proxy_attr["a"] == 3
+    assert x.proxy_changed["a"] == 1
 
     x.proxy_reset()
     assert x.a == 1
 
+
 def test_multiple_keys_raise():
-    with pytest.raises(TypeError): 
+    with pytest.raises(TypeError):
+
         class Foo(TestProxy):
             id1 = Id()
             id2 = Id()
 
+
 def test_id_property_nonkey_raise():
-    with pytest.raises(TypeError): 
+    with pytest.raises(TypeError):
+
         class Foo(TestProxy):
             id = Property()
+
         x = TPCatalog().registry_for(Foo).fetch()
 
 
 def test_Proxy_init():
     class Foo(TestProxy):
         a = Property()
-        data = {'a': 1}
+        data = {"a": 1}
 
     eid = uuid4()
     eid2 = uuid4()
@@ -380,15 +388,15 @@ def test_Proxy_init():
         x = Foo(tpc)
 
     with pytest.raises(ValueError):
-        x = Foo(tpc, eid=eid, entity={'id': str(eid2), 'a': 10})
+        x = Foo(tpc, eid=eid, entity={"id": str(eid2), "a": 10})
 
     with pytest.raises(ValueError):
-        x = Foo(tpc, entity = {'id2': str(eid2), 'a': 10})
+        x = Foo(tpc, entity={"id2": str(eid2), "a": 10})
 
-    x = Foo(tpc, eid, entity={'id': str(eid), 'a': 20})
+    x = Foo(tpc, eid, entity={"id": str(eid), "a": 20})
     assert x.id == eid
 
-    x = Foo(tpc, eid, entity={'a': 30})
+    x = Foo(tpc, eid, entity={"a": 30})
     assert x.id == eid
     assert x.a == 1
 
@@ -399,7 +407,7 @@ def test_Proxy_init():
     assert x.id == eid
     assert x.a == 1
 
-    x = Foo(tpc, entity={'id': eid, 'a': 20})
+    x = Foo(tpc, entity={"id": eid, "a": 20})
     assert x.a == 1
 
 
@@ -407,20 +415,20 @@ def test_setting_on_new_obj_syncs():
     class Foo(TestProxy):
         a = Property(updatable=True)
         b = Property(updatable=True)
-        data = {'a': 10, 'b':20}
+        data = {"a": 10, "b": 20}
 
     x = TPCatalog().registry_for(Foo).fetch()
     assert x.proxy_attr is None
     x.a = 1
-    assert x.proxy_attr['a'] == 1
-    assert x.proxy_attr['b'] == 20
+    assert x.proxy_attr["a"] == 1
+    assert x.proxy_attr["b"] == 20
 
 
 def test_cannot_set_to_ellipsis():
     class Foo(TestProxy):
         a = Property(updatable=True)
         b = Property(updatable=True)
-        data = {'a': 10, 'b':20}
+        data = {"a": 10, "b": 20}
 
     x = TPCatalog().registry_for(Foo).fetch()
     assert x.proxy_attr is None
@@ -434,7 +442,7 @@ def test_double_deletion():
     class Foo(TestProxy):
         a = Property(updatable=True)
         b = Property(updatable=True, optional=True)
-        data = {'a': 10, 'b':20}
+        data = {"a": 10, "b": 20}
 
     x = TPCatalog().registry_for(Foo).fetch()
     assert x.proxy_attr is None
@@ -453,7 +461,7 @@ def test_key_unchangable():
     class Foo(TestProxy):
         a = Property(updatable=True)
         b = Property(updatable=True, optional=True)
-        data = {'a': 10, 'b':20}
+        data = {"a": 10, "b": 20}
 
     eid = uuid4()
     x = TPCatalog().registry_for(Foo).fetch(eid)
@@ -469,7 +477,7 @@ def test_autosync():
     class Foo(TestProxy):
         a = Property(updatable=True)
         b = Property(updatable=True, optional=True)
-        data = {'a': 10, 'b':20}
+        data = {"a": 10, "b": 20}
 
     eid = uuid4()
     x = TPCatalog().registry_for(Foo).fetch(eid)
@@ -478,23 +486,24 @@ def test_autosync():
 
     x.a = 4
     assert x.a == 4
-    assert x.data['a'] == 4
+    assert x.data["a"] == 4
 
     x.update(a=0, b="haha")
     assert x.a == 0
     assert x.b == "haha"
-    assert x.data == {'a':0, 'b': 'haha'}
+    assert x.data == {"a": 0, "b": "haha"}
 
     x.update(a=100, b=...)
     assert x.a == 100
-    assert not hasattr(x, 'b')
-    assert x.data == {'a': 100}
+    assert not hasattr(x, "b")
+    assert x.data == {"a": 100}
+
 
 def test_autosync2():
     class Foo(TestProxy):
         a = Property(validator=IntField, updatable=True, optional=True)
         b = Property(validator=IntField, updatable=True, optional=True)
-        data = {'a': 10, 'b':20}
+        data = {"a": 10, "b": 20}
 
     eid = uuid4()
     x = TPCatalog().registry_for(Foo).fetch(eid)
@@ -509,7 +518,7 @@ def test_autosync2():
         x.update(a=0, b="aa")
     assert x.a == 10
     assert x.b == 20
-    
+
     with pytest.raises(ValueError):
         x.update(a="aa", b=0)
     assert x.a == 10
@@ -520,25 +529,29 @@ def test_autosync2():
     assert x.a == 10
     assert x.b == 20
 
+
 def test_proxy_new():
     class Foo(ProxyTestObj):
-        
         a = Property(validator=IntField, updatable=True, optional=True)
-        b = Property(validator=StrField(default='world'), updatable=True, optional=True)
+        b = Property(validator=StrField(default="world"), updatable=True, optional=True)
         c = Property(validator=BoolField(default=True), updatable=True, optional=True)
         d = Property(validator=DateField, updatable=True, optional=True)
-        e = Property(validator=UUIDField(default=uuid4()), updatable=True, optional=True)
+        e = Property(
+            validator=UUIDField(default=uuid4()), updatable=True, optional=True
+        )
 
         data = {}
 
     uu = uuid4()
-    Foo.data[uu] = Foo.new_entity(a=10, b="hello", c=False, d=datetime(2005,9,18, 23,55), e=uu)
+    Foo.data[uu] = Foo.new_entity(
+        a=10, b="hello", c=False, d=datetime(2005, 9, 18, 23, 55), e=uu
+    )
 
-    assert Foo.data[uu]['a'] == 10
-    assert Foo.data[uu]['b'] == 'hello'
-    assert Foo.data[uu]['c'] == False
-    assert Foo.data[uu]['d'] == datetime(2005, 9, 18, 23, 55).isoformat()
-    assert Foo.data[uu]['e'] == str(uu)
+    assert Foo.data[uu]["a"] == 10
+    assert Foo.data[uu]["b"] == "hello"
+    assert Foo.data[uu]["c"] == False
+    assert Foo.data[uu]["d"] == datetime(2005, 9, 18, 23, 55).isoformat()
+    assert Foo.data[uu]["e"] == str(uu)
 
     c = TPCatalog()
     x = c.registry_for(Foo).fetch(uu)
@@ -550,11 +563,11 @@ def test_proxy_new():
     assert x.e == uu
 
     dnow = datetime.now()
-    y = Foo.new(c, a=25, b='vsam', c=True, d=dnow, e=uu)
+    y = Foo.new(c, a=25, b="vsam", c=True, d=dnow, e=uu)
 
     assert y.id != UUID(int=0)
     assert y.a == 25
-    assert y.b == 'vsam'
+    assert y.b == "vsam"
     assert y.c is True
     assert y.d == dnow
     assert y.e == uu
@@ -564,7 +577,7 @@ def test_proxy_new():
 
     # Reloads
     assert y.a == 25
-    assert y.b == 'vsam'
+    assert y.b == "vsam"
     assert y.c is True
     assert y.d == dnow
     assert y.e == uu
@@ -586,9 +599,3 @@ def test_proxy_new():
 
     assert z.id != UUID(int=0)
     assert z.proxy_state is ProxyState.CLEAN
-
-
-
-
-
-    

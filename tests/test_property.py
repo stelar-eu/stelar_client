@@ -1,22 +1,33 @@
-import pytest
-from stelar_client.proxy import (Proxy, Property, Id,
-                                 Schema, IntField, StrField, DateField, BoolField, UUIDField,
-                                 ProxyState, InvalidationError)
-from uuid import uuid4, UUID
 from datetime import datetime
-from proxy_utils import TPCatalog, ProxyTestObj
+from uuid import UUID, uuid4
+
+import pytest
+from proxy_utils import ProxyTestObj, TPCatalog
+
 from stelar_client import deferred_sync
 from stelar_client.proxy import *
+from stelar_client.proxy import (
+    BoolField,
+    DateField,
+    Id,
+    IntField,
+    InvalidationError,
+    Property,
+    Proxy,
+    ProxyState,
+    Schema,
+    StrField,
+    UUIDField,
+)
 
 
 def test_derived_property():
-
     class Foo(ProxyTestObj):
         a = Property(validator=IntField, updatable=True)
 
         @derived_property
         def two_a(self, entity):
-            return 2*entity['a']
+            return 2 * entity["a"]
 
     c = TPCatalog()
 
@@ -33,6 +44,24 @@ def test_derived_property():
     assert x.two_a == 2
 
 
+def test_inherited_property():
+    class Foo(ProxyTestObj, entity=False):
+        a = Property(validator=IntField, updatable=True)
 
+    class Bar(Foo):
+        b = Property(validator=IntField, updatable=True)
 
+    assert hasattr(Bar, "proxy_schema")
+    assert not hasattr(Foo, "proxy_schema")
 
+    assert set(Bar.proxy_schema.properties) == {"a", "b"}
+    assert Bar.proxy_schema.abstract_base_classes == [Foo, ProxyTestObj, Proxy]
+
+    c = TPCatalog()
+
+    with pytest.raises(TypeError):
+        Foo.new(c, a=1)
+
+    x = Bar.new(c, a=1, b=3)
+    assert x.a == 1
+    assert x.b == 3

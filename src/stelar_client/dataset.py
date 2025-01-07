@@ -1,16 +1,32 @@
+from typing import Dict, List
 from uuid import UUID
-from typing import List, Dict
+
 from IPython.core.display import HTML
 from IPython.display import display
-from .utils import *
+
+from .apicall import GenericCursor, GenericProxy, api_call
+from .proxy import (
+    BoolField,
+    DateField,
+    ExtrasProperty,
+    ExtrasProxy,
+    Id,
+    NameId,
+    Property,
+    Reference,
+    RefList,
+    StateField,
+    StrField,
+    TaggableProxy,
+    TagList,
+    UUIDField,
+)
 from .resource import Resource
-from .proxy import (Property, Id, NameId, Reference, RefList, 
-                    DateField, StrField, BoolField, NameField, UUIDField, StateField,
-                    ExtrasProxy, ExtrasProperty)
+from .utils import *
+from .vocab import Tag
 
-from .apicall import api_call, GenericProxy
 
-class Dataset(GenericProxy, ExtrasProxy):
+class Dataset(GenericProxy, ExtrasProxy, TaggableProxy):
     """
     A proxy of a STELAR dataset.
     """
@@ -21,9 +37,11 @@ class Dataset(GenericProxy, ExtrasProxy):
     metadata_modified = Property(validator=DateField)
     state = Property(validator=StateField)
     type = Property(validator=StrField)
-    creator = Property(validator=UUIDField, entity_name='creator_user_id')
+    creator = Property(validator=UUIDField, entity_name="creator_user_id")
 
-    private = Property(validator=BoolField(nullable=False, default=False), updatable=True)
+    private = Property(
+        validator=BoolField(nullable=False, default=False), updatable=True
+    )
     title = Property(validator=StrField, updatable=True)
     notes = Property(validator=StrField(nullable=True), updatable=True)
     author = Property(validator=StrField(nullable=True), updatable=True)
@@ -34,13 +52,18 @@ class Dataset(GenericProxy, ExtrasProxy):
     # weird ones
     license_id = Property(validator=StrField(nullable=True), updatable=True)
     url = Property(validator=StrField(nullable=True), updatable=True)
-    version = Property(validator=StrField(nullable=True, maximum_len=100), updatable=True)
+    version = Property(
+        validator=StrField(nullable=True, maximum_len=100), updatable=True
+    )
 
     resources = RefList(Resource, trigger_sync=True)
-    organization = Reference('Organization', entity_name='owner_org', create_default='stelar-klms')
+    organization = Reference(
+        "Organization", entity_name="owner_org", create_default="stelar-klms"
+    )
 
-    groups = RefList('Group', trigger_sync=False)
+    groups = RefList("Group", trigger_sync=False)
     extras = ExtrasProperty()
+    tags = TagList()
 
     # *tags: list[str]
     # profile
@@ -50,15 +73,13 @@ class Dataset(GenericProxy, ExtrasProxy):
     def add_resource(self, **properties):
         """Add a new resource with the given properties.
 
-        Example:  new_rsrc = d.add_resource(name="Profile", url="s3://datasets/a.json", 
+        Example:  new_rsrc = d.add_resource(name="Profile", url="s3://datasets/a.json",
             format="json", mimetype="application/json")
 
         Args:
             **properties: The arguments to pass. See 'Resource' for details.
         """
         return client_for(self).resources.create(dataset=self, **properties)
-
-
 
     def _repr_html_(self):
         """
@@ -170,7 +191,7 @@ class Dataset(GenericProxy, ExtrasProxy):
         # Combine both tables into the final HTML
         html = f"{summary_html}<br>{resources_table_html}"
         return HTML(html)._repr_html_()
-    
+
     def __disabled_str__(self):
         dataset_info = f"Title: {self.title} | Dataset ID: {self.id} | Name: {self.name} | Tags: {self.tags} | Modified Date: {self.modified_date}\nDataset Resources:\n"
         if self.resources:
@@ -181,3 +202,16 @@ class Dataset(GenericProxy, ExtrasProxy):
         return dataset_info
 
 
+class DatasetCursor(GenericCursor):
+    def __init__(self, client):
+        super().__init__(client, Dataset)
+
+    def with_tag(self, tagarg):
+        # Need to obtain the tag ID, in order to call tag_show
+        match tagarg:
+            case Tag():
+                return tagarg.get_tagged_datasets()
+            case str():
+                return client_for(self).tags[tagarg].get_tagged_datasets()
+            case _:
+                raise ValueError("Expected Tag or tagspec (a string)")

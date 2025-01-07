@@ -1,22 +1,23 @@
+from urllib.parse import urlencode, urljoin
+
 import requests
-from urllib.parse import urljoin, urlencode
+
 from .proxy import RegistryCatalog
 
 
-class BaseAPI(RegistryCatalog):
+class BaseAPI:
     """Base class for all parts of the client API.
-    
-       Its main responsibility is to support API calls to the
-       STELAR server. It also contains logic to manage the proxies.
+
+    Its main responsibility is to support API calls to the
+    STELAR server. It also contains logic to manage the proxies.
     """
 
     def __init__(self, base_url, token, refresh_token, tls_verify=True):
         super().__init__()
         self._base_url = base_url
-        self._api_url = base_url+"/api/"
+        self._api_url = base_url + "/api/"
         self._tls_verify = tls_verify
         self.reset_tokens(token, refresh_token)
-
 
     @property
     def api_url(self):
@@ -39,7 +40,9 @@ class BaseAPI(RegistryCatalog):
         self._token = token
         self._refresh_token = refresh_token
 
-    def request(self, method, endpoint, params=None, data=None, headers=None, json=None):
+    def request(
+        self, method, endpoint, params=None, data=None, headers=None, json=None
+    ):
         """
         Sends a request to the STELAR API
 
@@ -55,16 +58,18 @@ class BaseAPI(RegistryCatalog):
             requests.Response: The response object from the API.
         """
         # Combine base_url with the endpoint
-        endpoint = endpoint.lstrip('/')
+        endpoint = endpoint.lstrip("/")
         url = urljoin(self.api_url, endpoint)
         # Handle query parameters in the endpoint or passed as 'params'
         if "?" in endpoint and params:
-            raise ValueError("Specify query parameters either in the endpoint or in 'params', not both.")
-        
+            raise ValueError(
+                "Specify query parameters either in the endpoint or in 'params', not both."
+            )
+
         # If the URL does not contain a query, add parameters from 'params'
         if params:
             url = f"{url}?{urlencode(params)}"
-        
+
         # Prepare headers, defaulting to Authorization if token is present and Content-Type
         default_headers = {
             "Content-Type": "application/json",
@@ -91,10 +96,10 @@ class BaseAPI(RegistryCatalog):
             method=method,
             url=url,
             params=None,  # params are already incorporated into the URL
-            data=data,    # if provided, this will be form data
-            json=json,    # if provided, this will be JSON payload
+            data=data,  # if provided, this will be form data
+            json=json,  # if provided, this will be JSON payload
             headers=default_headers,
-            verify=self._tls_verify
+            verify=self._tls_verify,
         )
 
         # Raise an exception for HTTP errors (4xx, 5xx responses)
@@ -105,32 +110,36 @@ class BaseAPI(RegistryCatalog):
         """Do an actual API call"""
 
         url = urljoin(self._api_url, endpoint)
-        headers = {
-            "Authorization": f"Bearer {self._token}"
-        }
-        if params is not None and 'json' in params:
-            json = params['json']
+        headers = {"Authorization": f"Bearer {self._token}"}
+        if params is not None and "json" in params:
+            json = params["json"]
 
-        response = requests.request(method, url, params=params, 
-                                    json=json, headers=headers, verify=self._tls_verify)
+        response = requests.request(
+            method,
+            url,
+            params=params,
+            json=json,
+            headers=headers,
+            verify=self._tls_verify,
+        )
         return response
-    
+
     def GET(self, *endp, **params):
-        endpoint = '/'.join(endp)
-        return self.api_request('GET', endpoint, params=params)
-    
+        endpoint = "/".join(endp)
+        return self.api_request("GET", endpoint, params=params)
+
     def POST(self, *endp, **params):
-        endpoint = '/'.join(endp)
-        return self.api_request('POST', endpoint, params=params)
+        endpoint = "/".join(endp)
+        return self.api_request("POST", endpoint, params=params)
 
     def PUT(self, *endp, **params):
-        endpoint = '/'.join(endp)
-        return self.api_request('PUT', endpoint, params=params)
+        endpoint = "/".join(endp)
+        return self.api_request("PUT", endpoint, params=params)
 
     def PATCH(self, *endp, **params):
-        endpoint = '/'.join(endp)
-        return self.api_request('PATCH', endpoint, params=params)
+        endpoint = "/".join(endp)
+        return self.api_request("PATCH", endpoint, params=params)
 
     def DELETE(self, *endp, **params):
-        endpoint = '/'.join(endp)
-        return self.api_request('DELETE', endpoint, params=params)
+        endpoint = "/".join(endp)
+        return self.api_request("DELETE", endpoint, params=params)

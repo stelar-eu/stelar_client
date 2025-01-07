@@ -1,23 +1,30 @@
-from .base import BaseAPI
-from .endpoints import APIEndpointsV1
-from .model import MissingParametersError, STELARUnknownError, DuplicateEntryError, EntityNotFoundError
-from .proxy import Registry
-from .apicall import GenericCursor
-from .dataset import Dataset
-from .resource import Resource
-from .organization import Organization
-from .group import Group
-from .tag import Vocabulary, Tag, VocabularyCursor
-from .user import User, UserCursor
+from urllib.parse import urlencode, urljoin
+
 from requests.exceptions import HTTPError
-from urllib.parse import urljoin, urlencode
+
+from .apicall import GenericCursor, api_call
+from .base import BaseAPI
+from .dataset import Dataset, DatasetCursor
+from .endpoints import APIEndpointsV1
+from .group import Group
+from .model import (
+    DuplicateEntryError,
+    EntityNotFoundError,
+    MissingParametersError,
+    STELARUnknownError,
+)
+from .organization import Organization
+from .proxy import Registry, RegistryCatalog
+from .resource import Resource
+from .user import User, UserCursor
+from .vocab import Tag, TagCursor, Vocabulary, VocabularyCursor
 
 
-class CatalogAPI(BaseAPI):
+class CatalogAPI(RegistryCatalog, BaseAPI):
     """
-    CatalogAPI is a superclass of the STELAR Python Client. It implements 
-    data catalog handling methods that utilizes a subset of the available STELAR API 
-    Endpoints that are related to catalog management operations (Publishing, 
+    CatalogAPI is a superclass of the STELAR Python Client. It implements
+    data catalog handling methods that utilizes a subset of the available STELAR API
+    Endpoints that are related to catalog management operations (Publishing,
     Searching etc.).
 
     """
@@ -25,18 +32,13 @@ class CatalogAPI(BaseAPI):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Create the registries
-        dataset_registry = Registry(self, Dataset)
-        resource_registry = Registry(self, Resource)
-        organization_registry = Registry(self, Organization)
-        group_registry = Registry(self, Group)
-        vocabulary_registry = Registry(self, Vocabulary)
-        tag_registry = Registry(self, Tag)
-        user_registry = Registry(self, User)
+        for ptype in [Dataset, Resource, Organization, Group, Vocabulary, Tag, User]:
+            Registry(self, ptype)
 
     @property
     def datasets(self):
         """The datasets cursor"""
-        return GenericCursor(self, Dataset)
+        return DatasetCursor(self)
 
     @property
     def resources(self):
@@ -62,3 +64,17 @@ class CatalogAPI(BaseAPI):
     def users(self):
         """The user cursor"""
         return UserCursor(self)
+
+    @property
+    def tags(self):
+        """The tag cursor"""
+        return TagCursor(self)
+
+    def fetch_active_vocabularies(self):
+        """Return a list of dicts with the id and name of each tag vocabulary.
+
+        This function is usually called to update the vocabulary index inside the
+        client, and is not very useful to end users.
+        """
+        ac = api_call(self)
+        return ac.vocabulary_list()

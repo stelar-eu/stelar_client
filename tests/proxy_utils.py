@@ -1,15 +1,26 @@
-from uuid import uuid4, UUID
-from stelar_client.proxy import Proxy, Registry, RegistryCatalog, ProxySynclist
+from uuid import UUID, uuid4
+
+from stelar_client.proxy import Proxy, ProxySynclist, Registry, RegistryCatalog
+
 
 class TPRegistry(Registry):
     def __init__(self, catalog, proxy_type):
         super().__init__(catalog, proxy_type)
+
     def fetch(self, eid=None):
         if eid is None:
             eid = uuid4()
         return self.proxy_type(self, eid)
 
+
 class TPCatalog(RegistryCatalog):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        self.vocabs = []
+
+    def fetch_active_vocabularies(self):
+        return self.vocabs
+
     def registry_for(self, cls):
         if cls not in self.registry_catalog:
             self.add_registry_for(cls, TPRegistry(self, cls))
@@ -21,7 +32,6 @@ class TPCatalog(RegistryCatalog):
 #  not implement an entity.
 ##################################################
 class ProxyTestObj(Proxy, entity=False):
-
     data = {}
     patch = {}
 
@@ -48,10 +58,13 @@ class ProxyTestObj(Proxy, entity=False):
             for prop in schema.properties.values():
                 if prop.entity_name not in entity:
                     v = prop.validator
-                    entity[prop.entity_name] = v.convert_to_entity(v.default_value())
+                    entity[prop.entity_name] = v.convert_to_entity(
+                        v.default_value(),
+                        vocindex=self.proxy_registry.catalog.vocabulary_index,
+                    )
 
             self.data[myid] = entity
-            #-------------------------------
+            # -------------------------------
 
             # We add this proxy to its registry!
             # This will call proxy_sync recursively !

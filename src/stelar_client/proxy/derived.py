@@ -1,13 +1,15 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING, TypeVar, Generic, Any
-from uuid import UUID
+
 from io import StringIO
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
+from uuid import UUID
+
 from .exceptions import EntityError
-from .fieldvalidation import AnyField, UUIDField, NameField
+from .fieldvalidation import AnyField, NameField, UUIDField
+from .property import Property
 from .proxy import Proxy
 from .proxylist import ProxySublist
 from .registry import Registry
-from .property import Property
 
 
 class derived_property(Property):
@@ -30,14 +32,14 @@ class derived_property(Property):
         self.method = method
         return self
 
-    def convert_entity_to_proxy(self, proxy: Proxy, entity: Any):
+    def convert_entity_to_proxy(self, proxy: Proxy, entity: Any, **kwargs):
         proxy.proxy_attr[self.name] = self.method(proxy, entity)
 
-    def convert_proxy_to_entity(self, proxy: Proxy, entity: dict):
+    def convert_proxy_to_entity(self, proxy: Proxy, entity: dict, **kwargs):
         pass
 
-    def convert_to_create(self, create_props: Entity, entity_props: Entity):
+    def convert_to_create(
+        self, proxy_type, create_props: dict, entity_props: dict, **kwargs
+    ):
         if self.name in create_props:
             raise EntityError("Cannot provide derived property for creation")
-            
-    
