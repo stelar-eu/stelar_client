@@ -58,7 +58,11 @@ class Dataset(GenericProxy, ExtrasProxy, TaggableProxy):
 
     resources = RefList(Resource, trigger_sync=True)
     organization = Reference(
-        "Organization", entity_name="owner_org", create_default="stelar-klms"
+        "Organization",
+        entity_name="owner_org",
+        create_default="stelar-klms",
+        updatable=True,
+        trigger_sync=True,
     )
 
     groups = RefList("Group", trigger_sync=False)
@@ -210,8 +214,8 @@ class DatasetCursor(GenericCursor):
         # Need to obtain the tag ID, in order to call tag_show
         match tagarg:
             case Tag():
-                return tagarg.get_tagged_datasets()
+                return list(tagarg.get_tagged_datasets())
             case str():
-                return client_for(self).tags[tagarg].get_tagged_datasets()
+                return list(client_for(self).tags[tagarg].get_tagged_datasets())
             case _:
                 raise ValueError("Expected Tag or tagspec (a string)")

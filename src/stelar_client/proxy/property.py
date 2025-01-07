@@ -221,6 +221,8 @@ class Property:
         entity_props[self.entity_name] = entity_value
 
     def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
         val = self.get(obj)
 
         # The attribute is deleted
