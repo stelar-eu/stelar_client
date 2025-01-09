@@ -10,12 +10,33 @@ from .proxy import Proxy
 
 if TYPE_CHECKING:
     from ..client import Client
-    from .property import RefList
+    from .refs import RefList
     from .registry import Registry
     from .schema import Schema
 
 
 ProxyClass = TypeVar("ProxyClass", bound=Proxy)
+
+
+class ShortenedUUID(UUID):
+    def __str__(self):
+        return f"{super().__str__()[:5]}..."
+
+
+def simplified(value, property):
+    from .property import Id
+    from .refs import Reference
+
+    match property:
+        case Id():
+            return ShortenedUUID(value.hex)
+        case Reference(proxy_type=pt):
+            if pt.proxy_schema.name:
+                return value.name
+            else:
+                return ShortenedUUID(value.proxy_id.hex)
+        case _:
+            return value
 
 
 class ProxyList(Generic[ProxyClass]):
@@ -72,22 +93,16 @@ class ProxyList(Generic[ProxyClass]):
         """Generate a dataframe for the set of resources."""
         import pandas as pd
 
-        def simplified(val):
-            if isinstance(val, Proxy):
-                if hasattr(val, "name"):
-                    return val.name
-                else:
-                    return val.proxy_id
-            else:
-                return val
+        schema = self.proxy_type.proxy_schema
 
         if fields is None:
-            fields = self.proxy_type.proxy_schema.short_list(set(additional_fields))
+            fields = schema.short_list(set(additional_fields))
         data = {field: list() for field in fields}
 
         for proxy in self:
             for field in fields:
-                data[field].append(simplified(getattr(proxy, field)))
+                property = schema.all_fields[field]
+                data[field].append(simplified(getattr(proxy, field), property))
         return pd.DataFrame(data=data)
 
     @property
@@ -102,7 +117,9 @@ class ProxyVec(ProxyList):
     correpsonding element is fetched from the registry.
     """
 
-    def __init__(self, client, proxy_type, members):
+    def __init__(
+        self, client: Client, proxy_type: Type[ProxyClass], members: list[ProxyClass]
+    ):
         super().__init__(client, proxy_type)
         self.members = members
 

@@ -146,11 +146,9 @@ class Schema:
     SHORT_NAMES = {
         "id",
         "name",
-        "state",
         "title",
         "author",
         "maintainer",
-        "type",
         "resource_type",
         "url",
     }
