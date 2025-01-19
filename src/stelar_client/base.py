@@ -2,8 +2,6 @@ from urllib.parse import urlencode, urljoin
 
 import requests
 
-from .proxy import RegistryCatalog
-
 
 class BaseAPI:
     """Base class for all parts of the client API.

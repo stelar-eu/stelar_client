@@ -31,17 +31,19 @@ class CKAN:
     dc.package_create(name='just_a_test', title='Just a test', owner_org='stelar-klms')
     dc.package_delete(id='just_a_test')
 
-    ... etc. Use 
+    ... etc. Use
     """
-    def __init__(self, context='apitest', client=None):
+
+    def __init__(self, context="apitest", client=None):
         from .client import Client
+
         if client is None:
             self.client = Client(context)
         else:
             self.client = client
         self.ckanapi = urljoin(self.client._base_url, "/dc/api/3/action/")
         self.headers = {
-            'Authorization': self.client._ckan_apitoken,
+            "Authorization": self.client._ckan_apitoken,
         }
         self.docs = {}
         self.bad_names = set()
@@ -49,17 +51,17 @@ class CKAN:
 
     def __bool__(self) -> bool:
         return self.status
-    
+
     def check(self) -> bool:
         try:
-            url = urljoin(self.ckanapi, 'site_read')
+            url = urljoin(self.ckanapi, "site_read")
             resp = requests.get(url, headers=self.headers)
-            result = resp.json()['result']
-            success = resp.json()['success']
+            result = resp.json()["result"]
+            success = resp.json()["success"]
             return success and result
-        except:
+        except Exception:
             return False
-        
+
     def __getattr__(self, name):
         if name in self.bad_names:
             raise AttributeError(name)
@@ -70,17 +72,18 @@ class CKAN:
         try:
             doc = self.docs.get(name)
             if doc is None:
-                urlh = urljoin(self.ckanapi, 'help_show')
-                resp = requests.post(urlh, json={'name': name}, headers=self.headers)
-                doc = resp.json()['result']
+                urlh = urljoin(self.ckanapi, "help_show")
+                resp = requests.post(urlh, json={"name": name}, headers=self.headers)
+                doc = resp.json()["result"]
                 self.docs[name] = doc
         except Exception as e:
             self.bad_names.add(name)
             raise AttributeError(name) from e
 
         url = urljoin(self.ckanapi, name)
+
         def ckan_call(json_obj={}, **kwargs):
-            json = json_obj|kwargs
+            json = json_obj | kwargs
             resp = requests.post(url, json=json, headers=self.headers)
             return resp.json()
 
@@ -92,4 +95,3 @@ class CKAN:
 
     def __repr__(self):
         return f"<CKAN {self.ckanapi} {'active' if self.status else 'bad'}>"
-

@@ -1,8 +1,12 @@
 from .base import BaseAPI
 from .endpoints import APIEndpointsV1
 from .policy import Policy
-from .model import MissingParametersError, STELARUnknownError, DuplicateEntryError, EntityNotFoundError
-from urllib.parse import urljoin, urlencode
+from .model import (
+    MissingParametersError,
+    STELARUnknownError,
+    DuplicateEntryError,
+)
+from urllib.parse import urljoin
 from requests.exceptions import HTTPError
 
 
@@ -14,67 +18,64 @@ class AdminAPI(BaseAPI):
     -------
     get_user_by_id(user_id: str) -> dict
         Returns a user entity by UUID or username. Requires admin rights.
-        
+
     get_users(offset: int = None, limit: int = None) -> dict
         Returns all user entities present inside the KLMS. Requires admin rights.
-        
+
     create_policy(policy: Policy)
         Creates a policy using the provided `Policy` object.
-        
+
     get_policy_info(filter: str)
         Retrieves detailed information about a specific policy based on a filter.
 
     get_policy_representation(filter: str)
         Retrieves the YAML representation of a specific policy based on a filter.
-        
+
     get_policy_list()
         Retrieves a list of all available policies and presents them as tables.
     """
 
-
     def get_user_by_id(self, user_id: str) -> dict:
         """Returns a user entity by UUID or by username. Requires admin rights.
-        
-        Args: 
+
+        Args:
             user_id (str): User UUID or username.
-        
-        Returns: 
+
+        Returns:
             dict: The user representation in dictionary resembling JSON.
         """
-        
+
         response = self.request("GET", urljoin(APIEndpointsV1.GET_USER, user_id))
         if response.status_code == 200:
-            result = response.json().get('result',  None)
+            result = response.json().get("result", None)
             if result:
-                userRepresentation = result.get('user', None)
-                return userRepresentation    
-        else:
-            return response.json()
-        
-
-
-    def get_users(self, offset: int = None, limit: int = None) -> dict:
-        """Returns all user entities present inside the KLMS. Requires admin rights.
-        
-        Args: 
-            offset (int): Optional offset parameter to apply pagination logic.
-            limit (int): Optional limit parameter to apply pagination. If not set, all users will be returned
-        
-        Returns: 
-            dict: The user representations in dictionary resembling JSON.
-        """
-        
-        response = self.request("GET", APIEndpointsV1.GET_USERS)
-        if response.status_code == 200:
-            result = response.json().get('result',  None)
-            if result:
-                userRepresentation = result.get('users', None)
+                userRepresentation = result.get("user", None)
                 return userRepresentation
         else:
             return response.json()
-        
 
-    def create_policy(self,policy: Policy):
+    def get_users(self, offset: int = None, limit: int = None) -> dict:
+        """Returns all user entities present inside the KLMS. Requires admin rights.
+
+        Args:
+            offset (int): Optional offset parameter to apply pagination logic.
+            limit (int): Optional limit parameter to apply pagination. If not set, all
+                users will be returned.
+
+        Returns:
+            dict: The user representations in dictionary resembling JSON.
+        """
+
+        response = self.request("GET", APIEndpointsV1.GET_USERS)
+        if response.status_code == 200:
+            result = response.json().get("result", None)
+            if result:
+                userRepresentation = result.get("users", None)
+                return userRepresentation
+        else:
+            return response.json()
+
+    def create_policy(self, policy: Policy):
         """
         Create a policy by sending its content to the specified API endpoint.
 
@@ -119,19 +120,28 @@ class AdminAPI(BaseAPI):
             return None
         try:
             yaml_headers = {"Content-Type": "application/x-yaml"}
-            policy_response = self.request("POST",APIEndpointsV1.POST_POLICY,headers=yaml_headers,data=policy.policy_content)
+            policy_response = self.request(
+                "POST",
+                APIEndpointsV1.POST_POLICY,
+                headers=yaml_headers,
+                data=policy.policy_content,
+            )
             if policy_response.status_code == 200:
-                policy_repr = self.request("GET",urljoin(APIEndpointsV1.GET_POLICY_REPRESENATION,"active"))
-                policy_info = self.request("GET",urljoin(APIEndpointsV1.GET_POLICY_INFO,"active"))
+                policy_repr = self.request(
+                    "GET", urljoin(APIEndpointsV1.GET_POLICY_REPRESENATION, "active")
+                )
+                policy_info = self.request(
+                    "GET", urljoin(APIEndpointsV1.GET_POLICY_INFO, "active")
+                )
                 if policy_info.status_code == 200 and policy_repr.status_code == 200:
                     yaml_content = policy_repr.content
                     if yaml_content.startswith(b"b'"):
                         yaml_content = yaml_content[2:-1]
-            
-                    formatted_yaml_string = yaml_content.decode('unicode_escape')
-                    pjson = policy_info.json()['result']['policy']
-                    pjson['policy_content'] = formatted_yaml_string
-                # print(yaml.dump(policy_response.json()['result']['policy']))
+
+                    formatted_yaml_string = yaml_content.decode("unicode_escape")
+                    pjson = policy_info.json()["result"]["policy"]
+                    pjson["policy_content"] = formatted_yaml_string
+                    # print(yaml.dump(policy_response.json()['result']['policy']))
 
                     policy.update_from_dict(pjson)
                     policy.reset_dirty()
@@ -142,9 +152,8 @@ class AdminAPI(BaseAPI):
                 raise DuplicateEntryError("Dataset Already Exists")
             else:
                 raise STELARUnknownError(f"Unknown Error: {he}")
-            
-            
-    def get_policy_info(self,filter: str):
+
+    def get_policy_info(self, filter: str):
         """
         Retrieve detailed information about a specific policy based on a filter.
 
@@ -175,16 +184,20 @@ class AdminAPI(BaseAPI):
         if not filter:
             return None
         try:
-            policy_repr = self.request("GET",urljoin(APIEndpointsV1.GET_POLICY_REPRESENATION,filter))
-            policy_info = self.request("GET",urljoin(APIEndpointsV1.GET_POLICY_INFO,filter))
+            policy_repr = self.request(
+                "GET", urljoin(APIEndpointsV1.GET_POLICY_REPRESENATION, filter)
+            )
+            policy_info = self.request(
+                "GET", urljoin(APIEndpointsV1.GET_POLICY_INFO, filter)
+            )
             if policy_info.status_code == 200 and policy_repr.status_code == 200:
                 yaml_content = policy_repr.content
                 if yaml_content.startswith(b"b'"):
                     yaml_content = yaml_content[2:-1]
-        
-                formatted_yaml_string = yaml_content.decode('unicode_escape')
-                pjson = policy_info.json()['result']['policy']
-                pjson['policy_content'] = formatted_yaml_string
+
+                formatted_yaml_string = yaml_content.decode("unicode_escape")
+                pjson = policy_info.json()["result"]["policy"]
+                pjson["policy_content"] = formatted_yaml_string
                 policy_obj = Policy.from_dict(pjson)
                 return policy_obj
         except HTTPError as he:
@@ -194,8 +207,8 @@ class AdminAPI(BaseAPI):
                 raise DuplicateEntryError("Dataset Already Exists")
             else:
                 raise STELARUnknownError(f"Unknown Error: {he}")
-    
-    def get_policy_representation(self,filter: str):
+
+    def get_policy_representation(self, filter: str):
         """
         Retrieve the YAML representation of a specific policy based on a filter.
 
@@ -224,13 +237,15 @@ class AdminAPI(BaseAPI):
         if not filter:
             return None
         try:
-            policy_repr = self.request("GET",urljoin(APIEndpointsV1.GET_POLICY_REPRESENATION,filter))
+            policy_repr = self.request(
+                "GET", urljoin(APIEndpointsV1.GET_POLICY_REPRESENATION, filter)
+            )
             if policy_repr.status_code == 200:
                 yaml_content = policy_repr.content
                 if yaml_content.startswith(b"b'"):
                     yaml_content = yaml_content[2:-1]
-        
-                formatted_yaml_string = yaml_content.decode('unicode_escape')
+
+                formatted_yaml_string = yaml_content.decode("unicode_escape")
                 print(formatted_yaml_string)
         except HTTPError as he:
             if he.response.status_code == 400:
@@ -240,7 +255,6 @@ class AdminAPI(BaseAPI):
             else:
                 raise STELARUnknownError(f"Unknown Error: {he}")
 
-     
     def get_policy_list(self):
         """
         Retrieve a list of all available policies and present them as tables.
@@ -264,9 +278,9 @@ class AdminAPI(BaseAPI):
         >>> admin.get_policy_list()
         """
         try:
-            policy_response = self.request("GET",APIEndpointsV1.GET_POLICY_LIST)
+            policy_response = self.request("GET", APIEndpointsV1.GET_POLICY_LIST)
             if policy_response.status_code == 200:
-                pjson = policy_response.json()['result']['policies']
+                pjson = policy_response.json()["result"]["policies"]
                 policy_list = [json for json in pjson]
                 return policy_list
                 # Policy.present_dictionaries_as_tables(policy_list)
@@ -277,5 +291,3 @@ class AdminAPI(BaseAPI):
                 raise DuplicateEntryError("Dataset Already Exists")
             else:
                 raise STELARUnknownError(f"Unknown Error: {he}")
-
-

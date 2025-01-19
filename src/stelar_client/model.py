@@ -1,16 +1,18 @@
-from typing import List, Dict
-from IPython.core.display import HTML
-from IPython.display import display
+"""A module containing useful definitions related to STELAR API entities
+"""
 
 
 class MissingParametersError(Exception):
     pass
 
+
 class DuplicateEntryError(Exception):
     pass
 
+
 class STELARUnknownError(Exception):
     pass
+
 
 class EntityNotFoundError(Exception):
     pass
