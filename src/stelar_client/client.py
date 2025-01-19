@@ -6,20 +6,22 @@ access the API.
 """
 from __future__ import annotations
 
+from configparser import ConfigParser
+from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import urljoin, urlparse, urlunparse
-from requests.utils import get_auth_from_url, urldefragauth
-from pathlib import Path
-from configparser import ConfigParser
+
 import requests
+from requests.utils import get_auth_from_url, urldefragauth
+
+from .admin import AdminAPI
+from .catalog import CatalogAPI
 
 # Import subAPIs modules
 from .endpoints import APIEndpointsV1
-from .workflows import WorkflowsAPI
-from .catalog import CatalogAPI
 from .knowgraph import KnowledgeGraphAPI
-from .admin import AdminAPI
 from .s3 import S3API
+from .workflows import WorkflowsAPI
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -125,8 +127,20 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         """
 
         # First, try to use the refresh token.
-
-        if False:
+        if self._refresh_token is not None:
+            try:
+                token, refresh_token = self.token_refresh(
+                    self._base_url, self._refresh_token, self._tls_verify
+                )
+                self.reset_tokens(token, refresh_token)
+            except RuntimeError as e:
+                # Suppress exception, proceed to refresh by re-authentication
+                print(
+                    "Refreshing token: an exception occurred using the refresh token:",
+                    e,
+                )
+                pass
+        else:
             if self._context or password is None:
                 base_url, username, password = self.__from_context()
             else:
@@ -138,7 +152,9 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
                 password=password,
                 tls_verify=self._tls_verify,
             )
-            self.reset_tokens(token, refresh_token)
+
+        # Reset the client tokens
+        self.reset_tokens(token, refresh_token)
 
     def __initialize_operators(self):
         ##  Instatiate the subAPIs as member variables of the client  ######
@@ -147,6 +163,50 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         self.knowledgegraph = self
         self.admin = self
         self.s3 = self
+
+    @classmethod
+    def token_refresh(cls, base_url, refresh_token, tls_verify):
+        """
+        Use the given refresh token to retrieve new access and refresh tokens.
+
+        Args:
+            base_url (str): The URL of the STELAR service
+            refresh_token (str): The refresh token to use.
+            password (str): The password of the user.
+            tls_verify (str): Whether to verify the server TLS certificate.
+
+        Raises:
+            RuntimeError: If authentication fails due to incorrect credentials or server issues.
+        """
+
+        req_data = {"refresh_token": refresh_token}
+        req_url = urljoin(base_url, "/stelar/api" + APIEndpointsV1.TOKEN_ISSUE)
+        token_response = requests.put(
+            url=req_url,
+            json=req_data,
+            headers={"Content-Type": "application/json"},
+            verify=tls_verify,
+        )
+        status_code = token_response.status_code
+        token_json = token_response.json().get("result", None)
+        success = token_response.json().get("success")
+
+        if (
+            token_json
+            and token_json["token"]
+            and token_json["refresh_token"]
+            and success
+            and status_code == 200
+        ):
+            token = token_json["token"]
+            refresh_token = token_json["refresh_token"]
+
+            return token, refresh_token
+
+        else:
+            raise RuntimeError(
+                "Could not authenticate user. Check the provided credentials and verify the availability of the STELAR API."
+            )
 
     @classmethod
     def authenticate(cls, base_url, username, password, tls_verify=True):
