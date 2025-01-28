@@ -1,8 +1,6 @@
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-from IPython.core.display import HTML
-from IPython.display import display
 
 from .apicall import GenericProxy, api_call
 from .proxy import (
@@ -15,14 +13,11 @@ from .proxy import (
     Property,
     Proxy,
     ProxyVec,
-    RefList,
     StateField,
     StrField,
     TaggableProxy,
     TagList,
-    derived_property,
 )
-from .resource import Resource
 
 if TYPE_CHECKING:
     from .proxy import Proxy

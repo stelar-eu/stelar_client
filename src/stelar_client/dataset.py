@@ -1,10 +1,6 @@
-from typing import Dict, List
-from uuid import UUID
-
 from IPython.core.display import HTML
-from IPython.display import display
 
-from .apicall import GenericCursor, GenericProxy, api_call
+from .apicall import GenericCursor, GenericProxy
 from .proxy import (
     BoolField,
     DateField,
@@ -22,7 +18,7 @@ from .proxy import (
     UUIDField,
 )
 from .resource import Resource
-from .utils import *
+from .utils import client_for
 from .vocab import Tag
 
 
@@ -197,7 +193,7 @@ class Dataset(GenericProxy, ExtrasProxy, TaggableProxy):
         return HTML(html)._repr_html_()
 
     def __disabled_str__(self):
-        dataset_info = f"Title: {self.title} | Dataset ID: {self.id} | Name: {self.name} | Tags: {self.tags} | Modified Date: {self.modified_date}\nDataset Resources:\n"
+        dataset_info = f"""Title: {self.title} | Dataset ID: {self.id} | Name: {self.name} | Tags: {self.tags} | Modified Date: {self.modified_date}\nDataset Resources:\n"""
         if self.resources:
             for resource in self.resources:
                 dataset_info += "\t" + str(resource) + "\n"

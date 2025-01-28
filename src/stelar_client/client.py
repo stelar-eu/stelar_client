@@ -133,6 +133,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
                     self._base_url, self._refresh_token, self._tls_verify
                 )
                 self.reset_tokens(token, refresh_token)
+                return
             except RuntimeError as e:
                 # Suppress exception, proceed to refresh by re-authentication
                 print(
@@ -140,29 +141,21 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
                     e,
                 )
                 pass
-        else:
-            if self._context or password is None:
-                base_url, username, password = self.__from_context()
-            else:
-                username = self._username
 
-            token, refresh_token = self.authenticate(
-                self._base_url,
-                username=username,
-                password=password,
-                tls_verify=self._tls_verify,
-            )
+        if self._context or password is None:
+            base_url, username, password = self.__from_context()
+        else:
+            username = self._username
+
+        token, refresh_token = self.authenticate(
+            self._base_url,
+            username=username,
+            password=password,
+            tls_verify=self._tls_verify,
+        )
 
         # Reset the client tokens
         self.reset_tokens(token, refresh_token)
-
-    def __initialize_operators(self):
-        ##  Instatiate the subAPIs as member variables of the client  ######
-        self.workflows = self
-        self.catalog = self
-        self.knowledgegraph = self
-        self.admin = self
-        self.s3 = self
 
     @classmethod
     def token_refresh(cls, base_url, refresh_token, tls_verify):
@@ -205,7 +198,8 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
 
         else:
             raise RuntimeError(
-                "Could not authenticate user. Check the provided credentials and verify the availability of the STELAR API."
+                "Could not authenticate user. Check the provided credentials"
+                " and verify the availability of the STELAR API."
             )
 
     @classmethod
@@ -259,7 +253,8 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
 
             else:
                 raise RuntimeError(
-                    "Could not authenticate user. Check the provided credentials and verify the availability of the STELAR API."
+                    "Could not authenticate user. Check the provided credentials"
+                    " and verify the availability of the STELAR API."
                 )
         else:
             raise ValueError("Credentials were fully or partially empty!")

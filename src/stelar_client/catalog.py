@@ -1,19 +1,10 @@
 from functools import cached_property
-from urllib.parse import urlencode, urljoin
 
-from requests.exceptions import HTTPError
 
 from .apicall import GenericCursor, api_call
 from .base import BaseAPI
 from .dataset import Dataset, DatasetCursor
-from .endpoints import APIEndpointsV1
 from .group import Group, Organization
-from .model import (
-    DuplicateEntryError,
-    EntityNotFoundError,
-    MissingParametersError,
-    STELARUnknownError,
-)
 from .proxy import Registry, RegistryCatalog
 from .resource import Resource
 from .user import User, UserCursor

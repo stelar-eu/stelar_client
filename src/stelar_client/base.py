@@ -55,15 +55,26 @@ class BaseAPI:
         Returns:
             requests.Response: The response object from the API.
         """
-        # Combine base_url with the endpoint
-        endpoint = endpoint.lstrip("/")
-        url = urljoin(self.api_url, endpoint)
+
+        # Validate data/json and handle accordingly
+        if method.upper() == "GET":
+            # GET requests should not have a body (data or json)
+            if data or json:
+                raise ValueError("GET requests cannot include body data.")
+        else:
+            # POST, PUT, DELETE, etc., should use either data or json but not both
+            if data and json:
+                raise ValueError("Specify either 'data' or 'json', not both.")
+
         # Handle query parameters in the endpoint or passed as 'params'
         if "?" in endpoint and params:
             raise ValueError(
                 "Specify query parameters either in the endpoint or in 'params', not both."
             )
 
+        # Combine base_url with the endpoint
+        endpoint = endpoint.lstrip("/")
+        url = urljoin(self.api_url, endpoint)
         # If the URL does not contain a query, add parameters from 'params'
         if params:
             url = f"{url}?{urlencode(params)}"
@@ -79,29 +90,28 @@ class BaseAPI:
         if headers:
             default_headers.update(headers)
 
-        # Validate data/json and handle accordingly
-        if method.upper() == "GET":
-            # GET requests should not have a body (data or json)
-            if data or json:
-                raise ValueError("GET requests cannot include body data.")
-        else:
-            # POST, PUT, DELETE, etc., should use either data or json but not both
-            if data and json:
-                raise ValueError("Specify either 'data' or 'json', not both.")
-
-        # Make the request using the provided method, url, params, data, json, and headers
-        response = requests.request(
-            method=method,
-            url=url,
-            params=None,  # params are already incorporated into the URL
-            data=data,  # if provided, this will be form data
-            json=json,  # if provided, this will be JSON payload
-            headers=default_headers,
-            verify=self._tls_verify,
-        )
+        turn = 0
+        while turn < 2:
+            # Make the request using the provided method, url, params, data, json, and headers
+            response = requests.request(
+                method=method,
+                url=url,
+                params=None,  # params are already incorporated into the URL
+                data=data,  # if provided, this will be form data
+                json=json,  # if provided, this will be JSON payload
+                headers=default_headers,
+                verify=self._tls_verify,
+            )
+            if response.status_code == 401 and turn == 0:
+                # Refresh the token and try again
+                self.refresh_tokens()
+                default_headers["Authorization"] = f"Bearer {self._token}"
+                turn += 1
+            else:
+                break
 
         # Raise an exception for HTTP errors (4xx, 5xx responses)
-        response.raise_for_status()
+        # response.raise_for_status()
         return response
 
     def api_request(self, method, endpoint, *, params=None, json=None):
@@ -112,14 +122,23 @@ class BaseAPI:
         if params is not None and "json" in params:
             json = params["json"]
 
-        response = requests.request(
-            method,
-            url,
-            params=params,
-            json=json,
-            headers=headers,
-            verify=self._tls_verify,
-        )
+        twice = 0
+        while twice < 2:
+            response = requests.request(
+                method,
+                url,
+                params=params,
+                json=json,
+                headers=headers,
+                verify=self._tls_verify,
+            )
+            if response.status_code == 401 and twice == 0:
+                self.refresh_tokens()
+                headers["Authorization"] = f"Bearer {self._token}"
+                twice += 1
+            else:
+                break
+
         return response
 
     def GET(self, *endp, **params):

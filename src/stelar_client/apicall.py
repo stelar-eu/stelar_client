@@ -7,10 +7,9 @@
 from __future__ import annotations
 
 from functools import wraps
-from typing import TYPE_CHECKING, Generic, Iterator, Type, TypeVar
+from typing import TYPE_CHECKING, Iterator, Type, TypeVar
 from uuid import UUID
 
-from .backdoor import CKAN
 from .proxy import (
     EntityNotFound,
     ErrorState,
@@ -20,10 +19,8 @@ from .proxy import (
     ProxyOperationError,
     ProxyState,
     ProxySynclist,
-    Reference,
-    RefList,
 )
-from .utils import *
+from .utils import client_for
 
 if TYPE_CHECKING:
     from .client import Client
@@ -148,7 +145,7 @@ def generic_proxy_sync(proxy: Proxy, entity, update_method="patch"):
 
             try:
                 entity = update_call(id=str(proxy.proxy_id), **updates)
-            except EntityNotFound as e:
+            except EntityNotFound:
                 proxy.proxy_is_purged()
                 raise  # We have updates that are lost
             proxy.proxy_changed = None
@@ -157,7 +154,7 @@ def generic_proxy_sync(proxy: Proxy, entity, update_method="patch"):
             show = ac.get_call(proxy_type, "show")
             try:
                 entity = show(id=str(proxy.proxy_id))
-            except EntityNotFound as e:
+            except EntityNotFound:
                 proxy.proxy_is_purged()
                 return  # Not an error!
 
@@ -192,7 +189,7 @@ def generic_get(
     show = ac.get_call(proxy_type, "show")
     try:
         entity = show(id=str(name_or_id))
-    except EntityNotFound as e:
+    except EntityNotFound:
         return default
     return client.registry_for(proxy_type).fetch_proxy_for_entity(entity)
 
