@@ -1,8 +1,11 @@
-import pytest
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
-from stelar_client.proxy import *
-from stelar_client.proxy.fieldvalidation import FieldValidator
+
+import pytest
+
+from stelar.client.proxy import *
+from stelar.client.proxy.fieldvalidation import FieldValidator
+
 
 def test_basic_checks():
     val = FieldValidator()
@@ -12,11 +15,12 @@ def test_basic_checks():
 
 def test_nullable():
     nv = AnyField(nullable=True)
-    nnv = AnyField(nullable = False)
+    nnv = AnyField(nullable=False)
 
-    assert nv.validate(None) is None    
+    assert nv.validate(None) is None
     with pytest.raises(ValueError):
         nnv.validate(None)
+
 
 def test_minimum_value():
     v = AnyField(minimum_value=10)
@@ -28,6 +32,7 @@ def test_minimum_value():
     with pytest.raises(ValueError):
         v.validate(0)
 
+
 def test_maximum_value():
     v = AnyField(maximum_value=10)
     assert v.validate(None) is None
@@ -38,24 +43,31 @@ def test_maximum_value():
     with pytest.raises(ValueError):
         v.validate(11)
 
+
 def test_max_min_length():
-    v = StrField(minimum_len = 3, maximum_len = 5)
+    v = StrField(minimum_len=3, maximum_len=5)
 
-    assert v.prioritized_checks == [(v.check_null,-1), (v.to_ftype, 5), (v.check_length, 20)]
+    assert v.prioritized_checks == [
+        (v.check_null, -1),
+        (v.to_ftype, 5),
+        (v.check_length, 20),
+    ]
 
-    assert v.validate('abc') == 'abc'
-    assert v.validate('abcde') == 'abcde'
+    assert v.validate("abc") == "abc"
+    assert v.validate("abcde") == "abcde"
 
-    for s in ['', 'a', 'sf', '123456', 'adlasdjasdasdlas']:
+    for s in ["", "a", "sf", "123456", "adlasdjasdasdlas"]:
         with pytest.raises(ValueError):
             v.validate(s)
 
+
 def test_str_field():
     v = StrField()
-    assert v.validate(10) == '10'
-    assert v.validate(True) == 'True'
+    assert v.validate(10) == "10"
+    assert v.validate(True) == "True"
     assert v.validate("10 312") == "10 312"
     assert v.validate("") == ""
+
 
 def test_int_field():
     v = IntField()
@@ -66,7 +78,8 @@ def test_int_field():
     assert v.validate("14") == 14
 
     with pytest.raises(ValueError):
-        v.validate('aaa')
+        v.validate("aaa")
+
 
 def test_bool_field():
     v = BoolField()
@@ -81,39 +94,41 @@ def test_bool_field():
     assert v.validate("14") is True
     assert v.validate("") is False
 
+
 def test_no_checks():
     v = FieldValidator(nullable=None)
     assert v.prioritized_checks == []
     assert v.checks == []
+
 
 def test_strict():
     v = AnyField(nullable=None, strict=True)
     assert v.prioritized_checks == []
     assert v.checks == []
 
-    for s in [None, 1, 'aa', ...]:
+    for s in [None, 1, "aa", ...]:
         with pytest.raises(ValueError):
             v.validate(s)
-    
+
     assert v.convert_to_entity(10) == 10
     assert v.convert_to_proxy(10) == 10
 
 
 def test_date_field():
-    v = DateField(nullable=False, minimum_value=datetime(2020,1,1))
+    v = DateField(nullable=False, minimum_value=datetime(2020, 1, 1))
 
     n = datetime.now()
     assert v.validate(n) == n
     tendays = timedelta(days=10)
-    assert v.validate(n-tendays) == n-tendays
+    assert v.validate(n - tendays) == n - tendays
 
     with pytest.raises(ValueError):
-        v.validate(datetime(2019,12,31, 23, 59))
+        v.validate(datetime(2019, 12, 31, 23, 59))
     with pytest.raises(ValueError):
         v.validate(None)
 
     assert v.validate(n.isoformat()) == n
-    assert v.validate('2022-11-11') == datetime.fromisoformat('2022-11-11')
+    assert v.validate("2022-11-11") == datetime.fromisoformat("2022-11-11")
     with pytest.raises(ValueError):
         v.validate("2022/11/11")
     with pytest.raises(ValueError):
@@ -134,16 +149,14 @@ def test_uuid_field():
 
     assert v.convert_to_entity(u) == str(u)
     assert v.convert_to_proxy(str(u)) == u
-    
+
 
 def test_state_field():
     v = StateField()
 
-    assert v.validate('active')
-    assert v.validate('deleted')
-    
-    for val in ('', 'ACTIVE', 4, None):
+    assert v.validate("active")
+    assert v.validate("deleted")
+
+    for val in ("", "ACTIVE", 4, None):
         with pytest.raises(ValueError):
             assert v.validate(val)
-
-    

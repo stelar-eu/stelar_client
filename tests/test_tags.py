@@ -3,9 +3,9 @@ from uuid import *
 import pytest
 from proxy_utils import ProxyTestObj, TPCatalog
 
-from stelar_client import *
-from stelar_client.proxy.tag import TaggableProxy, TagList, TagListField
-from stelar_client.vocab import *
+from stelar.client import *
+from stelar.client.proxy.tag import TaggableProxy, TagList, TagListField
+from stelar.client.vocab import *
 
 
 @pytest.mark.parametrize(

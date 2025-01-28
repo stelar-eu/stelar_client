@@ -1,21 +1,22 @@
 from __future__ import annotations
-from uuid import UUID
-from typing import List, Dict, Iterator
-from IPython.core.display import HTML
-from IPython.display import display
-from .resource import Resource
-from .proxy import (Property, Id, NameId, RefList, DateField, StrField, StateField,
-                    BoolField, NameField, ExtrasProxy, ExtrasProperty)
-from .apicall import GenericProxy, GenericCursor, api_call
+
+from typing import Iterator
+
+
+from .generic import GenericCursor, GenericProxy, api_call
+from .proxy import BoolField, DateField, Id, NameId, Property, StateField, StrField
 
 
 class User(GenericProxy):
-
     id = Id()
     name = NameId()
 
-    password = Property(validator=StrField(nullable=False, minimum_len=8), updatable=True, optional=True)
-    reset_key = Property(validator=StrField(nullable=False, minimum_len=8), updatable=True, optional=True)
+    password = Property(
+        validator=StrField(nullable=False, minimum_len=8), updatable=True, optional=True
+    )
+    reset_key = Property(
+        validator=StrField(nullable=False, minimum_len=8), updatable=True, optional=True
+    )
 
     fullname = Property(validator=StrField(nullable=True), updatable=True)
     email = Property(validator=StrField(nullable=True), updatable=True)
@@ -36,14 +37,13 @@ class User(GenericProxy):
 
 
 class UserCursor(GenericCursor):
-
     def __init__(self, client):
         super().__init__(client, User)
 
     def fetch_list(self, *, limit: int, offset: int) -> list[str]:
         registry = self.client.registry_for(User)
         ac = api_call(self.client)
-        result = ac.user_list(all_fields = False)
+        result = ac.user_list(all_fields=False)
         return result
 
     def fetch(self, *, limit: int, offset: int) -> Iterator[User]:
@@ -53,4 +53,3 @@ class UserCursor(GenericCursor):
 
         for entity in result:
             yield registry.fetch_proxy_for_entity(entity)
-

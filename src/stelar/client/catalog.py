@@ -1,9 +1,8 @@
 from functools import cached_property
 
-
-from .apicall import GenericCursor, api_call
 from .base import BaseAPI
 from .dataset import Dataset, DatasetCursor
+from .generic import GenericCursor, api_call
 from .group import Group, Organization
 from .proxy import Registry, RegistryCatalog
 from .resource import Resource

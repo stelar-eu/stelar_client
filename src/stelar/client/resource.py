@@ -1,9 +1,8 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from IPython.core.display import HTML
-from IPython.display import display
 
-from .apicall import GenericProxy, api_call, generic_proxy_sync
+from .generic import GenericProxy, generic_proxy_sync
 from .proxy import (
     DateField,
     ExtrasProperty,
@@ -11,9 +10,7 @@ from .proxy import (
     IntField,
     Property,
     Proxy,
-    ProxyOperationError,
     Reference,
-    Registry,
     StrField,
 )
 

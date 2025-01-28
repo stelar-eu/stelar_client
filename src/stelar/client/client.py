@@ -32,38 +32,39 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
 
     The config file contains a collection of contexts, and is encoded in the
     INI format:
-    ```
-    [default]
-    base_url=https://klms.example.com
-    username=joe
-    password=my!secret
 
-    [admin]
-    base_url=https://klms.example.com
-    username=admin
-    password=very!secret
-    ```
 
-    Arguments:
+    | [default]
+    | base_url=https://klms.example.com
+    | username=joe
+    | password=my!secret
+    |
+    | [admin]
+    | base_url=https://klms.example.com
+    | username=admin
+    | password=very!secret
+
+
+    Args:
         context (str): load the specified context from $HOME/.stelar (or
-        the 'stelar_config' path). If this is None, the default context is used.
-        If a config file is not found, the base_url, username and password
-        can be provided as keywords.
+            the 'stelar_config' path). If this is None, the default context is used.
+            If a config file is not found, the base_url, username and password
+            can be provided as keywords.
 
         base_url (str): The base URL to the STELAR installation. This URL contains only the
-        hostname. Optionally, it may contain a user name and password, as in
-        https://joe:joespassword@klms.example.com/
-        The user name and password are only used if the keyword arguments 'username' and
-        'password' are None.
+            hostname. Optionally, it may contain a user name and password, as in
+            https://joe:joespassword@klms.example.com/
+            The user name and password are only used if the keyword arguments 'username' and
+            'password' are None.
 
         token (str): The user token issued by the KLMS SSO service, if available. If a token is
-        provided, the username and password are ignored.
+            provided, the username and password are ignored.
 
         username (str): The user name to authenticate as for this client.
         password (str): The password to authenticate with.
 
         tls_verify (bool):  Verify the server TLS certificate. This setting takes precedence
-        if given. If none, the default is to verify.
+            if given. If none, the default is to verify.
 
         config_file (PathLike): Path to the config file. If None, the default of "$HOME/.stelar" is
         used.
@@ -115,15 +116,19 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         self._username = username
         super().__init__(base_url, token, refresh_token, tls_verify)
 
-    def refresh_tokens(self, password=None):
+    def refresh_tokens(self, password: str = None):
         """Refresh the access token for this client.
 
-        Note: eventually, this should be using the OpenID refresh_token
-        facility. For now, it just repeats the login.
+        This method attempts to refresh the access token using the refresh token. If the
+        refresh token is not available, or if it is also stale, the method will attempt to
+        re-authenticate the user.
 
         Args:
             password (str): A password, which is used for username/password authentication.
                 If not provided, the context mechanism is used.
+
+        Raises:
+            RuntimeError: If the refresh token is invalid or if re-authentication fails.
         """
 
         # First, try to use the refresh token.
@@ -158,15 +163,20 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         self.reset_tokens(token, refresh_token)
 
     @classmethod
-    def token_refresh(cls, base_url, refresh_token, tls_verify):
+    def token_refresh(
+        cls, base_url: str, refresh_token: str, tls_verify: bool = True
+    ) -> tuple[str, str]:
         """
         Use the given refresh token to retrieve new access and refresh tokens.
 
         Args:
             base_url (str): The URL of the STELAR service
             refresh_token (str): The refresh token to use.
-            password (str): The password of the user.
-            tls_verify (str): Whether to verify the server TLS certificate.
+            tls_verify (bool): Whether to verify the server TLS certificate.
+
+        Returns:
+            (str, str): If the refresh was successful, a OpenID token and refresh token, as a
+            pair of str (token, refresh_token)
 
         Raises:
             RuntimeError: If authentication fails due to incorrect credentials or server issues.
@@ -222,7 +232,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             RuntimeError: If authentication fails due to incorrect credentials or server issues.
 
         Returns:
-            token, refresh_token: If authentication was successful, a OpenID token and refresh token
+            (str, str): If authentication was successful, a OpenID token and refresh token, as a pair of str (token, refresh_token)
         """
 
         if username and password:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from .fieldvalidation import AnyField, StrField
 from .property import Property
@@ -35,29 +35,27 @@ are available as normal attributes.
     def __get__(self, obj, obj_type=None):
         return self.get(obj).copy()
 
-    def convert_entity_to_proxy(self, proxy: Proxy, entity: Any, **kwargs):
-        entity_extras = entity.get(self.entity_name, [])
-        proxy_extras = {p["key"]: p["value"] for p in entity_extras}
+    def convert_entity_to_proxy(self, proxy: Proxy, entity, **kwargs):
+        entity_extras = entity.get(self.entity_name, {})
+        proxy_extras = entity_extras.copy()  #  Do we need a copy here?
         proxy.proxy_attr[self.name] = proxy_extras
 
     def convert_proxy_to_entity(self, proxy: Proxy, entity: dict, **kwargs):
         proxy_extras = proxy.proxy_attr[self.name]
         if proxy_extras is ...:
             return
-        entity_extras = [
-            {"key": key, "value": value} for key, value in proxy_extras.items()
-        ]
+        entity_extras = proxy_extras.copy()  #  Do we need a copy here?
         entity[self.entity_name] = entity_extras
 
     def convert_to_create(self, proxy_type, create_props, entity_props, **kwargs):
         schema = proxy_type.proxy_schema
 
         # Collect all entries that do not appear in the schema
-        entity_extras = [
-            {"key": key, "value": self.item_validator.validate(value, **kwargs)}
+        entity_extras = {
+            key: self.item_validator.validate(value, **kwargs)
             for key, value in create_props.items()
             if key not in schema.all_fields and value is not None
-        ]
+        }
         entity_props[self.entity_name] = entity_extras
 
 

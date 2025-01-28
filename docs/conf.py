@@ -8,8 +8,8 @@
 # serve to show the default.
 
 import os
-import sys
 import shutil
+import sys
 
 # -- Path setup --------------------------------------------------------------
 
@@ -34,7 +34,7 @@ except ImportError:
     from sphinx import apidoc
 
 output_dir = os.path.join(__location__, "api")
-module_dir = os.path.join(__location__, "../src/stelar_client")
+module_dir = os.path.join(__location__, "../src/stelar")
 try:
     shutil.rmtree(output_dir)
 except FileNotFoundError:
@@ -72,7 +72,7 @@ extensions = [
     "sphinx.ext.ifconfig",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
-    'sphinx_rtd_theme',
+    "sphinx_rtd_theme",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -100,7 +100,7 @@ copyright = "2024, STELAR-EU"
 # If you don’t need the separation provided between version and release,
 # just set them both to the same value.
 try:
-    from stelar_client import __version__ as version
+    from stelar.client import __version__ as version
 except ImportError:
     version = ""
 
@@ -155,7 +155,7 @@ todo_emit_warnings = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = "sphinx_rtd_theme"
-html_static_path = ['_static']
+html_static_path = ["_static"]
 html_logo = "logo.png"
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -165,7 +165,7 @@ html_theme_options = {
     "sidebar_width": "300px",
     "page_width": "1200px",
     "logo_only": True,
-    "display_version": False
+    "display_version": False,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -251,7 +251,13 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-    ("index", "user_guide.tex", "stelar_client Documentation", "Vasilis Samoladas", "manual")
+    (
+        "index",
+        "user_guide.tex",
+        "stelar_client Documentation",
+        "Vasilis Samoladas",
+        "manual",
+    )
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

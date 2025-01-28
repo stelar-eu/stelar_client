@@ -1,6 +1,6 @@
 from IPython.core.display import HTML
 
-from .apicall import GenericCursor, GenericProxy
+from .generic import GenericCursor, GenericProxy
 from .proxy import (
     BoolField,
     DateField,

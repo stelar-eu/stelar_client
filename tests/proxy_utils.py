@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4
 
-from stelar_client.proxy import Proxy, ProxySynclist, Registry, RegistryCatalog
+from stelar.client.proxy import Proxy, ProxySynclist, Registry, RegistryCatalog
 
 
 class TPRegistry(Registry):

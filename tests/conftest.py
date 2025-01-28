@@ -1,5 +1,5 @@
 """
-    Dummy conftest.py for stelar_client.
+    Dummy conftest.py for stelar.client.
 
     If you don't know what this is for, just leave it empty.
     Read more about conftest.py under:
@@ -7,23 +7,25 @@
     - https://docs.pytest.org/en/stable/writing_plugins.html
 """
 
-import json, pathlib
+import json
+import pathlib
+
 import pytest
-from stelar_client import Client
+
+from stelar.client import Client
 
 
 @pytest.fixture()
 def testcontext() -> str:
-    return 'local'
-
+    return "local"
 
 
 def client_cleanup(cli):
     # Make sure that all datasets whose name
     # starts with "test_" are purged
-    for m in cli.DC.package_autocomplete(q="test_", limit=1000)['result']:
-        if m['match_field'] == 'name':
-            cli.DC.dataset_purge(id=m['name'])
+    for m in cli.DC.package_autocomplete(q="test_", limit=1000)["result"]:
+        if m["match_field"] == "name":
+            cli.DC.dataset_purge(id=m["name"])
 
 
 @pytest.fixture()
@@ -38,4 +40,3 @@ def testcli(testcontext) -> Client:
 
     # No logout yet. Once it is implemented,
     # here a logout must be posted.
-

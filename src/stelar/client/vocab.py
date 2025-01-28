@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import re
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List
+from typing import TYPE_CHECKING, Iterator
 from uuid import UUID
 
-from IPython.core.display import HTML
-from IPython.display import display
 
-from .apicall import GenericCursor, GenericProxy, api_call
+from .generic import GenericCursor, GenericProxy, api_call
 from .proxy import (
     Id,
     NameId,
@@ -17,7 +14,7 @@ from .proxy import (
     VocabNameField,
     derived_property,
 )
-from .utils import client_for, tag_split, validate_tagspec
+from .utils import client_for, tag_split
 
 if TYPE_CHECKING:
     from .client import Client

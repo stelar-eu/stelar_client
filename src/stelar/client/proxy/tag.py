@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-import re
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List
-from uuid import UUID
+from typing import TYPE_CHECKING
 
-from IPython.core.display import HTML
-from IPython.display import display
-
-from .decl import tag_split, validate_tagspec
+from .decl import validate_tagspec
 from .fieldvalidation import AnyField
 from .property import Property
 from .proxy import Proxy
@@ -79,27 +74,12 @@ class TagListField(AnyField):
     def convert_to_entity(
         self, value: TagSpecList, *, vocindex: VocabularyIndex, **kwargs
     ) -> TagDictList:
-        tdl = []
-        for tagspec in value:
-            voc, tag = tag_split(tagspec)
-            vid = vocindex.name_to_id[voc] if voc is not None else None
-            tagdict = {"name": tag, "vocabulary_id": vid}
-            tdl.append(tagdict)
-        return tdl
+        return list(value)
 
     def convert_to_proxy(
         self, value: TagDictList, *, vocindex: VocabularyIndex, **kwargs
     ) -> TagSpecList:
-        tsl = []
-        for tagdict in value:
-            vid = tagdict["vocabulary_id"]
-            tname = tagdict["name"]
-            if vid is not None:
-                vname = vocindex.id_to_name[vid]
-                tsl.append(f"{vname}:{tname}")
-            else:
-                tsl.append(tname)
-        return tuple(tsl)
+        return tuple(value)
 
 
 class TagList(Property):

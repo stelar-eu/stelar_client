@@ -1,6 +1,6 @@
 import pytest
 
-from stelar_client import Client, ProxyState
+from stelar.client import Client, ProxyState
 
 
 def test_standard_orgganization(testcli):

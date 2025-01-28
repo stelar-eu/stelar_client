@@ -4,9 +4,9 @@ from uuid import UUID, uuid4
 import pytest
 from proxy_utils import ProxyTestObj, TPCatalog
 
-from stelar_client import deferred_sync
-from stelar_client.proxy import *
-from stelar_client.proxy import (
+from stelar.client import deferred_sync
+from stelar.client.proxy import *
+from stelar.client.proxy import (
     BoolField,
     DateField,
     Id,

@@ -1,8 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-
-from .apicall import GenericProxy, api_call
+from .generic import GenericProxy, api_call
 from .proxy import (
     BoolField,
     DateField,

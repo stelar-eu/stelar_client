@@ -1,6 +1,6 @@
 import pytest
 
-from stelar_client import *
+from stelar.client import *
 
 
 def test_dataset_create(testcli):
