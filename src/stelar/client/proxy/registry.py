@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Generic, Type, TypeVar
 from uuid import UUID
 from weakref import WeakValueDictionary
 
@@ -11,7 +11,9 @@ from .proxy import Proxy
 if TYPE_CHECKING:
     from ..client import Client
     from .property import RefList
-    from .typing import ProxyClass
+
+    # This seemed to create some kind of problem...
+    # from .typing import ProxyClass
 
 
 ProxyClass = TypeVar("ProxyClass", bound=Proxy)
@@ -91,7 +93,9 @@ class Registry(Generic[ProxyClass]):
                 proxy.proxy_sync(entity)
             else:
                 raise ConflictError(
-                    f"Proxy fetched with new entity on state {proxy.proxy_state}"
+                    proxy,
+                    entity,
+                    f"Proxy fetched with new entity on state {proxy.proxy_state}",
                 )
         return proxy
 
@@ -109,12 +113,16 @@ class Registry(Generic[ProxyClass]):
         On failure, a conflict error is raised.
         """
         if proxy.proxy_id is None:
-            raise ConflictError(f"Cannot register deleted proxy")
+            raise ConflictError(proxy, entity, "Cannot register deleted proxy")
         if proxy.proxy_id != UUID(int=0):
-            raise ConflictError(f"Cannot register proxy with ID = {proxy.proxy_id}")
+            raise ConflictError(
+                proxy, entity, f"Cannot register proxy with ID = {proxy.proxy_id}"
+            )
         eid = UUID(self.proxy_type.proxy_schema.get_id(entity))
         if eid in self.registry:
-            raise ConflictError(f"Proxy for entity {eid} is already registered")
+            raise ConflictError(
+                proxy, entity, f"Proxy for entity {eid} is already registered"
+            )
 
         # Success:
         proxy.proxy_id = eid

@@ -1,18 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, Iterator, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Generic, Iterator, Type, TypeVar
 from uuid import UUID
-from weakref import WeakValueDictionary
 
 from .decl import ProxyState
-from .exceptions import InvalidationError
 from .proxy import Proxy
 
 if TYPE_CHECKING:
     from ..client import Client
     from .refs import RefList
-    from .registry import Registry
-    from .schema import Schema
 
 
 ProxyClass = TypeVar("ProxyClass", bound=Proxy)
@@ -82,7 +78,7 @@ class ProxyList(Generic[ProxyClass]):
             return len(self) == len(other) and (
                 all(p == q for p, q in zip(self, other))
             )
-        except:
+        except Exception:
             return False
 
     @property
@@ -196,7 +192,7 @@ class ProxyCursor(Generic[ProxyClass]):
         elif isinstance(item, (str, UUID)):
             proxy = self.get(item)
             if proxy is None:
-                raise KeyError(f"Entity not found")
+                raise KeyError("Entity not found")
             return proxy
         else:
             raise TypeError(

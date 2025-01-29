@@ -1,7 +1,7 @@
 from uuid import *
 
 import pytest
-from proxy_utils import ProxyTestObj, TPCatalog, TPRegistry
+from proxy_utils import ProxyTestObj, TPCatalog
 
 from stelar.client.proxy import *
 
@@ -15,12 +15,12 @@ def test_extras_proxy():
     uuids = [uuid4() for i in range(2)]
 
     Foo.data = {
-        uuids[0]: {"id": str(uuids[0]), "a": 10, "b": 20, "extras": []},
+        uuids[0]: {"id": str(uuids[0]), "a": 10, "b": 20, "extras": {}},
         uuids[1]: {
             "id": str(uuids[1]),
             "a": 100,
             "b": 200,
-            "extras": [{"key": "foo", "value": "bar"}],
+            "extras": {"foo": "bar"},
         },
     }
 
@@ -41,13 +41,11 @@ def test_extras_proxy():
     assert q.foo == "bar"
 
     q.foo = "baz"
-    assert Foo.data[q.id]["extras"] == [{"key": "foo", "value": "baz"}]
+    assert Foo.data[q.id]["extras"] == {"foo": "baz"}
 
     q.fozz = "bozz"
-    assert Foo.data[q.id]["extras"] == [
-        {"key": "foo", "value": "baz"},
-        {"key": "fozz", "value": "bozz"},
-    ]
+    assert Foo.data[q.id]["extras"] == {"foo": "baz", "fozz": "bozz"}
+
     assert q.extras == {"foo": "baz", "fozz": "bozz"}
     assert q.extras is not q.proxy_attr["extras"]
 
@@ -87,10 +85,7 @@ def test_extras_create():
 
     assert Foo.data[uuids[2]]["a"] == 5
     assert Foo.data[uuids[2]]["b"] == "hello"
-    assert Foo.data[uuids[2]]["extras"] == [
-        {"key": "skey", "value": "sval"},
-        {"key": "ukey", "value": "uval"},
-    ]
+    assert Foo.data[uuids[2]]["extras"] == {"skey": "sval", "ukey": "uval"}
 
     p = c.fetch_proxy(uuids[2])
 

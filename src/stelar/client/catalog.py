@@ -8,7 +8,7 @@ from .proxy import Registry, RegistryCatalog
 from .resource import Resource
 from .user import User, UserCursor
 from .utils import client_for
-from .vocab import Tag, TagCursor, Vocabulary, VocabularyCursor
+from .vocab import Tag, TagCursor, Vocabulary
 
 
 class DefaultsRegistry(Registry):
@@ -55,7 +55,7 @@ class CatalogAPI(RegistryCatalog, BaseAPI):
     @property
     def vocabularies(self):
         """The vocabulary cursor"""
-        return VocabularyCursor(self)
+        return GenericCursor(self, Vocabulary)
 
     @property
     def users(self):
@@ -74,4 +74,4 @@ class CatalogAPI(RegistryCatalog, BaseAPI):
         client, and is not very useful to end users.
         """
         ac = api_call(self)
-        return ac.vocabulary_list()
+        return ac.vocabulary_fetch()

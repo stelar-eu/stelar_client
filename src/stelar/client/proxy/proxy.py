@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, Iterator, Optional, Type, TypeVar
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
-from weakref import WeakValueDictionary
 
 from .decl import ProxyState
-from .exceptions import *
+from .exceptions import ConversionError, ErrorState, InvalidationError
 
 if TYPE_CHECKING:
     from pandas import Series
 
-    from ..client import Client
-    from .property import RefList
     from .registry import Registry, RegistryCatalog
 
 """
@@ -28,10 +26,10 @@ if TYPE_CHECKING:
     - Tasks
     - Tools
     - Policies
-    - Users 
-      
+    - Users
+
     They can be used to
-    - inspect 
+    - inspect
     - update
     - delete
     - link and relate
@@ -203,7 +201,7 @@ class Proxy:
         elif isinstance(regspec, Registry):
             registry = regspec.catalog.registry_for(cls)
         else:
-            raise TypeError(f"Expected Registry or RegistryCatalog for regspec")
+            raise TypeError("Expected Registry or RegistryCatalog for regspec")
 
         schema = cls.proxy_schema
         proxy = cls(registry, eid=UUID(int=0))
@@ -520,17 +518,21 @@ class Proxy:
         )
 
 
-from contextlib import contextmanager
-
-
 @contextmanager
 def deferred_sync(*proxies):
+    if not all(isinstance(p, Proxy) for p in proxies):
+        raise TypeError("All arguments must be entity proxies")
+    for i, p in enumerate(proxies):
+        if any(q is p for q in proxies[i + 1 :]):
+            raise ValueError(
+                f"The {i}-th argument appears again; proxies must be entered once"
+            )
     saved_autosync = [p.proxy_autosync for p in proxies]
     for p in proxies:
         p.proxy_autosync = False
     try:
         yield proxies
-    except Exception as e:
+    except Exception:
         for p in proxies:
             if p.proxy_state is not ProxyState.ERROR:
                 p.proxy_reset()
@@ -541,6 +543,15 @@ def deferred_sync(*proxies):
 
     # This belongs outside the finally clause.
     # It will not be executed if there is an error
+    exc = []
     for p in proxies:
-        if p.proxy_state is not ProxyState.ERROR:
+        if p.proxy_state is ProxyState.DIRTY:
+            try:
+                p.proxy_sync()
+            except Exception as e:
+                p.proxy_reset()
+                exc.append((p, e.with_traceback(None)))
+        elif p.proxy_state is not ProxyState.ERROR:
             p.proxy_sync()
+    if exc:
+        raise RuntimeError("Failed to sync, updates reset", exc)

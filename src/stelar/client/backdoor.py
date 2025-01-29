@@ -2,9 +2,19 @@
     Implement an accessor for CKAN API that bypasses the STELAR API.
     This is useful for debugging and testing.
 """
+from __future__ import annotations
 
+from functools import wraps
+from typing import TYPE_CHECKING
 from urllib.parse import urljoin
+
 import requests
+
+from .api_call import api_context
+from .proxy import EntityNotFound, Proxy, ProxyOperationError
+
+if TYPE_CHECKING:
+    from .client import Client
 
 
 class CKAN:
@@ -95,3 +105,55 @@ class CKAN:
 
     def __repr__(self):
         return f"<CKAN {self.ckanapi} {'active' if self.status else 'bad'}>"
+
+
+class api_call_DC(api_context):
+    """Class that exposes the CKAN API for the Data Catalog.
+
+    `api_call(proxy).foo(...)`
+    returns the 'result' of the CKAN API response on success,
+    and raises a ProxyOperationError on failure.
+
+    `api_call(client).foo(...)`
+    does the same.
+    """
+
+    def __init__(self, arg: Proxy | Client):
+        super().__init__(arg)
+        self.ckan = self.client.DC
+
+    def __getattr__(self, name):
+        func = getattr(self.ckan, name)
+
+        @wraps(func)
+        def wrapped_call(*args, **kwargs):
+            response = func(*args, **kwargs)
+            if not response["success"]:
+                err = response["error"]
+                if err["__type"] == "Not Found Error":
+                    raise EntityNotFound(self.proxy_type, self.proxy_id, name)
+                else:
+                    # Generic
+                    raise ProxyOperationError(
+                        self.proxy_type, self.proxy_id, name, response["error"]
+                    )
+            return response["result"]
+
+        return wrapped_call
+
+    def get_call(self, proxy_type, op):
+        _map_to_ckan = {
+            "Dataset": "package",
+            "Resource": "resource",
+            "Organization": "organization",
+            "Group": "group",
+            "Vocabulary": "vocabulary",
+            "Tag": "tag",
+            "User": "user",
+        }
+        ckan_type = _map_to_ckan[proxy_type.__name__]
+        if ckan_type == "package" and op == "purge":
+            call_name = "dataset_purge"
+        else:
+            call_name = f"{ckan_type}_{op}"
+        return getattr(self, call_name)

@@ -135,7 +135,7 @@ def generic_fetch_list(
     return result
 
 
-def generic_fetch(
+def generic_fetch_old(
     client: Client, proxy_type: Type[ProxyClass], *, limit: int, offset: int, **kwargs
 ) -> Iterator[ProxyClass]:
     ac = api_call(client)
@@ -153,6 +153,20 @@ def generic_fetch(
         for name in result:
             entity = show(id=name)
             yield registry.fetch_proxy_for_entity(entity)
+
+
+def generic_fetch(
+    client: Client, proxy_type: Type[ProxyClass], *, limit: int, offset: int, **kwargs
+) -> Iterator[ProxyClass]:
+    ac = api_call(client)
+    _fetch = ac.get_call(proxy_type, "fetch", **kwargs)
+    result = _fetch(limit=limit, offset=offset)
+
+    registry = client.registry_for(proxy_type)
+
+    # Check it the list already contains entities
+    for entity in result:
+        yield registry.fetch_proxy_for_entity(entity)
 
 
 def generic_delete(proxy: Proxy, purge=False):

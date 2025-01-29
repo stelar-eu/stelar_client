@@ -14,8 +14,6 @@ from .proxy import (
     ProxyVec,
     StateField,
     StrField,
-    TaggableProxy,
-    TagList,
 )
 
 if TYPE_CHECKING:
@@ -51,7 +49,7 @@ def get_members(group, proxy_type, capacity):
     return MemberList(ac.client, proxy_type, ids, cap)
 
 
-class GroupBase(GenericProxy, ExtrasProxy, TaggableProxy, entity=False):
+class GroupBase(GenericProxy, ExtrasProxy, entity=False):
     """
     Proxy for a STELAR Data Catalog group and organization.
     This is an abstract class. The group subclass is
@@ -71,7 +69,6 @@ class GroupBase(GenericProxy, ExtrasProxy, TaggableProxy, entity=False):
     description = Property(validator=StrField, updatable=True)
     image_url = Property(validator=StrField(), updatable=True)
     extras = ExtrasProperty()
-    tags = TagList()
 
     @property
     def users(self):

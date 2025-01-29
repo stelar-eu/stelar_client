@@ -1,11 +1,11 @@
-from uuid import *
+from uuid import uuid4
 
 import pytest
 from proxy_utils import ProxyTestObj, TPCatalog
 
-from stelar.client import *
+from stelar.client import ConversionError
 from stelar.client.proxy.tag import TaggableProxy, TagList, TagListField
-from stelar.client.vocab import *
+from stelar.client.vocab import tag_split
 
 
 @pytest.mark.parametrize(
@@ -75,14 +75,7 @@ def test_taggable():
     assert "bar" in x.tags
     assert "daltons:averell" in x.tags
 
-    assert Foo.data[x.id]["tags"] == [
-        {"name": "foo", "vocabulary_id": None},
-        {"name": "bar", "vocabulary_id": None},
-        {
-            "name": "averell",
-            "vocabulary_id": c.vocabulary_index.name_to_id["daltons"],
-        },
-    ]
+    assert Foo.data[x.id]["tags"] == ["foo", "bar", "daltons:averell"]
 
     # assign by several types of sequences
     x.tags = []

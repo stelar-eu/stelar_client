@@ -37,7 +37,10 @@ class ProxyError(RuntimeError):
 class ConflictError(ProxyError):
     """Update for an entity with unsynchronized changes"""
 
-    pass
+    def __init__(self, conflicted_proxy, new_entity, *args):
+        super().__init__(*args)
+        self.conflicted_proxy = conflicted_proxy
+        self.new_entity = new_entity
 
 
 class InvalidationError(ProxyError):

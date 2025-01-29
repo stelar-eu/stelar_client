@@ -2,7 +2,6 @@ from __future__ import annotations
 
 """Classes used to access the STELAR API.
 """
-from functools import wraps
 from typing import TYPE_CHECKING
 
 from .proxy import EntityNotFound, Proxy, ProxyCursor, ProxyList, ProxyOperationError
@@ -85,11 +84,15 @@ for m in api_models:
     api_models[m] = api_model.from_value(api_models[m])
 
 
-OPERATIONS = ["create", "show", "update", "patch", "delete", "list", "purge"]
+OPERATIONS = ["create", "show", "update", "patch", "delete", "list", "fetch", "purge"]
 
 
-class api_call(api_context):
-    """Access the STELAR API using a client or a proxy"""
+class api_call_base(api_context):
+    """Access the STELAR API using a client or a proxy.
+
+    This is the base class for api_call, defining the generic methods
+    for all types of entities.
+    """
 
     def __init__(self, arg: Proxy | Client):
         super().__init__(arg)
@@ -148,9 +151,17 @@ def generate_list(model: api_model):
         params = {"limit": limit, "offset": offset}
         return self.request(verb, endpoint, params)
 
-    name = model.get_method("list")
-    gen_list.__name__ = name
     return gen_list
+
+
+def generate_fetch(model: api_model):
+    def gen_fetch(self, limit=None, offset=None):
+        verb = "GET"
+        endpoint = f"v2/{model.collection_name}.fetch"
+        params = {"limit": limit, "offset": offset}
+        return self.request(verb, endpoint, params)
+
+    return gen_fetch
 
 
 def generate_show(model: api_model):
@@ -159,8 +170,6 @@ def generate_show(model: api_model):
         endpoint = f"v2/{model.name}/{id}"
         return self.request(verb, endpoint)
 
-    name = model.get_method("show")
-    gen_show.__name__ = name
     return gen_show
 
 
@@ -170,8 +179,6 @@ def generate_create(model: api_model):
         endpoint = f"v2/{model.name}"
         return self.request(verb, endpoint, json=kwargs)
 
-    name = model.get_method("create")
-    gen_create.__name__ = name
     return gen_create
 
 
@@ -181,8 +188,6 @@ def generate_update(model: api_model):
         endpoint = f"v2/{model.name}/{id}"
         return self.request(verb, endpoint, json=kwargs)
 
-    name = model.get_method("update")
-    gen_update.__name__ = name
     return gen_update
 
 
@@ -192,8 +197,6 @@ def generate_patch(model: api_model):
         endpoint = f"v2/{model.name}/{id}"
         return self.request(verb, endpoint, json=kwargs)
 
-    name = model.get_method("patch")
-    gen_patch.__name__ = name
     return gen_patch
 
 
@@ -203,51 +206,53 @@ def generate_delete(model: api_model):
         endpoint = f"v2/{model.name}/{id}"
         return self.request(verb, endpoint)
 
-    name = model.get_method("delete")
-    gen_delete.__name__ = name
     return gen_delete
 
 
 def generate_purge(model: api_model):
     def gen_purge(self, id):
         verb = "DELETE"
-        endpoint = f"v2/{model.collection_name}/{id}?purge=true"
+        endpoint = f"v2/{model.name}/{id}?purge=true"
         return self.request(verb, endpoint)
 
-    name = model.get_method("purge")
-    gen_purge.__name__ = name
     return gen_purge
 
 
+# Instrumenting api_call_base with the generated methods.
+# Where there is no specialized method defined,
+# add the generated generic method to the api_call class.
 for ptname in api_models:
     model = api_models[ptname]
     for op in OPERATIONS:
         call_name = model.get_method(op)
-        if not hasattr(api_call, call_name):
-            match op:
-                case "create":
-                    gcall = generate_create(model)
-                case "show":
-                    gcall = generate_show(model)
-                case "update":
-                    gcall = generate_update(model)
-                case "patch":
-                    gcall = generate_patch(model)
-                case "delete":
-                    gcall = generate_delete(model)
-                case "list":
-                    gcall = generate_list(model)
-                case "purge":
-                    gcall = generate_purge(model)
+        match op:
+            case "create":
+                gcall = generate_create(model)
+            case "show":
+                gcall = generate_show(model)
+            case "update":
+                gcall = generate_update(model)
+            case "patch":
+                gcall = generate_patch(model)
+            case "delete":
+                gcall = generate_delete(model)
+            case "list":
+                gcall = generate_list(model)
+            case "fetch":
+                gcall = generate_fetch(model)
+            case "purge":
+                gcall = generate_purge(model)
 
-            setattr(api_call, call_name, gcall)
+        gcall.__qualname__ = f"api_call_base.{call_name}"
+        gcall.__name__ = call_name
+        setattr(api_call_base, call_name, gcall)
 
 
-class api_call_DC(api_context):
-    """Class that exposes the CKAN API for the Data Catalog.
+class api_call(api_call_base):
+    """Class that exposes the STELAR API for a given entity.
 
     `api_call(proxy).foo(...)`
-    returns the 'result' of the CKAN API response on success,
+    returns the 'result' of the STELAR API response on success,
     and raises a ProxyOperationError on failure.
 
     `api_call(client).foo(...)`
@@ -256,40 +261,3 @@ class api_call_DC(api_context):
 
     def __init__(self, arg: Proxy | Client):
         super().__init__(arg)
-        self.ckan = self.client.DC
-
-    def __getattr__(self, name):
-        func = getattr(self.ckan, name)
-
-        @wraps(func)
-        def wrapped_call(*args, **kwargs):
-            response = func(*args, **kwargs)
-            if not response["success"]:
-                err = response["error"]
-                if err["__type"] == "Not Found Error":
-                    raise EntityNotFound(self.proxy_type, self.proxy_id, name)
-                else:
-                    # Generic
-                    raise ProxyOperationError(
-                        self.proxy_type, self.proxy_id, name, response["error"]
-                    )
-            return response["result"]
-
-        return wrapped_call
-
-    def get_call(self, proxy_type, op):
-        _map_to_ckan = {
-            "Dataset": "package",
-            "Resource": "resource",
-            "Organization": "organization",
-            "Group": "group",
-            "Vocabulary": "vocabulary",
-            "Tag": "tag",
-            "User": "user",
-        }
-        ckan_type = _map_to_ckan[proxy_type.__name__]
-        if ckan_type == "package" and op == "purge":
-            call_name = "dataset_purge"
-        else:
-            call_name = f"{ckan_type}_{op}"
-        return getattr(self, call_name)

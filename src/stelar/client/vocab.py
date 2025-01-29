@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterator
 from uuid import UUID
 
-
 from .generic import GenericCursor, GenericProxy, api_call
 from .proxy import (
     Id,
@@ -119,7 +118,11 @@ class Tag(GenericProxy):
 
 
 class VocabularyCursor(GenericCursor):
-    """Implement cursor functionalities for Vocabulary."""
+    """Implement CKAN cursor functionalities for Vocabulary.
+
+    N.B. This class is not used any more and will eventually be
+    removed.
+    """
 
     def __init__(self, client):
         super().__init__(client, Vocabulary)
