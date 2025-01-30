@@ -222,7 +222,7 @@ class Proxy:
                     validated_fields[name] = ...
                 else:
                     try:
-                        validated_fields[name] = prop.validator.validate(defval)
+                        validated_fields[name] = prop.validate(proxy, defval)
                     except ValueError as e:
                         raise ConversionError(prop, "validate") from e
                 # if False:  # prop.create_default is not None:

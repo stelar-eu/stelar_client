@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 from io import StringIO
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
-from uuid import UUID
+from typing import TYPE_CHECKING, Any
 
 from .exceptions import EntityError
 from .fieldvalidation import AnyField, NameField, UUIDField
 from .proxy import Proxy
-from .proxylist import ProxySublist
-from .registry import Registry
 
 if TYPE_CHECKING:
     from ..client import Client
@@ -173,9 +170,12 @@ class Property:
             # Record only first change
             obj.proxy_changed[self.name] = obj.proxy_attr[self.name]
 
+    def validate(self, obj, value):
+        return self.validator.validate(value)
+
     def set(self, obj, value):
         """Low-level setter"""
-        value = self.validator.validate(value)
+        value = self.validate(obj, value)
         self.touch(obj)
         # update the value
         obj.proxy_attr[self.name] = value

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .decl import validate_tagspec
+from .decl import tag_split
 from .fieldvalidation import AnyField
 from .property import Property
 from .proxy import Proxy
@@ -26,6 +26,20 @@ class VocabularyIndex:
         self.refresh_count = 0
         self._name_to_id = {}
         self._id_to_name = {}
+        self._name_to_tags = {}
+        self._id_to_tags = {}
+
+    @property
+    def name_to_tags(self):
+        if self.dirty:
+            self.refresh_tag_vocabularies()
+        return self._name_to_tags
+
+    @property
+    def id_to_tags(self):
+        if self.dirty:
+            self.refresh_tag_vocabularies()
+        return self._id_to_tags
 
     @property
     def name_to_id(self):
@@ -47,10 +61,18 @@ class VocabularyIndex:
         for voc in self.catalog.fetch_active_vocabularies():
             vid = voc["id"]
             vname = voc["name"]
+            tags = {tag["name"] for tag in voc["tags"]}
             self._id_to_name[vid] = vname
             self._name_to_id[vname] = vid
+            self._name_to_tags[vname] = tags
+            self._id_to_tags[vid] = tags
         self.dirty = False
         self.refresh_count += 1
+
+    def validate_tagspec(self, tagspec: str) -> bool:
+        """Check if a string is formatted correctly as a tagspec"""
+        voc, tag = tag_split(tagspec)
+        return voc is None or tag in self.name_to_tags.get(voc, ())
 
 
 class TagListField(AnyField):
@@ -58,7 +80,7 @@ class TagListField(AnyField):
         super().__init__(self, nullable=False, default=())
         self.add_check(self.to_taglist, 5)
 
-    def to_taglist(self, tagl):
+    def to_taglist(self, tagl, *, vocindex, **kwargs):
         if isinstance(tagl, str):
             raise ValueError("An iterable of strings was expected, got a single string")
         taglist = tuple(tagl)
@@ -66,7 +88,7 @@ class TagListField(AnyField):
             raise ValueError(
                 "Unexpected tagspec", [v for v in taglist if not isinstance(v, str)]
             )
-        badts = [ts for ts in taglist if not validate_tagspec(ts)]
+        badts = [ts for ts in taglist if not vocindex.validate_tagspec(ts)]
         if badts:
             raise ValueError("Tag list contains non-valid tagspec(s)", badts)
         return taglist, True
@@ -92,6 +114,10 @@ class TagList(Property):
             short=short,
             **kwargs,
         )
+
+    def validate(self, proxy, value):
+        vocindex = proxy.proxy_registry.catalog.vocabulary_index
+        return self.validator.validate(value, vocindex=vocindex)
 
     def convert_entity_to_proxy(self, proxy, entity, **kwargs):
         vocindex = proxy.proxy_registry.catalog.vocabulary_index

@@ -3,7 +3,6 @@ from uuid import uuid4
 import pytest
 from proxy_utils import ProxyTestObj, TPCatalog
 
-from stelar.client import ConversionError
 from stelar.client.proxy.tag import TaggableProxy, TagList, TagListField
 from stelar.client.vocab import tag_split
 
@@ -31,11 +30,32 @@ def test_tag_split(tagspec, tagpair):
 
 @pytest.mark.parametrize(
     "taglist",
-    [[], {}, (), {"aa", "bbb:as"}, ["foo", "bar", "abasw"], dict(tag1="aa", tag2=44)],
+    [
+        [],
+        {},
+        (),
+        {"aa", "daltons:joe"},
+        ["foo", "bar", "abasw"],
+        dict(tag1="aa", tag2=44),
+    ],
 )
 def test_taglist_field(taglist):
+    c = TPCatalog()
+    did = str(uuid4())
+    c.vocabs = [
+        {
+            "name": "daltons",
+            "id": did,
+            "tags": [
+                {"name": "joe"},
+                {"name": "jack"},
+                {"name": "averell"},
+            ],
+        }
+    ]
+
     v = TagListField()
-    v.validate(taglist)
+    v.validate(taglist, vocindex=c.vocabulary_index)
 
 
 @pytest.mark.parametrize("taglist", [["a"], "asdasda", 4, [["aa"]]])
@@ -49,7 +69,17 @@ def test_vocabulary_index():
     c = TPCatalog()
 
     did = str(uuid4())
-    c.vocabs = [{"name": "daltons", "id": did}]
+    c.vocabs = [
+        {
+            "name": "daltons",
+            "id": did,
+            "tags": [
+                {"name": "joe"},
+                {"name": "jack"},
+                {"name": "averell"},
+            ],
+        }
+    ]
 
     assert c.vocabulary_index.dirty
     assert c.vocabulary_index.refresh_count == 0
@@ -59,13 +89,34 @@ def test_vocabulary_index():
     assert not c.vocabulary_index.dirty
     assert c.vocabulary_index.refresh_count == 1
 
+    assert c.vocabulary_index.validate_tagspec("daltons:jack")
+    assert c.vocabulary_index.validate_tagspec("daltons:joe")
+    assert c.vocabulary_index.validate_tagspec("daltons:averell")
+
+    assert c.vocabulary_index.validate_tagspec("fii")
+    assert c.vocabulary_index.validate_tagspec("will")
+    assert c.vocabulary_index.validate_tagspec("ww")
+
+    assert not c.vocabulary_index.validate_tagspec("doltons:joe")
+    assert not c.vocabulary_index.validate_tagspec("daltons:william")
+
 
 def test_taggable():
     class Foo(TaggableProxy, ProxyTestObj):
         tags = TagList()
 
     c = TPCatalog()
-    c.vocabs = [{"name": "daltons", "id": uuid4()}]
+    c.vocabs = [
+        {
+            "name": "daltons",
+            "id": uuid4(),
+            "tags": [
+                {"name": "joe"},
+                {"name": "jack"},
+                {"name": "averell"},
+            ],
+        }
+    ]
 
     x = Foo.new(c)
     assert x.tags == ()
@@ -84,9 +135,8 @@ def test_taggable():
     x.tags = ["foo", "daltons:averell", "bar"]
     assert x.tags == ("foo", "daltons:averell", "bar")
 
-    with pytest.raises(ConversionError) as e:
+    with pytest.raises(ValueError) as e:
         x.tags = ["doltons:joe"]
-    assert e.value.args[1] == "tags"
 
     x.proxy_reset()
     assert x.tags == ("foo", "daltons:averell", "bar")
