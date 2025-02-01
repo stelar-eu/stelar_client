@@ -42,8 +42,9 @@ entity_to_ckan = {
 def get_members(group, proxy_type, capacity):
     ac = api_call(group)
 
-    ckan_type = entity_to_ckan[proxy_type.__name__]
-    result = ac.member_list(id=str(group.id), object_type=ckan_type, capacity=capacity)
+    list_members = ac.get_call(group.__class__, "list_members", proxy_type)
+
+    result = list_members(id=str(group.id), capacity=capacity)
     ids = [UUID(entry[0]) for entry in result]
     cap = [entry[2] for entry in result]
     return MemberList(ac.client, proxy_type, ids, cap)
@@ -87,31 +88,14 @@ class GroupBase(GenericProxy, ExtrasProxy, entity=False):
         return get_members(self, Group, capacity=None)
 
     def add(self, member: Proxy, capacity: str = ""):
-        try:
-            objtype = entity_to_ckan[member.__class__.__name__]
-        except KeyError:
-            raise TypeError(f"Cannot add {type(member)} to a group")
-
         ac = api_call(self)
-        ac.member_create(
-            id=str(self.id),
-            object=str(member.proxy_id),
-            object_type=objtype,
-            capacity=capacity,
-        )
+        add_member = ac.get_call(self.__class__, "add", member.__class__)
+        add_member(str(self.id), str(member.proxy_id), capacity=capacity)
 
     def remove(self, member: Proxy):
-        try:
-            objtype = entity_to_ckan[member.__class__.__name__]
-        except KeyError:
-            raise TypeError(f"Cannot add {type(member)} to a group")
-
         ac = api_call(self)
-        ac.member_delete(
-            id=str(self.id),
-            object=str(member.proxy_id),
-            object_type=objtype,
-        )
+        member_delete = ac.get_call(self.__class__, "remove", member.__class__)
+        member_delete(str(self.id), str(member.proxy_id))
 
 
 class Group(GroupBase):

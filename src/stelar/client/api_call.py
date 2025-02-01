@@ -43,11 +43,15 @@ class api_model:
             return value
 
     def __init__(self, **fields):
+        self.members = []
         for name, value in fields.items():
             setattr(self, name, value)
 
-    def get_method(self, op):
-        return f"{self.name}_{op}"
+    def get_method(self, op, mm: api_model = None):
+        if mm is None:
+            return f"{self.name}_{op}"
+        else:
+            return f"{self.name}_{op}_{mm.name}"
 
 
 api_models = {
@@ -62,10 +66,12 @@ api_models = {
     "Organization": {
         "name": "organization",
         "collection_name": "organizations",
+        "members": ["Dataset", "Group"],
     },
     "Group": {
         "name": "group",
         "collection_name": "groups",
+        "members": ["Dataset", "Group"],
     },
     "Vocabulary": {
         "name": "vocabulary",
@@ -82,9 +88,12 @@ api_models = {
 }
 for m in api_models:
     api_models[m] = api_model.from_value(api_models[m])
+for m in api_models:
+    api_models[m].members = [api_models[mm] for mm in api_models[m].members]
 
 
 OPERATIONS = ["create", "show", "update", "patch", "delete", "list", "fetch", "purge"]
+MEMBER_OPERATIONS = ["add", "remove", "list_members"]
 
 
 class api_call_base(api_context):
@@ -137,9 +146,13 @@ class api_call_base(api_context):
                     resp,
                 )
 
-    def get_call(self, proxy_type, op):
+    def get_call(self, proxy_type, op, member_type=None):
         m = api_models[proxy_type.__name__]
-        call_name = m.get_method(op)
+        if member_type is None:
+            call_name = m.get_method(op)
+        else:
+            mm = api_models[member_type.__name__]
+            call_name = m.get_method(op, mm)
         return getattr(self, call_name)
 
 
@@ -218,6 +231,35 @@ def generate_purge(model: api_model):
     return gen_purge
 
 
+def generate_add(model: api_model, mm: api_model):
+    def gen_add(self, id, member_id, capacity=None):
+        verb = "POST"
+        endpoint = f"v2/{model.name}/{id}/{mm.name}/{member_id}"
+        return self.request(verb, endpoint, json={"capacity": capacity})
+
+    return gen_add
+
+
+def generate_remove(model: api_model, mm: api_model):
+    def gen_remove(self, id, member_id):
+        verb = "DELETE"
+        endpoint = f"v2/{model.name}/{id}/{mm.name}/{member_id}"
+        return self.request(verb, endpoint)
+
+    return gen_remove
+
+
+def generate_list_members(model: api_model, mm: api_model):
+    def gen_list_members(self, id, capacity=None):
+        verb = "GET"
+        endpoint = f"v2/{model.name}/{id}/{mm.collection_name}"
+        if capacity is not None:
+            endpoint += f"?capacity={capacity}"
+        return self.request(verb, endpoint)
+
+    return gen_list_members
+
+
 # Instrumenting api_call_base with the generated methods.
 # Where there is no specialized method defined,
 # add the generated generic method to the api_call class.
@@ -246,6 +288,23 @@ for ptname in api_models:
         gcall.__qualname__ = f"api_call_base.{call_name}"
         gcall.__name__ = call_name
         setattr(api_call_base, call_name, gcall)
+
+    # Add the generated member methods to the api_call class
+    for mm in model.members:
+        for op in MEMBER_OPERATIONS:
+            call_name = model.get_method(op, mm)
+
+            match op:
+                case "add":
+                    gcall = generate_add(model, mm)
+                case "remove":
+                    gcall = generate_remove(model, mm)
+                case "list_members":
+                    gcall = generate_list_members(model, mm)
+
+            gcall.__qualname__ = f"api_call_base.{call_name}"
+            gcall.__name__ = call_name
+            setattr(api_call_base, call_name, gcall)
 
 
 class api_call(api_call_base):
