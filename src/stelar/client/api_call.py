@@ -56,12 +56,12 @@ class api_model:
 
 api_models = {
     "Dataset": {
-        "name": "datset",
-        "collection_name": "datsets",
+        "name": "dataset",
+        "collection_name": "datasets",
     },
     "Resource": {
-        "name": "resrc",
-        "collection_name": "resrcs",
+        "name": "resource",
+        "collection_name": "resources",
     },
     "Organization": {
         "name": "organization",
