@@ -15,6 +15,7 @@ class BaseAPI:
         self._base_url = base_url
         self._api_url = base_url + "/api/"
         self._tls_verify = tls_verify
+        self._http_session = requests.Session()
         self.reset_tokens(token, refresh_token)
 
     @property
@@ -37,6 +38,7 @@ class BaseAPI:
         """
         self._token = token
         self._refresh_token = refresh_token
+        self._http_session.headers.update({"Authorization": f"Bearer {self._token}"})
 
     def request(
         self, method, endpoint, params=None, data=None, headers=None, json=None
@@ -84,8 +86,8 @@ class BaseAPI:
             "Content-Type": "application/json",
         }
 
-        if self._token:
-            default_headers["Authorization"] = f"Bearer {self._token}"
+        # if self._token:
+        #    default_headers["Authorization"] = f"Bearer {self._token}"
 
         if headers:
             default_headers.update(headers)
@@ -93,7 +95,8 @@ class BaseAPI:
         turn = 0
         while turn < 2:
             # Make the request using the provided method, url, params, data, json, and headers
-            response = requests.request(
+            # response = requests.request(
+            response = self._http_session.request(
                 method=method,
                 url=url,
                 params=None,  # params are already incorporated into the URL
@@ -105,7 +108,7 @@ class BaseAPI:
             if response.status_code == 401 and turn == 0:
                 # Refresh the token and try again
                 self.refresh_tokens()
-                default_headers["Authorization"] = f"Bearer {self._token}"
+                # default_headers["Authorization"] = f"Bearer {self._token}"
                 turn += 1
             else:
                 break
@@ -118,23 +121,21 @@ class BaseAPI:
         """Do an actual API call"""
 
         url = urljoin(self._api_url, endpoint)
-        headers = {"Authorization": f"Bearer {self._token}"}
+        # headers = {"Authorization": f"Bearer {self._token}"}
         if params is not None and "json" in params:
             json = params["json"]
 
         twice = 0
         while twice < 2:
-            response = requests.request(
+            response = self._http_session.request(
                 method,
                 url,
                 params=params,
                 json=json,
-                headers=headers,
                 verify=self._tls_verify,
             )
             if response.status_code == 401 and twice == 0:
                 self.refresh_tokens()
-                headers["Authorization"] = f"Bearer {self._token}"
                 twice += 1
             else:
                 break
