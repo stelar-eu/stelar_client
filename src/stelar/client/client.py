@@ -246,16 +246,10 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
                 verify=tls_verify,
             )
             status_code = token_response.status_code
-            token_json = token_response.json().get("result", None)
-            success = token_response.json().get("success")
+            js = token_response.json()
 
-            if (
-                token_json
-                and token_json["token"]
-                and token_json["refresh_token"]
-                and success
-                and status_code == 200
-            ):
+            if status_code == 200:
+                token_json = js["result"]
                 token = token_json["token"]
                 refresh_token = token_json["refresh_token"]
 
@@ -264,7 +258,9 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             else:
                 raise RuntimeError(
                     "Could not authenticate user. Check the provided credentials"
-                    " and verify the availability of the STELAR API."
+                    " and verify the availability of the STELAR API.",
+                    status_code,
+                    js,
                 )
         else:
             raise ValueError("Credentials were fully or partially empty!")
