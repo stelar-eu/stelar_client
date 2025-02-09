@@ -1,23 +1,13 @@
-from functools import cached_property
-
-from .base import BaseAPI
+from .base import BaseAPI, DefaultsRegistry
 from .dataset import Dataset, DatasetCursor
 from .generic import GenericCursor, api_call
 from .group import Group, Organization
-from .proxy import Registry, RegistryCatalog
 from .resource import Resource
 from .user import User, UserCursor
-from .utils import client_for
 from .vocab import Tag, TagCursor, Vocabulary
 
 
-class DefaultsRegistry(Registry):
-    @cached_property
-    def default_organization(self):
-        return client_for(self).organizations["stelar-klms"]
-
-
-class CatalogAPI(RegistryCatalog, BaseAPI):
+class CatalogAPI(BaseAPI):
     """
     CatalogAPI is a superclass of the STELAR Python Client. It implements
     data catalog handling methods that utilizes a subset of the available STELAR API
@@ -29,7 +19,15 @@ class CatalogAPI(RegistryCatalog, BaseAPI):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Create the registries
-        for ptype in [Dataset, Resource, Organization, Group, Vocabulary, Tag, User]:
+        for ptype in [
+            Dataset,
+            Resource,
+            Organization,
+            Group,
+            Vocabulary,
+            Tag,
+            User,
+        ]:
             DefaultsRegistry(self, ptype)
 
     @property

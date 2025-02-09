@@ -1,6 +1,8 @@
 from IPython.core.display import HTML
 
-from .generic import GenericCursor, GenericProxy
+from stelar.client.package import PackageCursor
+
+from .generic import GenericProxy
 from .proxy import (
     BoolField,
     DateField,
@@ -19,7 +21,6 @@ from .proxy import (
 )
 from .resource import Resource
 from .utils import client_for
-from .vocab import Tag
 
 
 class Dataset(GenericProxy, ExtrasProxy, TaggableProxy):
@@ -202,16 +203,6 @@ class Dataset(GenericProxy, ExtrasProxy, TaggableProxy):
         return dataset_info
 
 
-class DatasetCursor(GenericCursor):
+class DatasetCursor(PackageCursor):
     def __init__(self, client):
         super().__init__(client, Dataset)
-
-    def with_tag(self, tagarg):
-        # Need to obtain the tag ID, in order to call tag_show
-        match tagarg:
-            case Tag():
-                return list(tagarg.get_tagged_datasets())
-            case str():
-                return list(client_for(self).tags[tagarg].get_tagged_datasets())
-            case _:
-                raise ValueError("Expected Tag or tagspec (a string)")

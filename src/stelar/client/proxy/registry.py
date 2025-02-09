@@ -58,7 +58,7 @@ class Registry(Generic[ProxyClass]):
          a proxy initialized with the provided entity.
         """
         if not isinstance(eid, UUID):
-            raise ValueError("Expected UUID")
+            raise ValueError(f"Expected UUID, got {eid} of type {type(eid)}")
         if eid == UUID(int=0):
             raise ValueError("The null UUID(int=0) is not legal")
         proxy = self.registry.get(eid, None)

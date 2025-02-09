@@ -21,7 +21,7 @@ from .catalog import CatalogAPI
 from .endpoints import APIEndpointsV1
 from .knowgraph import KnowledgeGraphAPI
 from .s3 import S3API
-from .workflows import WorkflowsAPI
+from .wfapi import WorkflowsAPI
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -183,7 +183,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         """
 
         req_data = {"refresh_token": refresh_token}
-        req_url = urljoin(base_url, "/stelar/api" + APIEndpointsV1.TOKEN_ISSUE)
+        req_url = urljoin(base_url, "/stelar/api/" + APIEndpointsV1.TOKEN_ISSUE)
         token_response = requests.put(
             url=req_url,
             json=req_data,
@@ -237,7 +237,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
 
         if username and password:
             auth_data = {"username": username, "password": password}
-            req_url = urljoin(base_url, "/stelar/api" + APIEndpointsV1.TOKEN_ISSUE)
+            req_url = urljoin(base_url, "/stelar/api/" + APIEndpointsV1.TOKEN_ISSUE)
 
             token_response = requests.post(
                 url=req_url,

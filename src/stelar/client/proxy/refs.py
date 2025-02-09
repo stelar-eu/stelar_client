@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from io import StringIO
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from .exceptions import EntityError
-from .fieldvalidation import AnyField, NameField, UUIDField
+from .fieldvalidation import AnyField
 from .property import Property
-from .proxy import Proxy
 from .proxylist import ProxySublist
 from .registry import Registry
 
@@ -131,6 +128,7 @@ class RefList(Reference):
             proxy_ids = [UUID(e.get(entity_id_name)) for e in entities]
         except Exception as e:
             breakpoint()
+            raise
         proxy.proxy_attr[self.name] = proxy_ids
 
     def convert_proxy_to_entity(self, proxy, entity):

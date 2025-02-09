@@ -85,6 +85,10 @@ api_models = {
         "name": "user",
         "collection_name": "users",
     },
+    "Process": {
+        "name": "process",
+        "collection_name": "processes",
+    },
 }
 for m in api_models:
     api_models[m] = api_model.from_value(api_models[m])

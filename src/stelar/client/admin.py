@@ -1,13 +1,11 @@
+from urllib.parse import urljoin
+
+from requests.exceptions import HTTPError
+
 from .base import BaseAPI
 from .endpoints import APIEndpointsV1
+from .model import DuplicateEntryError, MissingParametersError, STELARUnknownError
 from .policy import Policy
-from .model import (
-    MissingParametersError,
-    STELARUnknownError,
-    DuplicateEntryError,
-)
-from urllib.parse import urljoin
-from requests.exceptions import HTTPError
 
 
 class AdminAPI(BaseAPI):
@@ -45,7 +43,7 @@ class AdminAPI(BaseAPI):
             dict: The user representation in dictionary resembling JSON.
         """
 
-        response = self.request("GET", urljoin(APIEndpointsV1.GET_USER, user_id))
+        response = self.api_request("GET", f"v1/users/{user_id}")
         if response.status_code == 200:
             result = response.json().get("result", None)
             if result:
@@ -66,7 +64,7 @@ class AdminAPI(BaseAPI):
             dict: The user representations in dictionary resembling JSON.
         """
 
-        response = self.request("GET", APIEndpointsV1.GET_USERS)
+        response = self.api_request("GET", APIEndpointsV1.GET_USERS)
         if response.status_code == 200:
             result = response.json().get("result", None)
             if result:
@@ -120,17 +118,17 @@ class AdminAPI(BaseAPI):
             return None
         try:
             yaml_headers = {"Content-Type": "application/x-yaml"}
-            policy_response = self.request(
+            policy_response = self.api_request(
                 "POST",
                 APIEndpointsV1.POST_POLICY,
                 headers=yaml_headers,
                 data=policy.policy_content,
             )
             if policy_response.status_code == 200:
-                policy_repr = self.request(
+                policy_repr = self.api_request(
                     "GET", urljoin(APIEndpointsV1.GET_POLICY_REPRESENATION, "active")
                 )
-                policy_info = self.request(
+                policy_info = self.api_request(
                     "GET", urljoin(APIEndpointsV1.GET_POLICY_INFO, "active")
                 )
                 if policy_info.status_code == 200 and policy_repr.status_code == 200:
@@ -184,10 +182,10 @@ class AdminAPI(BaseAPI):
         if not filter:
             return None
         try:
-            policy_repr = self.request(
+            policy_repr = self.api_request(
                 "GET", urljoin(APIEndpointsV1.GET_POLICY_REPRESENATION, filter)
             )
-            policy_info = self.request(
+            policy_info = self.api_request(
                 "GET", urljoin(APIEndpointsV1.GET_POLICY_INFO, filter)
             )
             if policy_info.status_code == 200 and policy_repr.status_code == 200:
@@ -237,7 +235,7 @@ class AdminAPI(BaseAPI):
         if not filter:
             return None
         try:
-            policy_repr = self.request(
+            policy_repr = self.api_request(
                 "GET", urljoin(APIEndpointsV1.GET_POLICY_REPRESENATION, filter)
             )
             if policy_repr.status_code == 200:
@@ -278,7 +276,7 @@ class AdminAPI(BaseAPI):
         >>> admin.get_policy_list()
         """
         try:
-            policy_response = self.request("GET", APIEndpointsV1.GET_POLICY_LIST)
+            policy_response = self.api_request("GET", APIEndpointsV1.GET_POLICY_LIST)
             if policy_response.status_code == 200:
                 pjson = policy_response.json()["result"]["policies"]
                 policy_list = [json for json in pjson]

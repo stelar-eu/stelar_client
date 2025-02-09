@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
+from typing import Any, Optional
 from uuid import UUID
 
 __all__ = [
@@ -318,7 +318,10 @@ class UUIDField(BasicField):
         super().__init__(ftype=UUID, **kwargs)
 
     def convert_to_proxy(self, value: str, **kwargs) -> UUID:
-        return UUID(value)
+        try:
+            return UUID(value)
+        except ValueError:
+            raise ValueError("Invalid UUID", value, kwargs)
 
     def convert_to_entity(self, value: UUID, **kwargs) -> str:
         return str(value)

@@ -1,9 +1,19 @@
+from functools import cached_property
 from urllib.parse import urlencode, urljoin
 
 import requests
 
+from .proxy import Registry, RegistryCatalog
+from .utils import client_for
 
-class BaseAPI:
+
+class DefaultsRegistry(Registry):
+    @cached_property
+    def default_organization(self):
+        return client_for(self).organizations["stelar-klms"]
+
+
+class BaseAPI(RegistryCatalog):
     """Base class for all parts of the client API.
 
     Its main responsibility is to support API calls to the
@@ -44,7 +54,11 @@ class BaseAPI:
         self, method, endpoint, params=None, data=None, headers=None, json=None
     ):
         """
-        Sends a request to the STELAR API
+        Sends a request to the STELAR API.
+
+        The main difference of this method with respect to `api_request` is that the
+        endpoint is relative to the base URL, and it can include headers, as well as
+        non-JSON data (e.g., form data).
 
         Args:
             method (str): The HTTP method ('GET', 'POST', 'PUT', 'DELETE').
@@ -57,7 +71,6 @@ class BaseAPI:
         Returns:
             requests.Response: The response object from the API.
         """
-
         # Validate data/json and handle accordingly
         if method.upper() == "GET":
             # GET requests should not have a body (data or json)
@@ -76,7 +89,7 @@ class BaseAPI:
 
         # Combine base_url with the endpoint
         endpoint = endpoint.lstrip("/")
-        url = urljoin(self.api_url, endpoint)
+        url = urljoin(self._base_url + "/", endpoint)
         # If the URL does not contain a query, add parameters from 'params'
         if params:
             url = f"{url}?{urlencode(params)}"

@@ -17,6 +17,7 @@ from .proxy import ProxyState, deferred_sync
 from .resource import Resource
 from .user import User
 from .vocab import Tag, Vocabulary
+from .workflows import Process, Task, Workflow
 
 __all__ = [
     "Client",
@@ -28,6 +29,9 @@ __all__ = [
     "Tag",
     "Vocabulary",
     "User",
+    "Process",
+    "Task",
+    "Workflow",
     "deferred_sync",
 ]
 
