@@ -257,8 +257,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
 
             else:
                 raise RuntimeError(
-                    "Could not authenticate user. Check the provided credentials"
-                    " and verify the availability of the STELAR API.",
+                    "Could not authenticate user.",
                     status_code,
                     js,
                 )

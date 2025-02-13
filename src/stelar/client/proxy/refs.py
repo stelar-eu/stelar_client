@@ -124,11 +124,7 @@ class RefList(Reference):
         # entities is a list of entities, we need to fetch them from
         # our proxy's client.
         entity_id_name = self.proxy_type.proxy_schema.id.entity_name
-        try:
-            proxy_ids = [UUID(e.get(entity_id_name)) for e in entities]
-        except Exception as e:
-            breakpoint()
-            raise
+        proxy_ids = [UUID(e.get(entity_id_name)) for e in entities]
         proxy.proxy_attr[self.name] = proxy_ids
 
     def convert_proxy_to_entity(self, proxy, entity):

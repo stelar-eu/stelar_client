@@ -85,7 +85,7 @@ class Process(GenericProxy, ExtrasProxy, TaggableProxy):
         trigger_sync=True,
     )
     tasks = RefList("Task", trigger_sync=True)
-    exec_state = Property(validator=StrField)
+    exec_state = Property(validator=StrField, updatable=True)
 
     metadata_created = Property(validator=DateField)
     metadata_modified = Property(validator=DateField)
