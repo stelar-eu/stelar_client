@@ -161,7 +161,13 @@ class TagCursor(GenericCursor):
             case (None, tagname):
                 entity = ac.tag_show(id=tagname)
             case (vocname, tagname):
-                entity = ac.tag_show(id=tagname, vocabulary_id=vocname)
+                # Lookup the tag in the vocabulary index
+                try:
+                    self.client.vocabulary_index.dirty = True
+                    entity = self.client.vocabulary_index.name_to_tags[vocname][tagname]
+                except KeyError:
+                    raise ValueError(f"Tag {tagspec} not found")
+                # entity = ac.tag_show(id=tagname, vocabulary_id=vocname)
             case _:
                 raise RuntimeError("Tag splitting, this is a bug")
         return self.client.registry_for(Tag).fetch_proxy_for_entity(entity)

@@ -14,7 +14,7 @@ from stelar.client.vocab import tag_split
         ("gg:aa:bar", ("gg:aa", "bar")),
         ("", None),
         ("a", None),
-        ("a ", None),
+        ("a ", (None, "a ")),
         ("--", (None, "--")),
         ("s" * 101, None),
         (":::::::__", ("::::::", "__")),

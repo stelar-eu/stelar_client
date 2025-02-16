@@ -15,7 +15,7 @@ class ProxyState(Enum):
 # Tag-related declarations
 # -------------------------
 
-TAGSPEC_PATTERN = re.compile(r"((.{2,100})\:)?([a-z0-9_-]{2,100})")
+TAGSPEC_PATTERN = re.compile(r"((.{2,100})\:)?([A-Za-z0-9 _-]{2,100})")
 
 
 def validate_tagspec(tagspec: str) -> bool:

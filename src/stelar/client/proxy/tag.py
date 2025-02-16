@@ -61,7 +61,7 @@ class VocabularyIndex:
         for voc in self.catalog.fetch_active_vocabularies():
             vid = voc["id"]
             vname = voc["name"]
-            tags = {tag["name"] for tag in voc["tags"]}
+            tags = {tag["name"]: tag for tag in voc["tags"]}
             self._id_to_name[vid] = vname
             self._name_to_id[vname] = vid
             self._name_to_tags[vname] = tags
@@ -73,6 +73,13 @@ class VocabularyIndex:
         """Check if a string is formatted correctly as a tagspec"""
         voc, tag = tag_split(tagspec)
         return voc is None or tag in self.name_to_tags.get(voc, ())
+
+    def tagspec_to_id(self, tagspec: str) -> str:
+        """Convert a tagspec to a tag ID"""
+        voc, tagname = tag_split(tagspec)
+        if voc is None:
+            return tagname
+        return self.name_to_tags[voc][tagname]["id"]
 
 
 class TagListField(AnyField):
