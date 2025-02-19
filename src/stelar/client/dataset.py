@@ -35,7 +35,6 @@ class Dataset(GenericProxy, ExtrasProxy, TaggableProxy):
     state = Property(validator=StateField)
     type = Property(validator=StrField)
     creator = Property(validator=UUIDField, entity_name="creator_user_id")
-
     private = Property(
         validator=BoolField(nullable=False, default=False), updatable=True
     )
@@ -46,8 +45,9 @@ class Dataset(GenericProxy, ExtrasProxy, TaggableProxy):
     maintainer = Property(validator=StrField(nullable=True), updatable=True)
     maintainer_email = Property(validator=StrField(nullable=True), updatable=True)
 
-    # weird ones
-    license_id = Property(validator=StrField(nullable=True), updatable=True)
+    # N.B. This has been removed from the schema
+    # license_id = Property(validator=StrField(nullable=True), updatable=True)
+
     url = Property(validator=StrField(nullable=True), updatable=True)
     version = Property(
         validator=StrField(nullable=True, maximum_len=100), updatable=True
