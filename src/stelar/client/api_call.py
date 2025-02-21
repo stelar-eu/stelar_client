@@ -88,6 +88,19 @@ api_models = {
     "Process": {
         "name": "process",
         "collection_name": "processes",
+        "members": ["Task"],
+    },
+    "Task": {
+        "name": "task",
+        "collection_name": "tasks",
+    },
+    "Workflow": {
+        "name": "workflow",
+        "collection_name": "workflows",
+    },
+    "Tool": {
+        "name": "tool",
+        "collection_name": "tools",
     },
 }
 for m in api_models:
@@ -327,3 +340,32 @@ class api_call(api_call_base):
 
     # def tag_list(self, vocabulary_id: str = None):
     #    raise NotImplementedError("tag_list")
+
+    def user_fetch(self, limit: int = None, offset: int = None):
+        response = self.request(
+            "GET", "v1/users/", params={"limit": limit, "offset": offset}
+        )
+        users = response["users"]
+        return users
+
+    def user_list(self, limit: int = None, offset: int = None):
+        return [u["id"] for u in self.user_fetch()]
+
+    def user_show(self, id: str):
+        response = self.request("GET", f"v1/users/{id}")
+        return response["user"]
+
+    def user_delete(self, id):
+        return self.request("DELETE", f"v1/users/{id}")
+
+    def user_create(self, **kwargs):
+        raise NotImplementedError
+
+    def user_update(self, id, **kwargs):
+        raise NotImplementedError
+
+    def user_patch(self, id, **kwargs):
+        raise NotImplementedError
+
+    def user_purge(self, id):
+        raise NotImplementedError

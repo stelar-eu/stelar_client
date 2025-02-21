@@ -53,8 +53,7 @@ def generic_proxy_sync(proxy: Proxy, entity, update_method="patch"):
         create = ac.get_call(type(proxy), "create")
         entity = create(**entity_properties)
 
-        # We add this proxy to its registry!
-        # This will call proxy_sync recursively !
+        # We add this proxy to its registry
         proxy.proxy_registry.register_proxy_for_entity(proxy, entity)
         proxy.proxy_from_entity(entity)
         proxy.proxy_changed = None

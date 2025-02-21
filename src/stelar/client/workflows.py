@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from stelar.client.package import PackageCursor
 from stelar.client.proxy.fieldvalidation import UUIDField
+from stelar.client.proxy.property import DictProperty
 
 from .generic import GenericProxy
 from .proxy import (
@@ -18,7 +19,6 @@ from .proxy import (
     TaggableProxy,
     TagList,
 )
-from .resource import Resource
 from .utils import client_for
 
 
@@ -41,12 +41,13 @@ class Workflow(GenericProxy, ExtrasProxy, TaggableProxy):
 
     # weird ones
     # license_id = Property(validator=StrField(nullable=True), updatable=True)
-    url = Property(validator=StrField(nullable=True), updatable=True)
+    repository = Property(validator=StrField(nullable=True), updatable=True)
+    executor = Property(validator=StrField(nullable=True), updatable=True)
     version = Property(
         validator=StrField(nullable=True, maximum_len=100), updatable=True
     )
 
-    resources = RefList(Resource, trigger_sync=True)
+    # resources = RefList(Resource, trigger_sync=True)
     organization = Reference(
         "Organization",
         entity_name="owner_org",
@@ -94,6 +95,10 @@ class Process(GenericProxy, ExtrasProxy, TaggableProxy):
     creator = Property(validator=StrField, entity_name="creator")
     # creator_id = Property(validator=StrField, entity_name="creator")
 
+    start_date = Property(validator=DateField, updatable=False)
+    end_date = Property(validator=DateField, updatable=True)
+    exec_state = Property(validator=StrField, updatable=False)
+
     title = Property(validator=StrField, updatable=True)
     notes = Property(validator=StrField(nullable=True), updatable=True)
     author = Property(validator=StrField(nullable=True), updatable=True)
@@ -107,7 +112,12 @@ class Process(GenericProxy, ExtrasProxy, TaggableProxy):
         validator=StrField(nullable=True, maximum_len=100), updatable=True
     )
 
-    resources = RefList(Resource, trigger_sync=True)
+    # resources = RefList(Resource, trigger_sync=True)
+
+    #
+    # TODO
+    #  tasks
+
     organization = Reference(
         "Organization",
         entity_name="owner_org",
@@ -135,3 +145,52 @@ class Process(GenericProxy, ExtrasProxy, TaggableProxy):
 class ProcessCursor(PackageCursor):
     def __init__(self, client):
         super().__init__(client, Process)
+
+
+class Tool(GenericProxy, ExtrasProxy, TaggableProxy):
+    id = Id()
+    name = NameId()
+
+    metadata_created = Property(validator=DateField)
+    metadata_modified = Property(validator=DateField)
+    state = Property(validator=StateField)
+    type = Property(validator=StrField)
+    creator = Property(validator=UUIDField, entity_name="creator_user_id")
+
+    notes = Property(validator=StrField(nullable=True), updatable=True)
+    author = Property(validator=StrField(nullable=True), updatable=True)
+    author_email = Property(validator=StrField(nullable=True), updatable=True)
+    maintainer = Property(validator=StrField(nullable=True), updatable=True)
+    maintainer_email = Property(validator=StrField(nullable=True), updatable=True)
+
+    # weird ones
+    # license_id = Property(validator=StrField(nullable=True), updatable=True)
+    git_repository = Property(validator=StrField(nullable=True), updatable=True)
+    programming_language = Property(validator=StrField(nullable=True), updatable=True)
+    version = Property(
+        validator=StrField(nullable=True, maximum_len=100), updatable=True
+    )
+
+    inputs = DictProperty(str, str, updatable=True)
+    outputs = DictProperty(str, str, updatable=True)
+    parameters = DictProperty(str, str, updatable=True)
+
+    # resources = RefList(Resource, trigger_sync=True)
+    organization = Reference(
+        "Organization",
+        entity_name="owner_org",
+        create_default="default_organization",
+        updatable=True,
+        trigger_sync=True,
+    )
+
+    # images = RefList("Image", trigger_sync=False)
+
+    groups = RefList("Group", trigger_sync=False)
+    extras = ExtrasProperty()
+    tags = TagList()
+
+
+class ToolCursor(PackageCursor):
+    def __init__(self, client):
+        super().__init__(client, Tool)

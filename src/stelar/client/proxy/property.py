@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import copy
+from collections.abc import MutableMapping
 from io import StringIO
 from typing import TYPE_CHECKING, Any
 
 from .exceptions import EntityError
-from .fieldvalidation import AnyField, NameField, UUIDField
+from .fieldvalidation import AnyField, DictField, NameField, UUIDField
 from .proxy import Proxy
 
 if TYPE_CHECKING:
@@ -160,15 +162,24 @@ class Property:
 
         This is done only on the first update to an attribute,
         in order to allow for the proxy_reset() functionality.
+
+        Args:
+            obj (Proxy): The proxy object whose property is touched.
+        Returns:
+            True if the touch actually happened, False if the property
+            was already touched.
         """
         if obj.proxy_changed is None:
             # Initialize proxy_changed on clean object
             if obj.proxy_attr is None:
                 obj.proxy_sync()
             obj.proxy_changed = {self.name: obj.proxy_attr[self.name]}
+            return True
         elif self.name not in obj.proxy_changed:
             # Record only first change
             obj.proxy_changed[self.name] = obj.proxy_attr[self.name]
+            return True
+        return False
 
     def validate(self, obj, value):
         return self.validator.validate(value)
@@ -296,3 +307,101 @@ class NameId(Property):
             doc = "The name field, which is a unique string identifying the entity."
         super().__init__(validator=validator, entity_name=entity_name, doc=doc)
         self.isName = True
+
+
+# -----------------------------------------
+# Properties returning proxies
+#
+# These properties are used to implement properties that return
+# proxy objects, instead of simple values. This is used for dict-valued
+# and list-valued properties. The proxy object is responsible for
+# updating the entity when the value is changed.
+#
+# Implementation:
+# Suppose that property 'inputs' is a dict-valued property. The property getter
+# __get__() returns a DictPropertyProxy object, which is a MutableMapping.
+#
+# For a mutating operation (__setitem__ or __delitem__), the DictPropertyProxy
+# object updates the dictionary and then sets the property value to the new
+# updated dictionary. Note that the whole new dictionary is set (and auto-updated)
+# not just one entry.
+#
+# For a non-mutating operation (__getitem__ or __len__ or __iter__),
+# the DictPropertyProxy object simply returns the
+# value from the dictionary.
+# -----------------------------------------
+
+
+class PropertyProxy:
+    def __init__(self, proxy, property):
+        self._proxy = proxy
+        self._property = property
+        self._name = property.name
+
+
+class DictProxy(PropertyProxy, MutableMapping):
+    def __getitem__(self, key):
+        return self._proxy.proxy_attr[self._name][key]
+
+    def __setitem__(self, key, value):
+        newval = copy.copy(self._proxy.proxy_attr[self._name])
+        newval[key] = value
+        setattr(self._proxy, self._name, newval)
+
+    def __delitem__(self, key):
+        newval = copy.copy(self._proxy.proxy_attr[self._name])
+        del newval[key]
+        setattr(self._proxy, self._name, newval)
+
+    def __iter__(self):
+        return iter(self._proxy.proxy_attr[self._name])
+
+    def __len__(self):
+        return len(self._proxy.proxy_attr[self._name])
+
+    def __repr__(self):
+        return f"<DictProxy {self._name}: {self._proxy.proxy_attr[self._name]}>"
+
+    def __str__(self):
+        return str(self._proxy.proxy_attr[self._name])
+
+    def __or__(self, other):
+        return self._proxy.proxy_attr[self._name] | other
+
+    def __ior__(self, other):
+        newval = copy.copy(self._proxy.proxy_attr[self._name])
+        newval |= other
+        setattr(self._proxy, self._name, newval)
+        return self
+
+
+class ProxyProperty(Property):
+    """A proxy property allows for properties whose values are objects.
+
+    As an example, a dict-valued property can be accessed via a proxy object,
+    which detects changes to the dictionary and automatically updates the
+    entity proxy.
+
+    For this to work, the proxy property is parametrized with a PropertyProxy
+    class, whose instances are to be returned by the __get__ method.
+    """
+
+    def __init__(self, property_proxy_class, **kwargs):
+        super().__init__(**kwargs)
+        self.property_proxy_class = property_proxy_class
+
+    def __get__(self, obj, objtype=None):
+        val = super().__get__(obj, objtype)
+        if val is None:
+            return None
+        else:
+            return self.property_proxy_class(obj, self)
+
+
+class DictProperty(ProxyProperty):
+    def __init__(self, key_type, value_type, *, nullable=False, **kwargs):
+        super().__init__(
+            DictProxy,
+            validator=DictField(key_type, value_type, nullable=nullable),
+            **kwargs,
+        )

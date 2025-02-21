@@ -12,6 +12,9 @@ from .resource import Resource
 
 
 class S3API(BaseAPI):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def download_resource(self, resource: Resource, localpath: str) -> bool:
         """
         Downloads an object from the S3 instance the KLMS is working with.

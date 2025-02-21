@@ -2,12 +2,32 @@ from __future__ import annotations
 
 from typing import Iterator
 
+from stelar.client.proxy.derived import derived_property
 
 from .generic import GenericCursor, GenericProxy, api_call
 from .proxy import BoolField, DateField, Id, NameId, Property, StateField, StrField
 
 
 class User(GenericProxy):
+    id = Id()
+
+    username = Property(validator=StrField())
+
+    fullname = Property(validator=StrField())
+    first_name = Property(validator=StrField())
+    last_name = Property(validator=StrField())
+
+    email = Property(validator=StrField())
+
+    @derived_property
+    def roles(self, entity):
+        return tuple(entity.get("roles", []))
+
+    joined_date = Property(validator=DateField())
+    active = Property(validator=BoolField())
+
+
+class OldUser(GenericProxy):
     id = Id()
     name = NameId()
 
@@ -41,15 +61,14 @@ class UserCursor(GenericCursor):
         super().__init__(client, User)
 
     def fetch_list(self, *, limit: int, offset: int) -> list[str]:
-        registry = self.client.registry_for(User)
         ac = api_call(self.client)
-        result = ac.user_list(all_fields=False)
+        result = ac.user_list(limit=limit, offset=offset)
         return result
 
     def fetch(self, *, limit: int, offset: int) -> Iterator[User]:
         registry = self.client.registry_for(User)
         ac = api_call(self.client)
-        result = ac.user_list()
+        result = ac.user_fetch(limit=limit, offset=offset)
 
         for entity in result:
             yield registry.fetch_proxy_for_entity(entity)

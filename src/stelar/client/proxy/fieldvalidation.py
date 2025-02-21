@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Mapping, Optional
 from uuid import UUID
 
 __all__ = [
@@ -218,6 +218,13 @@ class StateField(EnumeratedField):
         super().__init__(nullable=False)
 
 
+class ExecStateField(EnumeratedField):
+    VALUES = ["running", "succeeded", "failed"]
+
+    def __init__(self):
+        super().__init__(nullable=False)
+
+
 class BasicField(AnyField):
     """
     Given ftype T, accept value if it is an instance of T or if T(value) succeeds.
@@ -311,6 +318,25 @@ class DateField(FieldValidator):
 
     def repr_type(self):
         return "datetime"
+
+
+class DictField(AnyField):
+    def __init__(self, key_type, value_type, **kwargs):
+        super().__init__(**kwargs)
+        self.key_type = key_type
+        self.value_type = value_type
+        self._repr_type = f"Dict[{key_type},{value_type}]"
+        self.add_check(self.check_dict, 5)
+
+    def check_dict(self, value, **kwargs):
+        if not isinstance(value, Mapping):
+            raise TypeError("Expected a dictionary")
+        for k, v in value.items():
+            if not isinstance(k, self.key_type):
+                raise TypeError(f"Invalid key type, expected {self.key_type}")
+            if not isinstance(v, self.value_type):
+                raise TypeError(f"Invalid value type, expected {self.value_type}")
+        return dict(value), False
 
 
 class UUIDField(BasicField):
