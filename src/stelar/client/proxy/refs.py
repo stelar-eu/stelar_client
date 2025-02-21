@@ -46,13 +46,24 @@ class RefField(AnyField):
 class Reference(Property):
     """A proxy property which is a reference to an entity."""
 
-    def __init__(self, proxy_type, nullable=False, trigger_sync=False, *args, **kwargs):
-        ptn = self.property_type_name(proxy_type)
-        val = RefField(self, ptn, nullable=nullable)
-        super().__init__(*args, validator=val, **kwargs)
+    VALIDATOR_CLASS = RefField
+
+    def __init__(
+        self,
+        proxy_type,
+        nullable=False,
+        trigger_sync=False,
+        **kwargs,
+    ):
+        val = self.validator_for(proxy_type, nullable=nullable)
+        super().__init__(validator=val, **kwargs)
         self.__proxy_type = proxy_type
         self.nullable = nullable
         self.trigger_sync = trigger_sync
+
+    def validator_for(self, proxy_type, **kwargs):
+        ptn = self.property_type_name(proxy_type)
+        return self.VALIDATOR_CLASS(self, ptn, **kwargs)
 
     @classmethod
     def property_type_name(cls, proxy_type) -> str:
@@ -94,11 +105,56 @@ class Reference(Property):
     # set and delete are inherited from Property
 
 
+class RefListField(AnyField):
+    """This field validator is specialized for reference properties"""
+
+    def __init__(
+        self,
+        ref_property: RefList,
+        ref_typename: str,
+        *,
+        element_validator=None,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.ref_property = ref_property
+        self.ref_typename = ref_typename
+        self.element_validator = element_validator
+        self.add_check(self.to_list, 5)
+
+    @property
+    def proxy_type(self):
+        return self.ref_property.proxy_type
+
+    def to_list(self, value, **kwargs):
+        if not isinstance(value, list):
+            raise ValueError(f"Expected a list")
+        if self.element_validator is not None:
+            value = [self.element_validator.validate(v) for v in value]
+        return value, True
+
+    def convert_to_proxy(self, value: str, **kwargs) -> UUID:
+        raise NotImplementedError
+
+    def convert_to_entity(self, value: list, **kwargs) -> str:
+        if self.element_validator is not None:
+            newval = [self.element_validator.convert_to_entity(v) for v in value]
+            return newval
+
+        raise NotImplementedError
+
+    def repr_type(self):
+        return self.ref_typename
+
+
 class RefList(Reference):
     """A proxy property that manages a sub-schema (a sub-collection of other properties)"""
 
-    def __init__(self, *args, **kwargs):
+    VALIDATOR_CLASS = RefListField
+
+    def __init__(self, *args, element_validator=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.validator.element_validator = element_validator
 
     @classmethod
     def property_type_name(cls, proxy_type) -> str:
@@ -119,7 +175,7 @@ class RefList(Reference):
     def set(self, obj, value):
         raise NotImplementedError("Cannot set value of RefList field")
 
-    def convert_entity_to_proxy(self, proxy, entity):
+    def convert_entity_to_proxy(self, proxy, entity, **kwargs):
         entities = entity[self.entity_name]
         # entities is a list of entities, we need to fetch them from
         # our proxy's client.
@@ -127,8 +183,10 @@ class RefList(Reference):
         proxy_ids = [UUID(e.get(entity_id_name)) for e in entities]
         proxy.proxy_attr[self.name] = proxy_ids
 
-    def convert_proxy_to_entity(self, proxy, entity):
+    def convert_proxy_to_entity(self, proxy, entity, **kwargs):
         proxy_value = proxy.proxy_attr[self.name]
         if proxy_value is ...:
             return
-        raise NotImplementedError
+        entity[self.entity_name] = self.validator.convert_to_entity(
+            proxy_value, **kwargs
+        )

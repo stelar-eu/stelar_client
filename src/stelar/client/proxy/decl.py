@@ -14,8 +14,13 @@ class ProxyState(Enum):
 # -------------------------
 # Tag-related declarations
 # -------------------------
-
+TAGNAME_PATTERN = re.compile(r"[A-Za-z0-9 _-]{2,100}")
 TAGSPEC_PATTERN = re.compile(r"((.{2,100})\:)?([A-Za-z0-9 _-]{2,100})")
+
+
+def validate_tagname(tagname: str) -> bool:
+    """Check if a string is formatted correctly as a tagname"""
+    return TAGNAME_PATTERN.fullmatch(tagname) is not None
 
 
 def validate_tagspec(tagspec: str) -> bool:

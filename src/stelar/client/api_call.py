@@ -324,3 +324,6 @@ class api_call(api_call_base):
 
     def __init__(self, arg: Proxy | Client):
         super().__init__(arg)
+
+    # def tag_list(self, vocabulary_id: str = None):
+    #    raise NotImplementedError("tag_list")

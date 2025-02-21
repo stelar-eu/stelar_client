@@ -3,12 +3,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterator
 from uuid import UUID
 
+from stelar.client.proxy.decl import validate_tagname
+
 from .generic import GenericCursor, GenericProxy, api_call
 from .proxy import (
     Id,
     NameId,
     Reference,
     RefList,
+    Registry,
+    RegistryCatalog,
     TagNameField,
     VocabNameField,
     derived_property,
@@ -31,8 +35,7 @@ class Vocabulary(GenericProxy):
     @property
     def tagnames(self) -> list[str]:
         """The list of tag names."""
-        ac = api_call(self)
-        return ac.tag_list(vocabulary_id=str(self.id))
+        return [t for t in self.tag_map]
 
     @property
     def tagspecs(self) -> TagSpecList:
@@ -70,6 +73,44 @@ class Vocabulary(GenericProxy):
             return super().proxy_sync(entity=entity)
         finally:
             self.proxy_registry.catalog.vocabulary_index.dirty = True
+
+    @classmethod
+    def new(
+        cls,
+        regspec: Registry | RegistryCatalog,
+        *,
+        name: str,
+        tags: list[str] = [],
+        autosync=True,
+    ) -> Vocabulary:
+        """Create a new vocabulary.
+
+        Args:
+            name (str): the name of the vocabulary.
+            tags (list[str]): the list of tags to add to the vocabulary.
+            autosync (bool): this is actually ignored.
+
+        Returns:
+            Vocabulary: the newly created vocabulary.
+        """
+
+        if not hasattr(cls, "proxy_schema"):
+            raise TypeError(f"Class {cls.__name__} is not an entity class")
+
+        tags = list(tags)
+        if not all(validate_tagname(t) for t in tags):
+            raise ValueError("Invalid tag name(s)", tags)
+
+        newvoc = super().new(regspec, autosync=False, name=name, tags=[])
+
+        ac = api_call(newvoc)
+        ent = ac.vocabulary_create(name=name, tags=[{"name": t} for t in tags])
+
+        newvoc.proxy_registry.register_proxy_for_entity(newvoc, ent)
+        newvoc.proxy_from_entity(ent)
+        newvoc.proxy_changed = None
+
+        return newvoc
 
 
 class Tag(GenericProxy):
