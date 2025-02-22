@@ -3,7 +3,7 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Tuple
+from typing import TYPE_CHECKING, Any
 
 from .proxy import Proxy, ProxyCursor, ProxyList, Registry
 
@@ -17,6 +17,8 @@ __all__ = ["client_for", "tag_split", "tag_join", "validate_tagspec", "TAGSPEC_P
 
 def client_for(obj: Any) -> Client:
     """Return the client for a proxy object."""
+    from .client import Client
+
     match obj:
         case Proxy():
             return obj.proxy_registry.catalog

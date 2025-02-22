@@ -91,7 +91,7 @@ api_models = {
         "members": ["Task"],
     },
     "Task": {
-        "name": "task",
+        "name": "tasks",
         "collection_name": "tasks",
     },
     "Workflow": {

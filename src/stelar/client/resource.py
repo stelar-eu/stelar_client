@@ -154,7 +154,7 @@ class Resource(GenericProxy):
                     </tr>
                     <tr style="background-color: rgba(230, 179, 255, 0.8);">
                         <td style="text-align: left; padding: 5px; border: 1px solid #ddd; font-weight: bold;">Parent Package:</td>
-                        <td style="text-align: left; padding: 5px; border: 1px solid #ddd;">{self.package_id or 'N/A'}</td>
+                        <td style="text-align: left; padding: 5px; border: 1px solid #ddd;">{self.dataset.id or 'N/A'}</td>
                     </tr>
                     <tr style="background-color: rgba(255, 255, 255, 0.8);">
                         <td style="text-align: left; padding: 5px; border: 1px solid #ddd; font-weight: bold;">Relation To Parent:</td>

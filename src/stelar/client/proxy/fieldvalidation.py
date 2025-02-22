@@ -16,6 +16,7 @@ of the classes herein.
 from __future__ import annotations
 
 import re
+from collections.abc import MutableSequence
 from datetime import datetime
 from typing import Any, Mapping, Optional
 from uuid import UUID
@@ -337,6 +338,25 @@ class DictField(AnyField):
             if not isinstance(v, self.value_type):
                 raise TypeError(f"Invalid value type, expected {self.value_type}")
         return dict(value), False
+
+
+class ListField(AnyField):
+    def __init__(self, element_type, **kwargs):
+        super().__init__(**kwargs)
+        self.element_type = element_type
+        self._repr_type = f"List[{element_type}]"
+        self.add_check(self.check_list, 5)
+
+    def check_list(self, value, **kwargs):
+        if not isinstance(value, MutableSequence):
+            raise TypeError("Expected a list")
+        for v in value:
+            if not isinstance(v, self.element_type):
+                raise TypeError(f"Invalid element type, expected {self.element_type}")
+        return list(value), False
+
+    def repr_type(self):
+        return self._repr_type
 
 
 class UUIDField(BasicField):

@@ -1,15 +1,10 @@
 from __future__ import annotations
 
-from io import StringIO
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
-from uuid import UUID
+from typing import Any
 
 from .exceptions import EntityError
-from .fieldvalidation import AnyField, NameField, UUIDField
 from .property import Property
 from .proxy import Proxy
-from .proxylist import ProxySublist
-from .registry import Registry
 
 
 class derived_property(Property):

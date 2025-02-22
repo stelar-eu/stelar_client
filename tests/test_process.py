@@ -1,65 +1,48 @@
-import pytest
-
-from stelar.client import *
+from stelar.client import Client, Process
 
 
+# @pytest.fixture(autouse=True, scope="module")
+def cleanup_processes(testcontext):
+    c = Client(testcontext)
 
-@pytest.mark.skip
+    # Run after the tests in the module
+    yield None
+
+    for p in c.processes[:]:
+        try:
+            if "test_delete" in p.tags:
+                p.delete()
+                assert p not in c.processes
+                c.DC.dataset_purge(id=str(p.id))
+        except Exception:
+            pass
+
+
 def test_process_create(testcli):
     p = Process.new(testcli)
-    assert p.organization is testcli.organizations['stelar-klms']
-    assert p.exec_state == 'running'
-    assert p.state == 'active'
-    assert p.creator == 'admin'
+    assert p.organization is testcli.organizations["stelar-klms"]
+    assert p.exec_state == "running"
+    assert p.state == "active"
+    assert p.creator == "admin"
+
+    assert p.tasks == []
+
+    p.terminate("succeeded")
+    assert p.exec_state == "succeeded"
+    p.tags += ("test_delete",)
+    p.delete()
 
 
+def test_process_create_with_workflow(testcli):
+    p = Process.new(testcli, workflow=testcli.workflows["test_workflow"])
+    assert p.workflow is testcli.workflows["test_workflow"]
+    assert p.exec_state == "running"
+    assert p.state == "active"
+    assert p.creator == "admin"
 
-"""
-    id = Id()
-    name = NameId()
+    assert p.tasks == []
 
-    start_date = Property(validator=DateField)
-    end_date = Property(validator=DateField(nullable=True))
-    workflow = Reference(
-        "Workflow",
-        updatable=True,
-        nullable=True,
-        entity_name="workflow",
-        trigger_sync=True,
-    )
-    tasks = RefList("Task", trigger_sync=True)
-    exec_state = Property(validator=StrField, updatable=True)
-
-    metadata_created = Property(validator=DateField)
-    metadata_modified = Property(validator=DateField)
-    state = Property(validator=StateField)
-    type = Property(validator=StrField)
-    creator = Property(validator=StrField, entity_name="creator")
-    # creator_id = Property(validator=StrField, entity_name="creator")
-
-    title = Property(validator=StrField, updatable=True)
-    notes = Property(validator=StrField(nullable=True), updatable=True)
-    author = Property(validator=StrField(nullable=True), updatable=True)
-    author_email = Property(validator=StrField(nullable=True), updatable=True)
-    maintainer = Property(validator=StrField(nullable=True), updatable=True)
-    maintainer_email = Property(validator=StrField(nullable=True), updatable=True)
-
-    # weird ones
-    url = Property(validator=StrField(nullable=True), updatable=True)
-    version = Property(
-        validator=StrField(nullable=True, maximum_len=100), updatable=True
-    )
-
-    resources = RefList(Resource, trigger_sync=True)
-    organization = Reference(
-        "Organization",
-        entity_name="owner_org",
-        create_default="default_organization",
-        updatable=True,
-        trigger_sync=True,
-    )
-
-    groups = RefList("Group", trigger_sync=False)
-    extras = ExtrasProperty()
-    tags = TagList()
-"""
+    p.terminate("succeeded")
+    assert p.exec_state == "succeeded"
+    p.tags += ("test_delete",)
+    p.delete()

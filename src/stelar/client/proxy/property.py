@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import MutableMapping
+from collections.abc import MutableMapping, MutableSequence
 from io import StringIO
 from typing import TYPE_CHECKING, Any
 
 from .exceptions import EntityError
-from .fieldvalidation import AnyField, DictField, NameField, UUIDField
+from .fieldvalidation import AnyField, DictField, ListField, NameField, UUIDField
 from .proxy import Proxy
 
 if TYPE_CHECKING:
@@ -339,6 +339,29 @@ class PropertyProxy:
         self._name = property.name
 
 
+class ProxyProperty(Property):
+    """A proxy property allows for properties whose values are objects.
+
+    As an example, a dict-valued property can be accessed via a proxy object,
+    which detects changes to the dictionary and automatically updates the
+    entity proxy.
+
+    For this to work, the proxy property is parametrized with a PropertyProxy
+    class, whose instances are to be returned by the __get__ method.
+    """
+
+    def __init__(self, property_proxy_class, **kwargs):
+        super().__init__(**kwargs)
+        self.property_proxy_class = property_proxy_class
+
+    def __get__(self, obj, objtype=None):
+        val = super().__get__(obj, objtype)
+        if val is None:
+            return None
+        else:
+            return self.property_proxy_class(obj, self)
+
+
 class DictProxy(PropertyProxy, MutableMapping):
     def __getitem__(self, key):
         return self._proxy.proxy_attr[self._name][key]
@@ -375,33 +398,50 @@ class DictProxy(PropertyProxy, MutableMapping):
         return self
 
 
-class ProxyProperty(Property):
-    """A proxy property allows for properties whose values are objects.
-
-    As an example, a dict-valued property can be accessed via a proxy object,
-    which detects changes to the dictionary and automatically updates the
-    entity proxy.
-
-    For this to work, the proxy property is parametrized with a PropertyProxy
-    class, whose instances are to be returned by the __get__ method.
-    """
-
-    def __init__(self, property_proxy_class, **kwargs):
-        super().__init__(**kwargs)
-        self.property_proxy_class = property_proxy_class
-
-    def __get__(self, obj, objtype=None):
-        val = super().__get__(obj, objtype)
-        if val is None:
-            return None
-        else:
-            return self.property_proxy_class(obj, self)
-
-
 class DictProperty(ProxyProperty):
     def __init__(self, key_type, value_type, *, nullable=False, **kwargs):
         super().__init__(
             DictProxy,
             validator=DictField(key_type, value_type, nullable=nullable),
+            **kwargs,
+        )
+
+
+class ListProxy(PropertyProxy, MutableSequence):
+    # __getitem__, __setitem__, __delitem__, __len__, insert
+
+    def __getitem__(self, index):
+        return self._proxy.proxy_attr[self._name][index]
+
+    def __setitem__(self, index, value):
+        newval = copy.copy(self._proxy.proxy_attr[self._name])
+        newval[index] = value
+        setattr(self._proxy, self._name, newval)
+
+    def __delitem__(self, index):
+        newval = copy.copy(self._proxy.proxy_attr[self._name])
+        del newval[index]
+        setattr(self._proxy, self._name, newval)
+
+    def __len__(self):
+        return len(self._proxy.proxy_attr[self._name])
+
+    def insert(self, index, value):
+        newval = copy.copy(self._proxy.proxy_attr[self._name])
+        newval.insert(index, value)
+        setattr(self._proxy, self._name, newval)
+
+    def __repr__(self):
+        return f"<ListProxy {self._name}: {self._proxy.proxy_attr[self._name]}>"
+
+    def __str__(self):
+        return str(self._proxy.proxy_attr[self._name])
+
+
+class ListProperty(ProxyProperty):
+    def __init__(self, value_type, *, nullable=False, **kwargs):
+        super().__init__(
+            ListProxy,
+            validator=ListField(value_type, nullable=nullable),
             **kwargs,
         )

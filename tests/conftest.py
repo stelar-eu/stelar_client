@@ -7,15 +7,13 @@
     - https://docs.pytest.org/en/stable/writing_plugins.html
 """
 
-import json
-import pathlib
 
 import pytest
 
 from stelar.client import Client
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def testcontext() -> str:
     return "local"
 

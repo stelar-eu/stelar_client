@@ -131,7 +131,18 @@ class BaseAPI(RegistryCatalog):
         return response
 
     def api_request(self, method, endpoint, *, params=None, json=None):
-        """Do an actual API call"""
+        """Do an actual API call
+
+        Examples:
+            response = api_request("GET", "v2/datasets")
+            response = api_request("POST", "v2/dataset", json={"name": "my_dataset"})
+
+        Args:
+            method (str): The HTTP method ('GET', 'POST', 'PUT', 'PATCH', 'DELETE').
+            endpoint (str): The API endpoint. It should be given as a relative path.
+            params (dict, optional): URL query parameters.
+            json (dict, optional): JSON data to be sent in the body.
+        """
 
         url = urljoin(self._api_url, endpoint)
         # headers = {"Authorization": f"Bearer {self._token}"}
@@ -156,21 +167,89 @@ class BaseAPI(RegistryCatalog):
         return response
 
     def GET(self, *endp, **params):
-        endpoint = "/".join(endp)
+        """Send a GET request to the API.
+
+        Examples:
+            response = c.GET("v2/datasets")
+            response = c.GET("v2/dataset", 'my_dataset')
+
+        Args:
+            *endp: Path components to the API endpoint.
+            **params: The query parameters to send.
+
+        Returns:
+            requests.Response: The response object from the API.
+        """
+        endpoint = "/".join(str(pc) for pc in endp)
         return self.api_request("GET", endpoint, params=params)
 
-    def POST(self, *endp, **params):
-        endpoint = "/".join(endp)
-        return self.api_request("POST", endpoint, params=params)
+    def POST(self, *endp, params={}, **json):
+        """Send a POST request to the API.
 
-    def PUT(self, *endp, **params):
-        endpoint = "/".join(endp)
-        return self.api_request("PUT", endpoint, params=params)
+        Example:
+            response = c.POST("v2/dataset", name="my_dataset")
 
-    def PATCH(self, *endp, **params):
-        endpoint = "/".join(endp)
-        return self.api_request("PATCH", endpoint, params=params)
+        Args:
+            *endp: Path components to the API endpoint.
+            params: (keyword-only) The query parameters to send.
+            **json: The JSON data to send.
+
+        Returns:
+            requests.Response: The response object from the API.
+        """
+        endpoint = "/".join(str(pc) for pc in endp)
+        return self.api_request("POST", endpoint, params=params, json=json)
+
+    def PUT(self, *endp, params={}, **json):
+        """Send a PUT request to the API.
+
+        Example:
+            response = c.PUT("v2/tag", "my_tag", display_name="My Tag", vocabulary_id='my_vocabulary')
+
+        Args:
+            *endp: Path components to the API endpoint.
+            params: (keyword-only) The query parameters to send.
+            **json: The JSON data to send.
+
+        Returns:
+            requests.Response: The response object from the API.
+        """
+        endpoint = "/".join(str(pc) for pc in endp)
+        return self.api_request("PUT", endpoint, params=params, json=json)
+
+    def PATCH(self, *endp, params={}, **json):
+        """Send a PATCH request to the API.
+
+        Example:
+            response = c.PATCH("v2/dataset", "my_dataset", author="John Doe")
+
+        Args:
+            *endp: Path components to the API endpoint.
+            params: (keyword-only) The query parameters to send.
+            **json: The JSON data to send.
+        Returns:
+            requests.Response: The response object from the API.
+        """
+        endpoint = "/".join(str(pc) for pc in endp)
+        return self.api_request("POST", endpoint, params=params, json=json)
 
     def DELETE(self, *endp, **params):
-        endpoint = "/".join(endp)
+        """Send a DELETE request to the API.
+
+        Example:
+            response = c.DELETE("v2/dataset", "my_dataset")
+
+        Args:
+            *endp: Path components to the API endpoint.
+            **params: The query parameters to send.
+        Returns:
+            requests.Response: The response object from the API.
+        """
+        endpoint = "/".join(str(pc) for pc in endp)
         return self.api_request("DELETE", endpoint, params=params)
+
+    @property
+    def api(self):
+        from .api_call import api_call
+
+        return api_call(self)
