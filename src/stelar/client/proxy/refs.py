@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from .fieldvalidation import AnyField
+from .fieldvalidation import AnyField, UUIDField
 from .property import Property
 from .proxylist import ProxySublist
 from .registry import Registry
@@ -152,8 +152,10 @@ class RefList(Reference):
 
     VALIDATOR_CLASS = RefListField
 
-    def __init__(self, *args, element_validator=None, **kwargs):
+    def __init__(self, *args, element_validator=UUIDField, **kwargs):
         super().__init__(*args, **kwargs)
+        if isinstance(element_validator, type):
+            element_validator = element_validator()
         self.validator.element_validator = element_validator
 
     @classmethod

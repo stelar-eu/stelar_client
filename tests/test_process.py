@@ -1,4 +1,4 @@
-from stelar.client import Client, Process
+from stelar.client import Client, Process, Workflow
 
 
 # @pytest.fixture(autouse=True, scope="module")
@@ -34,15 +34,26 @@ def test_process_create(testcli):
 
 
 def test_process_create_with_workflow(testcli):
-    p = Process.new(testcli, workflow=testcli.workflows["test_workflow"])
-    assert p.workflow is testcli.workflows["test_workflow"]
+    wf = Workflow.new(testcli, name="test_workflow")
+
+    p = Process.new(testcli, workflow=wf)
+    assert p.workflow is wf
     assert p.exec_state == "running"
     assert p.state == "active"
     assert p.creator == "admin"
 
     assert p.tasks == []
 
+    assert p.workflow is wf
+
+    # Check updates to workflow
+    p.workflow = None
+    assert p.workflow is None
+    p.workflow = wf
+    assert p.workflow is wf
+
     p.terminate("succeeded")
     assert p.exec_state == "succeeded"
     p.tags += ("test_delete",)
     p.delete()
+    wf.delete(purge=True)

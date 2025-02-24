@@ -247,3 +247,13 @@ class GenericCursor(ProxyCursor[ProxyClass]):
             return GenericProxyList(v, self.client, self.proxy_type)
         else:
             return v
+
+    def apply(self, callable):
+        return super().apply(callable)
+
+    def _ipython_key_completions_(self):
+        try:
+            kc = self.fetch_list(limit=100, offset=0)
+        except Exception:
+            kc = []
+        return kc

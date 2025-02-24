@@ -30,40 +30,13 @@ class CatalogAPI(BaseAPI):
         ]:
             DefaultsRegistry(self, ptype)
 
-    @property
-    def datasets(self):
-        """The datasets cursor"""
-        return DatasetCursor(self)
-
-    @property
-    def resources(self):
-        """The resources cursor"""
-        return GenericCursor(self, Resource)
-
-    @property
-    def organizations(self):
-        """The organizations cursor"""
-        return GenericCursor(self, Organization)
-
-    @property
-    def groups(self):
-        """The groups cursor"""
-        return GenericCursor(self, Group)
-
-    @property
-    def vocabularies(self):
-        """The vocabulary cursor"""
-        return GenericCursor(self, Vocabulary)
-
-    @property
-    def users(self):
-        """The user cursor"""
-        return UserCursor(self)
-
-    @property
-    def tags(self):
-        """The tag cursor"""
-        return TagCursor(self)
+        self.datasets = DatasetCursor(self)
+        self.resources = GenericCursor(self, Resource)
+        self.organizations = GenericCursor(self, Organization)
+        self.groups = GenericCursor(self, Group)
+        self.vocabularies = GenericCursor(self, Vocabulary)
+        self.users = UserCursor(self)
+        self.tags = TagCursor(self)
 
     def fetch_active_vocabularies(self):
         """Return a list of dicts with the id and name of each tag vocabulary.

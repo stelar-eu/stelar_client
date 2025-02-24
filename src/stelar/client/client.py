@@ -7,6 +7,7 @@ access the API.
 from __future__ import annotations
 
 from configparser import ConfigParser
+from http.client import responses
 from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import urljoin, urlparse, urlunparse
@@ -191,6 +192,13 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             verify=tls_verify,
         )
         status_code = token_response.status_code
+        if status_code >= 500:  # Could be a message by the proxy, or a server error
+            raise RuntimeError(
+                "Could not authenticate user. The server is not available.",
+                status_code,
+                responses.get(status_code, "Unknown status code"),
+                token_response.text,
+            )
         token_json = token_response.json().get("result", None)
         success = token_response.json().get("success")
 
@@ -199,7 +207,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             and token_json["token"]
             and token_json["refresh_token"]
             and success
-            and status_code == 200
+            and status_code in range(200, 300)
         ):
             token = token_json["token"]
             refresh_token = token_json["refresh_token"]
@@ -246,6 +254,14 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
                 verify=tls_verify,
             )
             status_code = token_response.status_code
+            if status_code >= 500:  # Could be a message by the proxy, or a server error
+                raise RuntimeError(
+                    "Could not authenticate user. The server is not available.",
+                    status_code,
+                    responses.get(status_code, "Unknown status code"),
+                    token_response.text,
+                )
+
             js = token_response.json()
 
             if status_code == 200:
