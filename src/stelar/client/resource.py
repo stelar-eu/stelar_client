@@ -2,7 +2,7 @@ from typing import Any
 
 from IPython.core.display import HTML
 
-from .generic import GenericProxy, generic_proxy_sync
+from .generic import GenericCursor, GenericProxy, generic_proxy_sync
 from .proxy import (
     DateField,
     ExtrasProperty,
@@ -181,3 +181,21 @@ class Resource(GenericProxy):
         </div>
         """
         return HTML(html)._repr_html_()
+
+
+class ResourceCursor(GenericCursor):
+    """
+    A cursor for a collection of STELAR resources.
+    """
+
+    def __init__(self, api):
+        super().__init__(api, Resource)
+
+    def fetch(self, **kwargs):
+        raise NotImplementedError("ResourceCursor does not support fetch operations.")
+
+    def fetch_list(self, **kwargs):
+        raise NotImplementedError("ResourceCursor does not support fetch operations.")
+
+    def for_object(self, s3obj):
+        pass

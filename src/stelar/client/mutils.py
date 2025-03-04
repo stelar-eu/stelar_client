@@ -6,15 +6,45 @@ Project Name:  STELAR EU
 Project Info: https://stelar-project.eu/
 
 """
+# from typing import Any
+
+import os
+import traceback
+from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 from minio import Minio
-import traceback
-from minio.error import S3Error, InvalidResponseError
-import traceback
-import os
+from minio.datatypes import Object
+from minio.error import InvalidResponseError, S3Error
+
+if TYPE_CHECKING:
+    from minio.datatypes import Object
+
+
+S3ObjSpec = str | tuple[str, str] | Object
+
+
+def s3spec_to_pair(objspec: str):
+    if isinstance(objspec, str):
+        u = urlparse(objspec)
+        if u.scheme != "s3":
+            raise ValueError(f"Invalid S3 object url: {objspec}")
+        bucket = u.netloc
+        obj = u.path.lstrip("/")
+        return bucket, obj
+    elif isinstance(objspec, tuple) and len(objspec) == 2:
+        return objspec
+    elif isinstance(objspec, Object):
+        return objspec.bucket_name, objspec.object_name
+    else:
+        raise TypeError(f"Invalid type S3 object spec: {type(objspec)}")
+
+
+# ---------  These will soon be removed ---------------------
 
 
 mclient: Minio = None
+
 
 def init_client(minio_url: str, access_id: str, secret_key: str, stoken: str = None):
     """
@@ -31,14 +61,18 @@ def init_client(minio_url: str, access_id: str, secret_key: str, stoken: str = N
     global mclient
     sanitized_url = minio_url.replace("http://", "").replace("https://", "")
     try:
-        mclient = Minio(sanitized_url, access_key=access_id, secret_key=secret_key, session_token=stoken, secure=True)
+        mclient = Minio(
+            sanitized_url,
+            access_key=access_id,
+            secret_key=secret_key,
+            session_token=stoken,
+            secure=True,
+        )
         return mclient
     except Exception as e:
-        return {
-            "error": "Could not initialize MinIO client",
-            "message": str(e)
-        }
-    
+        return {"error": "Could not initialize MinIO client", "message": str(e)}
+
+
 def put_object(object_path: str, file_path: str):
     """
     Uploads an object to the specified bucket using a combined object path.
@@ -56,32 +90,33 @@ def put_object(object_path: str, file_path: str):
     try:
         if not os.path.isfile(file_path):
             return {"error": f"The specified file does not exist: {file_path}"}
-        
+
         # Split object_path into bucket and object name
-        bucket_name, object_name = object_path.split('/', 1)
+        bucket_name, object_name = object_path.split("/", 1)
         file_stat = os.stat(file_path)
-        with open(file_path, 'rb') as file_data:
+        with open(file_path, "rb") as file_data:
             mclient.put_object(
                 bucket_name=bucket_name,
                 object_name=object_name,
                 data=file_data,
-                length=file_stat.st_size
+                length=file_stat.st_size,
             )
-        return {"message": f"Object '{object_name}' successfully uploaded to bucket '{bucket_name}'."}
+        return {
+            "message": f"Object '{object_name}' successfully uploaded to bucket '{bucket_name}'."
+        }
 
     except (S3Error, InvalidResponseError) as e:
         return {
             "error": "Could not upload the object to MinIO",
             "message": str(e),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
         }
     except Exception as e:
         return {
             "error": "An unexpected error occurred while uploading the object",
             "message": str(e),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
         }
-    
 
 
 def get_object(object_path: str, file_path: str):
@@ -98,28 +133,30 @@ def get_object(object_path: str, file_path: str):
 
     try:
         # Split object_path into bucket and object name
-        bucket_name, object_name = object_path.split('/', 1)
-   
+        bucket_name, object_name = object_path.split("/", 1)
+
         response = mclient.get_object(bucket_name, object_name)
-        with open(file_path, 'wb') as file_data:
+        with open(file_path, "wb") as file_data:
             for d in response.stream(32 * 1024):
                 file_data.write(d)
         response.close()
         response.release_conn()
-        
-        return {"message": f"Object '{object_name}' successfully downloaded from bucket '{bucket_name}' to '{file_path}'."}
+
+        return {
+            "message": f"Object '{object_name}' successfully downloaded from bucket '{bucket_name}' to '{file_path}'."
+        }
 
     except (S3Error, InvalidResponseError) as e:
         return {
             "error": "Could not download the object from MinIO",
             "message": str(e),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
         }
     except Exception as e:
         return {
             "error": "An unexpected error occurred while downloading the object",
             "message": str(e),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
         }
 
 
@@ -136,7 +173,7 @@ def stream_object(object_path: str, chunk_size: int = 32 * 1024):
         return {"error": "MinIO client is not initialized."}
 
     try:
-        bucket_name, object_name = object_path.split('/', 1)
+        bucket_name, object_name = object_path.split("/", 1)
         response = mclient.get_object(bucket_name, object_name)
         for chunk in response.stream(chunk_size):
             yield chunk
@@ -146,16 +183,16 @@ def stream_object(object_path: str, chunk_size: int = 32 * 1024):
         yield {
             "error": "Could not stream the object from MinIO",
             "message": str(e),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
         }
     except Exception as e:
         yield {
             "error": "An unexpected error occurred while streaming the object",
             "message": str(e),
-            "traceback": traceback.format_exc()  
+            "traceback": traceback.format_exc(),
         }
-    
-    
+
+
 def stat_object(object_path: str):
     """
     Retrieves metadata of an object from MinIO, such as size and other attributes.
@@ -168,7 +205,7 @@ def stat_object(object_path: str):
         return {"error": "MinIO client is not initialized."}
 
     try:
-        bucket_name, object_name = object_path.split('/', 1)
+        bucket_name, object_name = object_path.split("/", 1)
         stat = mclient.stat_object(bucket_name, object_name)
         return {
             "bucket_name": bucket_name,
@@ -182,11 +219,11 @@ def stat_object(object_path: str):
         return {
             "error": "Could not retrieve object stats from MinIO",
             "message": str(e),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
         }
     except Exception as e:
         return {
             "error": "An unexpected error occurred while retrieving object stats",
             "message": str(e),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
         }

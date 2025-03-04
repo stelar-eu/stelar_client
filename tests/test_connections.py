@@ -1,7 +1,7 @@
 import pytest
-from pytest_mock import mocker
 
 from stelar.client import Client
+from stelar.client.base import KLMSInfo
 
 #
 #  A fixture with a sample context file
@@ -30,7 +30,19 @@ password= joesecret
 
 
 def test_normalize_urls(mocker):
-    mocker.patch("stelar.client.Client.authenticate", return_value=("token", "refresh"))
+    mocker.patch(
+        "stelar.client.Client.authenticate",
+        return_value={
+            "token": "token",
+            "refresh_token": "refresh",
+            "expires_in": 100,
+            "refresh_expires_in": 100,
+        },
+    )
+    mocker.patch(
+        "stelar.client.base.BaseAPI._get_api_info",
+        return_value=KLMSInfo({"s3_api": "http://foo.bar.com"}),
+    )
 
     cli = Client(base_url="http://user:pass@foo.bar.com")
     assert cli._base_url == "http://foo.bar.com/stelar"
@@ -46,7 +58,20 @@ def test_normalize_urls(mocker):
 
 
 def test_context_default(mocker, config_file):
-    mocker.patch("stelar.client.Client.authenticate", return_value=("token", "refresh"))
+    mocker.patch(
+        "stelar.client.Client.authenticate",
+        return_value={
+            "token": "token",
+            "refresh_token": "refresh",
+            "expires_in": 100,
+            "refresh_expires_in": 100,
+        },
+    )
+    mocker.patch(
+        "stelar.client.base.BaseAPI._get_api_info",
+        return_value=KLMSInfo({"s3_api": "http://minio.example.org"}),
+    )
+
     c = Client(config_file=config_file)
     assert c._context is None
     assert c._base_url == "http://klms.example.org/stelar"
@@ -59,7 +84,19 @@ def test_context_default(mocker, config_file):
 
 
 def test_context_given(mocker, config_file):
-    mocker.patch("stelar.client.Client.authenticate", return_value=("token", "refresh"))
+    mocker.patch(
+        "stelar.client.Client.authenticate",
+        return_value={
+            "token": "token",
+            "refresh_token": "refresh",
+            "expires_in": 100,
+            "refresh_expires_in": 100,
+        },
+    )
+    mocker.patch(
+        "stelar.client.base.BaseAPI._get_api_info",
+        return_value=KLMSInfo({"s3_api": "http://minio.example.org"}),
+    )
 
     c = Client(context="default", config_file=config_file)
 
@@ -74,7 +111,19 @@ def test_context_given(mocker, config_file):
 
 
 def test_context_noverify(mocker, config_file):
-    mocker.patch("stelar.client.Client.authenticate", return_value=("token", "refresh"))
+    mocker.patch(
+        "stelar.client.Client.authenticate",
+        return_value={
+            "token": "token",
+            "refresh_token": "refresh",
+            "expires_in": 100,
+            "refresh_expires_in": 100,
+        },
+    )
+    mocker.patch(
+        "stelar.client.base.BaseAPI._get_api_info",
+        return_value=KLMSInfo({"s3_api": "http://minio.example.org"}),
+    )
 
     c = Client(context="default", config_file=config_file, tls_verify=False)
 
@@ -89,28 +138,20 @@ def test_context_noverify(mocker, config_file):
     assert c._tls_verify is False
 
 
-def test_context_token():
-    tok = "silly token"
-
-    c = Client(base_url="https://klms.foo.com/", token=tok)
-    assert c._base_url == "https://klms.foo.com/stelar"
-    assert c._token == tok
-    assert c._refresh_token is None
-
-    c = Client(base_url="https://klms.foo.com/", token=tok, tls_verify=False)
-    assert c._base_url == "https://klms.foo.com/stelar"
-    assert c._token == tok
-    assert c._refresh_token is None
-    assert c._tls_verify is False
-
-
-def test_context_token_nourl_raises():
-    with pytest.raises(ValueError):
-        c = Client(token="silly token")
-
-
 def test_user_pass_in_url(mocker):
-    mocker.patch("stelar.client.Client.authenticate", return_value=("token", "refresh"))
+    mocker.patch(
+        "stelar.client.Client.authenticate",
+        return_value={
+            "token": "token",
+            "refresh_token": "refresh",
+            "expires_in": 100,
+            "refresh_expires_in": 100,
+        },
+    )
+    mocker.patch(
+        "stelar.client.base.BaseAPI._get_api_info",
+        return_value=KLMSInfo({"s3_api": "http://minio.example.org"}),
+    )
 
     c = Client(base_url="https://joe:joesecret@foo.bar.com")
 
@@ -126,7 +167,19 @@ def test_user_pass_in_url(mocker):
 
 
 def test_no_user_pass(mocker):
-    mocker.patch("stelar.client.Client.authenticate", return_value=("token", "refresh"))
+    mocker.patch(
+        "stelar.client.Client.authenticate",
+        return_value={
+            "token": "token",
+            "refresh_token": "refresh",
+            "expires_in": 100,
+            "refresh_expires_in": 100,
+        },
+    )
+    mocker.patch(
+        "stelar.client.base.BaseAPI._get_api_info",
+        return_value=KLMSInfo({"s3_api": "http://minio.example.org"}),
+    )
 
     c = Client(base_url="https://foo.bar.com")
 
@@ -139,7 +192,19 @@ def test_no_user_pass(mocker):
 
 
 def test_user_pass_given(mocker):
-    mocker.patch("stelar.client.Client.authenticate", return_value=("token", "refresh"))
+    mocker.patch(
+        "stelar.client.Client.authenticate",
+        return_value={
+            "token": "token",
+            "refresh_token": "refresh",
+            "expires_in": 100,
+            "refresh_expires_in": 100,
+        },
+    )
+    mocker.patch(
+        "stelar.client.base.BaseAPI._get_api_info",
+        return_value=KLMSInfo({"s3_api": "http://minio.example.org"}),
+    )
 
     c = Client(base_url="https://foo.bar.com", username="joe", password="joesecret")
 

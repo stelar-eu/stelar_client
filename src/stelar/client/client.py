@@ -58,9 +58,6 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             The user name and password are only used if the keyword arguments 'username' and
             'password' are None.
 
-        token (str): The user token issued by the KLMS SSO service, if available. If a token is
-            provided, the username and password are ignored.
-
         username (str): The user name to authenticate as for this client.
         password (str): The password to authenticate with.
 
@@ -75,7 +72,6 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         self,
         context: str = None,
         *,
-        token=None,
         base_url: str = None,
         username=None,
         password=None,
@@ -91,15 +87,9 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
 
             urllib3.disable_warnings()
 
-        if token is not None:  # direct provision of token
-            if base_url is None:
-                raise ValueError("Token is specified but base_url is missing")
-            base_url = self.__normalize_base_url(base_url)
-            refresh_token = None
-
-        elif context is not None or base_url is None:  # init via context
+        if context is not None or base_url is None:  # init via context
             base_url, username, password = self.__from_context()
-            token, refresh_token = self.authenticate(
+            token_json = self.authenticate(
                 base_url, username=username, password=password, tls_verify=tls_verify
             )
 
@@ -110,12 +100,12 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             if not password:
                 password = upass
             base_url = self.__normalize_base_url(base_url)
-            token, refresh_token = self.authenticate(
+            token_json = self.authenticate(
                 base_url, username=username, password=password, tls_verify=tls_verify
             )
 
         self._username = username
-        super().__init__(base_url, token, refresh_token, tls_verify)
+        super().__init__(base_url, token_json, tls_verify)
 
     def refresh_tokens(self, password: str = None):
         """Refresh the access token for this client.
@@ -135,10 +125,10 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         # First, try to use the refresh token.
         if self._refresh_token is not None:
             try:
-                token, refresh_token = self.token_refresh(
+                token_json = self.token_refresh(
                     self._base_url, self._refresh_token, self._tls_verify
                 )
-                self.reset_tokens(token, refresh_token)
+                self.reset_tokens(token_json)
                 return
             except RuntimeError as e:
                 # Suppress exception, proceed to refresh by re-authentication
@@ -153,7 +143,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         else:
             username = self._username
 
-        token, refresh_token = self.authenticate(
+        token_json = self.authenticate(
             self._base_url,
             username=username,
             password=password,
@@ -161,12 +151,12 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         )
 
         # Reset the client tokens
-        self.reset_tokens(token, refresh_token)
+        self.reset_tokens(token_json)
 
     @classmethod
     def token_refresh(
         cls, base_url: str, refresh_token: str, tls_verify: bool = True
-    ) -> tuple[str, str]:
+    ) -> dict:
         """
         Use the given refresh token to retrieve new access and refresh tokens.
 
@@ -202,17 +192,8 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         token_json = token_response.json().get("result", None)
         success = token_response.json().get("success")
 
-        if (
-            token_json
-            and token_json["token"]
-            and token_json["refresh_token"]
-            and success
-            and status_code in range(200, 300)
-        ):
-            token = token_json["token"]
-            refresh_token = token_json["refresh_token"]
-
-            return token, refresh_token
+        if success and status_code in range(200, 300):
+            return token_json
 
         else:
             raise RuntimeError(
@@ -221,7 +202,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             )
 
     @classmethod
-    def authenticate(cls, base_url, username, password, tls_verify=True):
+    def authenticate(cls, base_url, username, password, tls_verify=True) -> dict:
         """
         Authenticates the user and retrieves access and refresh tokens.
 
@@ -266,11 +247,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
 
             if status_code == 200:
                 token_json = js["result"]
-                token = token_json["token"]
-                refresh_token = token_json["refresh_token"]
-
-                return token, refresh_token
-
+                return token_json
             else:
                 raise RuntimeError(
                     "Could not authenticate user.",
