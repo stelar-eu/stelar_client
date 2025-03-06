@@ -197,8 +197,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
 
         else:
             raise RuntimeError(
-                "Could not authenticate user. Check the provided credentials"
-                " and verify the availability of the STELAR API."
+                "Could not refresh the current token", status_code, token_json
             )
 
     @classmethod
@@ -224,38 +223,35 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             (str, str): If authentication was successful, a OpenID token and refresh token, as a pair of str (token, refresh_token)
         """
 
-        if username and password:
-            auth_data = {"username": username, "password": password}
-            req_url = urljoin(base_url, "/stelar/api/" + APIEndpointsV1.TOKEN_ISSUE)
+        auth_data = {"username": username, "password": password}
+        req_url = urljoin(base_url, "/stelar/api/" + APIEndpointsV1.TOKEN_ISSUE)
 
-            token_response = requests.post(
-                url=req_url,
-                json=auth_data,
-                headers={"Content-Type": "application/json"},
-                verify=tls_verify,
+        token_response = requests.post(
+            url=req_url,
+            json=auth_data,
+            headers={"Content-Type": "application/json"},
+            verify=tls_verify,
+        )
+        status_code = token_response.status_code
+        if status_code >= 500:  # Could be a message by the proxy, or a server error
+            raise RuntimeError(
+                "Could not authenticate user. The server is not available.",
+                status_code,
+                responses.get(status_code, "Unknown status code"),
+                token_response.text,
             )
-            status_code = token_response.status_code
-            if status_code >= 500:  # Could be a message by the proxy, or a server error
-                raise RuntimeError(
-                    "Could not authenticate user. The server is not available.",
-                    status_code,
-                    responses.get(status_code, "Unknown status code"),
-                    token_response.text,
-                )
 
-            js = token_response.json()
+        js = token_response.json()
 
-            if status_code == 200:
-                token_json = js["result"]
-                return token_json
-            else:
-                raise RuntimeError(
-                    "Could not authenticate user.",
-                    status_code,
-                    js,
-                )
+        if status_code == 200:
+            token_json = js["result"]
+            return token_json
         else:
-            raise ValueError("Credentials were fully or partially empty!")
+            raise RuntimeError(
+                "Could not authenticate user.",
+                status_code,
+                js,
+            )
 
     @staticmethod
     def __normalize_base_url(base_url):

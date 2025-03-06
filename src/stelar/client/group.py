@@ -22,8 +22,8 @@ class MemberList(ProxyVec):
         super().__init__(client, proxy_type, members)
         self.capacities = capacities
 
-    def to_df(self, *additional, fields=None):
-        df = super().to_df(*additional, fields=fields)
+    def to_df(self, *additional, fields=None, simplify=True):
+        df = super().to_df(*additional, fields=fields, simplify=simplify)
         return df.assign(capacity=self.capacities)
 
 
@@ -48,7 +48,7 @@ class GroupBase(GenericProxy, ExtrasProxy, entity=False):
     image_url = Property(validator=StrField(), updatable=True)
     extras = ExtrasProperty()
 
-    def get_members(self, proxy_type: builtins.type[Proxy], capacity: str) -> MemberList:  # type: ignore
+    def get_members(self, proxy_type: builtins.type[Proxy], capacity: str | None = None) -> MemberList:  # type: ignore
         """Get the members of the group.
 
         Args:
@@ -82,11 +82,25 @@ class GroupBase(GenericProxy, ExtrasProxy, entity=False):
         return self.get_members(Dataset, capacity=None)
 
     @property
+    def workflows(self):
+        """Get the workflows of the group."""
+        from .workflows import Workflow
+
+        return self.get_members(Workflow, capacity=None)
+
+    @property
+    def tools(self):
+        """Get the tools of the group."""
+        from .workflows import Tool
+
+        return self.get_members(Tool, capacity=None)
+
+    @property
     def groups(self):
         """Get the groups of the group."""
         return self.get_members(Group, capacity=None)
 
-    def add(self, member: Proxy, capacity: str = ""):
+    def add(self, member: Proxy, capacity: str = "member"):
         """Add a member to the group.
 
         Args:

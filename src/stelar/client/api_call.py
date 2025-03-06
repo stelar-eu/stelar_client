@@ -66,12 +66,12 @@ api_models = {
     "Organization": {
         "name": "organization",
         "collection_name": "organizations",
-        "members": ["Dataset", "Group"],
+        "members": ["Dataset", "Workflow", "Tool", "Group", "User"],
     },
     "Group": {
         "name": "group",
         "collection_name": "groups",
-        "members": ["Dataset", "Group"],
+        "members": ["Dataset", "Workflow", "Tool", "Group", "User"],
     },
     "Vocabulary": {
         "name": "vocabulary",
