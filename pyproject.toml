@@ -6,5 +6,7 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 # For smarter version schemes and other configuration options,
 # check out https://github.com/pypa/setuptools_scm
-version_scheme = "release-branch-semver"
-local_scheme = "no-local-version"
+#version_scheme = "release-branch-semver"
+# local_scheme = "no-local-version"
+version_scheme = "post-release"
+local_scheme = "node-and-date"

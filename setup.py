@@ -11,8 +11,14 @@ from setuptools import setup
 
 if __name__ == "__main__":
     try:
-        setup(version="0.1.10")
-    except:  # noqa
+        # setup(version="0.1.10")
+        setup(use_scm_version=True, setup_requires=["setuptools_scm"])
+    except Exception as e:  # noqa
+        import sys
+        import traceback
+
+        traceback.print_exc()
+
         print(
             "\n\nAn error occurred while building the project, "
             "please ensure you have the most updated version of setuptools, "

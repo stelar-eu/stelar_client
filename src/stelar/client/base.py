@@ -19,6 +19,17 @@ class KLMSInfo:
     def __init__(self, info: dict):
         self.__dict__.update(info)
 
+    def __repr__(self):
+        return f"<KLMSInfo {self.__dict__}>"
+
+    def __str__(self):
+        return str(self.__dict__)
+
+    def _repr_pretty_(self, p, cycle: bool):
+        for k, v in self.__dict__.items():
+            p.text(f"{k}: {v}")
+            p.break_()
+
 
 class BaseAPI(RegistryCatalog):
     """Base class for all parts of the client API.
@@ -43,7 +54,14 @@ class BaseAPI(RegistryCatalog):
         info_attr = {
             k: v for k, v in help.items() if re.match(r"[A-Za-z][A-Za-z0-9_]*", k)
         }
+        from importlib.metadata import version
+
+        info_attr["client_version"] = version("stelar.client")
         return KLMSInfo(info_attr)
+
+    @property
+    def klms_info(self):
+        return self._info
 
     @property
     def api_url(self):
