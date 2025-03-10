@@ -29,10 +29,14 @@ def simplified(value, property):
         case Id():
             return ShortenedUUID(value.hex)
         case Reference(proxy_type=pt):
-            if pt.proxy_schema.name:
+            if pt.proxy_schema.name_id:
                 return value.name
-            else:
+            elif isinstance(value, Proxy):
                 return ShortenedUUID(value.proxy_id.hex)
+            elif isinstance(value, ProxyList):
+                return f"{pt.proxy_schema.class_name}[{len(value)}]"
+            else:
+                return value
         case _:
             return value
 
