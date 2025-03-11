@@ -101,8 +101,7 @@ class ExtrasProxy(Proxy, entity=False):
         value = extras_property.item_validator.validate(value)
         extras_property.touch(self)
         extras_property.get(self)[attr] = value
-        if self.proxy_autosync:
-            self.proxy_sync()
+        self.proxy_autocommit()
 
     def __delattr__(self, attr):
         if attr.startswith("proxy_") or attr in self.proxy_schema.all_fields:

@@ -265,8 +265,7 @@ class Property:
         if value is ...:
             raise ValueError("Properties cannot be set to '...'")
         self.set(obj, value)
-        if obj.proxy_autosync:
-            obj.proxy_sync()
+        obj.proxy_autocommit()
 
     def __delete__(self, obj):
         if not self.optional:

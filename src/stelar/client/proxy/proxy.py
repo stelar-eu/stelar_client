@@ -389,6 +389,22 @@ class Proxy:
         self.proxy_registry.purge_proxy(self)
         self.proxy_attr = self.proxy_changed = None
 
+    def proxy_autocommit(self):
+        """Try a call to proxy_sync() if the proxy is in auto sync.
+
+        This call is invoked whenever the proxy is changed. If the
+        proxy is in autosync mode and DIRTY, the method will try to sync
+        the proxy with the API. If this fails, the proxy is reset to CLEAN.
+
+        If the proxy is not DIRTY, or not in autosync mode, the method does nothing.
+        """
+        if self.proxy_state is ProxyState.DIRTY and self.proxy_autosync:
+            try:
+                self.proxy_sync()
+            except Exception:
+                self.proxy_reset()
+                raise
+
     def proxy_sync(self, entity=None):
         """Sync the data between the proxy and the API entity.
 

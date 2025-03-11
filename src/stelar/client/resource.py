@@ -87,8 +87,7 @@ class Resource(GenericProxy):
 
         prop.touch(self)
         self.proxy_schema.extras.get(self)[attr] = value
-        if self.proxy_autosync:
-            self.proxy_sync()
+        self.proxy_autocommit()
 
     def __delattr__(self, attr):
         if attr.startswith("proxy_") or attr in self.proxy_schema.all_fields:
@@ -99,8 +98,7 @@ class Resource(GenericProxy):
         if attr in extras:
             prop.touch(self)
             del extras[attr]
-            if self.proxy_autosync:
-                self.proxy_sync()
+            self.proxy_autocommit()
         else:
             raise AttributeError(attr)
 

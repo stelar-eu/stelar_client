@@ -75,10 +75,10 @@ class Registry(Generic[ProxyClass]):
         it will be initialized in the CLEAN state by the
         provided entity object.
 
-        Args:
-         entity: The provided entity object.
+        Arguments:
+            entity: The provided entity object.
         Returns:
-         a proxy initialized with the provided entity.
+            a proxy initialized with the provided entity.
         """
         eid = UUID(self.proxy_type.proxy_schema.get_id(entity))
         proxy: Proxy = self.registry.get(eid, None)
@@ -111,6 +111,15 @@ class Registry(Generic[ProxyClass]):
         proxy is registered.
 
         On failure, a conflict error is raised.
+
+        Arguments:
+            proxy: The proxy object to be registered.
+            entity: The entity object to be registered.
+        Returns:
+            None
+        Raises:
+            ConflictError: If the proxy cannot be registered (is deleted or has an ID)
+
         """
         if proxy.proxy_id is None:
             raise ConflictError(proxy, entity, "Cannot register deleted proxy")
