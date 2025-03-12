@@ -9,9 +9,9 @@ from .exceptions import ConflictError
 from .proxy import Proxy
 
 if TYPE_CHECKING:
-    from ..client import Client
-    from .property import RefList
-
+    pass
+    # from ..client import Client
+    # from .property import RefList
     # This seemed to create some kind of problem...
     # from .typing import ProxyClass
 

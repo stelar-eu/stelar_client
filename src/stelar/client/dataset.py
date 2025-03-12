@@ -3,12 +3,11 @@ from IPython.core.display import HTML
 from stelar.client.package import PackageCursor
 from stelar.client.spatial import GeoJSON
 
-from .generic import GenericProxy
+from .package import PackageProxy
 from .proxy import (
     BoolField,
     DateField,
     ExtrasProperty,
-    ExtrasProxy,
     Id,
     NameId,
     Property,
@@ -16,7 +15,6 @@ from .proxy import (
     RefList,
     StateField,
     StrField,
-    TaggableProxy,
     TagList,
     UUIDField,
 )
@@ -24,7 +22,7 @@ from .resource import Resource
 from .utils import client_for
 
 
-class Dataset(GenericProxy, ExtrasProxy, TaggableProxy):
+class Dataset(PackageProxy):
     """
     A proxy of a STELAR dataset.
     """
@@ -35,6 +33,7 @@ class Dataset(GenericProxy, ExtrasProxy, TaggableProxy):
     metadata_modified = Property(validator=DateField)
     state = Property(validator=StateField)
     type = Property(validator=StrField)
+
     creator = Property(validator=UUIDField, entity_name="creator_user_id")
     private = Property(
         validator=BoolField(nullable=False, default=False), updatable=True
@@ -207,6 +206,6 @@ class Dataset(GenericProxy, ExtrasProxy, TaggableProxy):
         return dataset_info
 
 
-class DatasetCursor(PackageCursor):
+class DatasetCursor(PackageCursor[Dataset]):
     def __init__(self, client):
         super().__init__(client, Dataset)

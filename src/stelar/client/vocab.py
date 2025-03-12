@@ -156,7 +156,7 @@ class Tag(GenericProxy):
         return c.datasets.with_tag(self.tagspec)
 
 
-class VocabularyCursor(GenericCursor):
+class VocabularyCursor(GenericCursor[Vocabulary]):
     """Implement CKAN cursor functionalities for Vocabulary.
 
     N.B. This class is not used any more and will eventually be
@@ -178,7 +178,7 @@ class VocabularyCursor(GenericCursor):
             yield registry.fetch_proxy_for_entity(entity)
 
 
-class TagCursor(GenericCursor):
+class TagCursor(GenericCursor[Tag]):
     """Tag cursors are a bit different, since they need to cater to
     free tags as well as vocabulary tags, and be fast about searching
     tags.

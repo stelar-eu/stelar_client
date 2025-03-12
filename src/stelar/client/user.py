@@ -56,7 +56,7 @@ class OldUser(GenericProxy):
     image_url = Property(validator=StrField)
 
 
-class UserCursor(GenericCursor):
+class UserCursor(GenericCursor[User]):
     def __init__(self, client):
         super().__init__(client, User)
 

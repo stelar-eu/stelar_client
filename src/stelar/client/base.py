@@ -1,15 +1,18 @@
 import re
 import time
 from functools import cached_property
+from typing import TypeVar
 from urllib.parse import urlencode, urljoin
 
 import requests
 
-from .proxy import Registry, RegistryCatalog
+from .proxy import Proxy, Registry, RegistryCatalog
 from .utils import client_for
 
+ProxyClass = TypeVar("ProxyClass", bound="Proxy")
 
-class DefaultsRegistry(Registry):
+
+class DefaultsRegistry(Registry[ProxyClass]):
     @cached_property
     def default_organization(self):
         return client_for(self).organizations["stelar-klms"]

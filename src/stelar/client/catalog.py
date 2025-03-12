@@ -1,10 +1,10 @@
-from .base import BaseAPI, DefaultsRegistry
-from .dataset import Dataset, DatasetCursor
+from .base import BaseAPI
+from .dataset import DatasetCursor
 from .generic import GenericCursor, api_call
 from .group import Group, Organization
 from .resource import Resource
-from .user import User, UserCursor
-from .vocab import Tag, TagCursor, Vocabulary
+from .user import UserCursor
+from .vocab import TagCursor, Vocabulary
 
 
 class CatalogAPI(BaseAPI):
@@ -18,7 +18,9 @@ class CatalogAPI(BaseAPI):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         # Create the registries
+        """
         for ptype in [
             Dataset,
             Resource,
@@ -29,6 +31,7 @@ class CatalogAPI(BaseAPI):
             User,
         ]:
             DefaultsRegistry(self, ptype)
+        """
 
         self.datasets = DatasetCursor(self)
         self.resources = GenericCursor(self, Resource)

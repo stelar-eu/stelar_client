@@ -6,10 +6,10 @@ from stelar.client.proxy.fieldvalidation import EnumeratedField, UUIDField
 from stelar.client.proxy.property import DictProperty, ListProperty
 
 from .generic import GenericProxy
+from .package import PackageProxy
 from .proxy import (
     DateField,
     ExtrasProperty,
-    ExtrasProxy,
     Id,
     NameId,
     Property,
@@ -17,13 +17,12 @@ from .proxy import (
     RefList,
     StateField,
     StrField,
-    TaggableProxy,
     TagList,
 )
 from .utils import client_for
 
 
-class Workflow(GenericProxy, ExtrasProxy, TaggableProxy):
+class Workflow(PackageProxy):
     id = Id()
     name = NameId()
 
@@ -85,7 +84,7 @@ class ExecStateField(EnumeratedField):
     VALUES = ["running", "succeeded", "failed"]
 
 
-class Process(GenericProxy, ExtrasProxy, TaggableProxy):
+class Process(PackageProxy):
     """Proxy object for workflow processes (executions)."""
 
     id = Id()
@@ -176,12 +175,12 @@ class Process(GenericProxy, ExtrasProxy, TaggableProxy):
         self.proxy_sync(entity=entity)
 
 
-class ProcessCursor(PackageCursor):
+class ProcessCursor(PackageCursor[Process]):
     def __init__(self, client):
         super().__init__(client, Process)
 
 
-class Tool(GenericProxy, ExtrasProxy, TaggableProxy):
+class Tool(PackageProxy):
     id = Id()
     name = NameId()
 
@@ -225,6 +224,6 @@ class Tool(GenericProxy, ExtrasProxy, TaggableProxy):
     tags = TagList()
 
 
-class ToolCursor(PackageCursor):
+class ToolCursor(PackageCursor[Tool]):
     def __init__(self, client):
         super().__init__(client, Tool)

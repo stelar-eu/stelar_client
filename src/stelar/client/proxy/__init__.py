@@ -12,7 +12,8 @@ from .extras import ExtrasProperty, ExtrasProxy
 from .fieldvalidation import *
 from .property import Id, NameId, Property
 from .proxy import Proxy, deferred_sync
-from .proxylist import ProxyCursor, ProxyList, ProxySublist, ProxyVec
+from .proxycursor import ProxyCursor
+from .proxylist import ProxyList, ProxySublist, ProxyVec
 from .proxysync import ProxySynclist
 from .refs import Reference, RefList
 from .registry import Registry, RegistryCatalog

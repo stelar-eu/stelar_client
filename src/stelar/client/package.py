@@ -7,16 +7,23 @@ These will be:
 - tools
 """
 
-from typing import Any
+from typing import Any, TypeVar
 from uuid import UUID
 
-from stelar.client.generic import GenericCursor
-from stelar.client.proxy.decl import tag_split
-from stelar.client.proxy.proxylist import ProxyVec
-from stelar.client.vocab import Tag
+from .generic import GenericCursor, GenericProxy
+from .proxy import ExtrasProxy, ProxyVec, TaggableProxy
+from .proxy.decl import tag_split
+from .vocab import Tag
 
 
-class PackageCursor(GenericCursor):
+class PackageProxy(GenericProxy, ExtrasProxy, TaggableProxy, entity=False):
+    pass
+
+
+PackageProxyType = TypeVar("PackageProxy", bound=PackageProxy)
+
+
+class PackageCursor(GenericCursor[PackageProxyType]):
     def __init__(self, client, proxy_type):
         super().__init__(client, proxy_type)
 
