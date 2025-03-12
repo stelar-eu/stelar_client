@@ -203,11 +203,18 @@ class Property:
                     f"Entity does not have attribute {self.entity_name}"
                 ) from e
 
-        proxy.proxy_attr[self.name] = (
-            self.validator.convert_to_proxy(entity_value, **kwargs)
-            if entity_value is not None
-            else None
-        )
+        try:
+            value = (
+                self.validator.convert_to_proxy(entity_value, **kwargs)
+                if entity_value is not None
+                else None
+            )
+        except Exception as e:
+            raise EntityError(
+                f"Error converting entity '{self.name}' value to proxy"
+            ) from e
+
+        proxy.proxy_attr[self.name] = value
 
     def convert_proxy_to_entity(self, proxy: Proxy, entity: dict, **kwargs):
         """Update entity dict to represent this property from the proxy.

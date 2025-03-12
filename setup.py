@@ -14,7 +14,6 @@ if __name__ == "__main__":
         # setup(version="0.1.10")
         setup(use_scm_version=True, setup_requires=["setuptools_scm"])
     except Exception as e:  # noqa
-        import sys
         import traceback
 
         traceback.print_exc()

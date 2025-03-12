@@ -298,7 +298,7 @@ class BaseAPI(RegistryCatalog):
             requests.Response: The response object from the API.
         """
         endpoint = "/".join(str(pc) for pc in endp)
-        return self.api_request("POST", endpoint, params=params, json=json)
+        return self.api_request("PATCH", endpoint, params=params, json=json)
 
     def DELETE(self, *endp, **params):
         """Send a DELETE request to the API.

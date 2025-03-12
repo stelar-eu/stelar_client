@@ -1,6 +1,7 @@
 from IPython.core.display import HTML
 
 from stelar.client.package import PackageCursor
+from stelar.client.spatial import GeoJSON
 
 from .generic import GenericProxy
 from .proxy import (
@@ -52,6 +53,9 @@ class Dataset(GenericProxy, ExtrasProxy, TaggableProxy):
     version = Property(
         validator=StrField(nullable=True, maximum_len=100), updatable=True
     )
+
+    # The spatial property
+    spatial = Property(validator=GeoJSON(nullable=True), updatable=True)
 
     resources = RefList(Resource, trigger_sync=True)
     organization = Reference(
