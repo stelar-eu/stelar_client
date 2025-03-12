@@ -9,7 +9,7 @@ by the proxy objects.
 client proxy value  <-->  json entity value
 
 For example, dates are represented as datetime objects in the proxy and as strings
-in the JSON entity. Conversion between the two is done via the two conversion methods 
+in the JSON entity. Conversion between the two is done via the two conversion methods
 of the classes herein.
 """
 

@@ -1,12 +1,12 @@
 import re
 import time
 from functools import cached_property
-from typing import TypeVar
+from typing import Type, TypeVar
 from urllib.parse import urlencode, urljoin
 
 import requests
 
-from .proxy import Proxy, Registry, RegistryCatalog
+from .proxy import Proxy, ProxyCursor, Registry, RegistryCatalog
 from .utils import client_for
 
 ProxyClass = TypeVar("ProxyClass", bound="Proxy")
@@ -109,6 +109,25 @@ class BaseAPI(RegistryCatalog):
             bool: True if the token has expired, False otherwise.
         """
         return time.time() > self._expiration_time
+
+    def cursor_for(
+        self, proxy_type: Type[ProxyClass] | str, **kwargs
+    ) -> ProxyCursor[ProxyClass]:
+        """Get a cursor for a given proxy type.
+
+        Args:
+            proxy_type: The type of the proxy. This can be provided as a string
+                (the name of the proxy) or as the class itself.
+            **kwargs: Additional arguments to pass to the cursor.
+
+        Returns:
+            ProxyCursor: The cursor for the proxy type.
+
+        Example:
+            client.cursor_for("Dataset")
+            client.cursor_for(Dataset)
+        """
+        return self.registry_for(proxy_type)
 
     def request(
         self, method, endpoint, params=None, data=None, headers=None, json=None

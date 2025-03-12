@@ -1,9 +1,15 @@
-from uuid import *
+from uuid import uuid4
 
 import pytest
 from proxy_utils import ProxyTestObj, TPCatalog
 
-from stelar.client.proxy import *
+from stelar.client.proxy import (
+    ExtrasProperty,
+    ExtrasProxy,
+    IntField,
+    Property,
+    StrField,
+)
 
 
 def test_extras_proxy():

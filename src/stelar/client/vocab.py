@@ -3,13 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from stelar.client.proxy.decl import validate_tagname
-from stelar.client.proxy.proxylist import ProxyList
-
 from .generic import GenericCursor, GenericProxy, api_call
 from .proxy import (
     Id,
     NameId,
+    ProxyList,
     Reference,
     RefList,
     Registry,
@@ -18,7 +16,7 @@ from .proxy import (
     VocabNameField,
     derived_property,
 )
-from .utils import client_for, tag_split
+from .utils import client_for, tag_split, validate_tagname
 
 if TYPE_CHECKING:
     from .client import Client

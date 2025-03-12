@@ -32,7 +32,9 @@ class GroupBase(NamedProxy, entity=False):
     description = Property(validator=StrField, updatable=True)
     image_url = Property(validator=StrField(), updatable=True)
 
-    def get_members(self, proxy_type: builtins.type[Proxy], capacity: str | None = None) -> MemberList:  # type: ignore
+    def get_members(
+        self, proxy_type: builtins.type[Proxy], capacity: str | None = None
+    ) -> MemberList:  # type: ignore
         """Get the members of the group.
 
         Args:

@@ -10,7 +10,8 @@ from .fieldvalidation import AnyField, DictField, ListField, NameField, UUIDFiel
 from .proxy import Proxy
 
 if TYPE_CHECKING:
-    from ..client import Client
+    pass
+    # from ..client import Client
 
 Entity = dict[str, Any]
 

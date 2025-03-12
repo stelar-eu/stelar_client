@@ -7,8 +7,9 @@ from .property import Property
 from .proxy import Proxy
 
 if TYPE_CHECKING:
-    from ..client import Client
-    from .schema import Schema
+    # from ..client import Client
+    # from .schema import Schema
+    pass
 
 
 class ExtrasProperty(Property):
@@ -20,7 +21,7 @@ class ExtrasProperty(Property):
         self.item_validator = StrField(nullable=False)
 
     def autodoc(self, doc, repr_type, repr_constraints):
-        return f"""\
+        return """\
 The field holding extras (additional fields) for this entity.
 This field should not be accessed directly, instead its contents
 are available as normal attributes.
@@ -44,7 +45,7 @@ are available as normal attributes.
         proxy_extras = proxy.proxy_attr[self.name]
         if proxy_extras is ...:
             return
-        entity_extras = proxy_extras.copy()  #  Do we need a copy here?
+        entity_extras = proxy_extras.copy()  # Do we need a copy here?
         entity[self.entity_name] = entity_extras
 
     def convert_to_create(self, proxy_type, create_props, entity_props, **kwargs):

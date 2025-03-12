@@ -7,6 +7,7 @@ Version 0.3.5
 - Added support for the search operation, which allows the client to search for datasets
   and other entities using the Solr facility. The search operation is available in the
   cursor objects.
+- An internal refactoring of the client removed redundant entity definitions.
 
 Version 0.3.4
 =============

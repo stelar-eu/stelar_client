@@ -91,7 +91,7 @@ def test_non_entity_class_property_raises():
 
     with pytest.raises((RuntimeError, TypeError)):
 
-        class Foo:
+        class Foo2:
             a = Id()
 
 
@@ -372,7 +372,8 @@ def test_id_property_nonkey_raise():
         class Foo(TestProxy):
             id = Property()
 
-        x = TPCatalog().registry_for(Foo).fetch()
+        # This should raise
+        TPCatalog().registry_for(Foo).fetch()
 
 
 def test_Proxy_init():
@@ -549,7 +550,7 @@ def test_proxy_new():
 
     assert Foo.data[uu]["a"] == 10
     assert Foo.data[uu]["b"] == "hello"
-    assert Foo.data[uu]["c"] == False
+    assert Foo.data[uu]["c"] is False
     assert Foo.data[uu]["d"] == datetime(2005, 9, 18, 23, 55).isoformat()
     assert Foo.data[uu]["e"] == str(uu)
 

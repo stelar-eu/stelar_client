@@ -124,7 +124,8 @@ class Resource(GenericProxy):
 
         # Build the table HTML
         html = f"""
-        <div style="position: relative; width: 100%; height: auto; display: flex; justify-content: flex-start; align-items: flex-start; margin-bottom: 20px;">
+        <div style="position: relative; width: 100%; height: auto; display: flex; justify-content:
+                                    flex-start; align-items: flex-start; margin-bottom: 20px;">
             <table border="1" style="
                 border-collapse: collapse;
                 width: 50%;
@@ -136,7 +137,8 @@ class Resource(GenericProxy):
                 background-repeat: no-repeat;">
                 <thead>
                     <tr>
-                        <th colspan="2" style="text-align: center; padding: 10px; font-size: 18px; font-weight: bold; background-color: rgba(242, 242, 242, 0.8);">
+                        <th colspan="2" style="text-align: center; padding: 10px; font-size: 18px;
+                        font-weight: bold; background-color: rgba(242, 242, 242, 0.8);">
                             Resource Summary
                         </th>
                     </tr>

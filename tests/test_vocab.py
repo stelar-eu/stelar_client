@@ -10,7 +10,7 @@ def vocab1(testcli):
 
 
 def test_vocabulary_create(testcli, vocab1):
-    c = testcli
+    # c = testcli
     assert vocab1.name == "vocab1"
     assert vocab1.tagnames == ["tag1", "tag2", "tag3"]
     assert vocab1.tagspecs == ["vocab1:tag1", "vocab1:tag2", "vocab1:tag3"]

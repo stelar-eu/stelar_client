@@ -24,7 +24,7 @@ from .proxy import (
     TagList,
     UUIDField,
 )
-from .proxy.decl import tag_split
+from .utils import tag_split
 from .vocab import Tag
 
 

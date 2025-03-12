@@ -10,9 +10,22 @@ from .proxy import Proxy, ProxyCursor, ProxyList, Registry
 if TYPE_CHECKING:
     from .client import Client
 
-from .proxy.decl import *
+from .proxy.decl import (
+    TAGSPEC_PATTERN,
+    tag_join,
+    tag_split,
+    validate_tagname,
+    validate_tagspec,
+)
 
-__all__ = ["client_for", "tag_split", "tag_join", "validate_tagspec", "TAGSPEC_PATTERN"]
+__all__ = [
+    "client_for",
+    "tag_split",
+    "tag_join",
+    "validate_tagspec",
+    "validate_tagname",
+    "TAGSPEC_PATTERN",
+]
 
 
 def client_for(obj: Any) -> Client:

@@ -131,7 +131,7 @@ def test_dataset_extras(testcli):
     c = testcli
 
     d = c.datasets.create(name="test_dataset_add_resources")
-    r1 = d.add_resource(name="my name")
+    d.add_resource(name="my name")
 
     assert d.extras == {}
 
