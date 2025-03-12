@@ -37,7 +37,7 @@ are available as normal attributes.
 
     def convert_entity_to_proxy(self, proxy: Proxy, entity, **kwargs):
         entity_extras = entity.get(self.entity_name, {})
-        proxy_extras = entity_extras.copy()  #  Do we need a copy here?
+        proxy_extras = entity_extras.copy()  # Do we need a copy here?
         proxy.proxy_attr[self.name] = proxy_extras
 
     def convert_proxy_to_entity(self, proxy: Proxy, entity: dict, **kwargs):

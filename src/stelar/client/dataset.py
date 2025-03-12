@@ -4,20 +4,7 @@ from stelar.client.package import PackageCursor
 from stelar.client.spatial import GeoJSON
 
 from .package import PackageProxy
-from .proxy import (
-    BoolField,
-    DateField,
-    ExtrasProperty,
-    Id,
-    NameId,
-    Property,
-    Reference,
-    RefList,
-    StateField,
-    StrField,
-    TagList,
-    UUIDField,
-)
+from .proxy import Property, RefList, StrField
 from .resource import Resource
 from .utils import client_for
 
@@ -27,27 +14,7 @@ class Dataset(PackageProxy):
     A proxy of a STELAR dataset.
     """
 
-    id = Id()
-    name = NameId()
-    metadata_created = Property(validator=DateField)
-    metadata_modified = Property(validator=DateField)
-    state = Property(validator=StateField)
-    type = Property(validator=StrField)
-
-    creator = Property(validator=UUIDField, entity_name="creator_user_id")
-    private = Property(
-        validator=BoolField(nullable=False, default=False), updatable=True
-    )
     title = Property(validator=StrField, updatable=True)
-    notes = Property(validator=StrField(nullable=True), updatable=True)
-    author = Property(validator=StrField(nullable=True), updatable=True)
-    author_email = Property(validator=StrField(nullable=True), updatable=True)
-    maintainer = Property(validator=StrField(nullable=True), updatable=True)
-    maintainer_email = Property(validator=StrField(nullable=True), updatable=True)
-
-    # N.B. This has been removed from the schema
-    # license_id = Property(validator=StrField(nullable=True), updatable=True)
-
     url = Property(validator=StrField(nullable=True), updatable=True)
     version = Property(
         validator=StrField(nullable=True, maximum_len=100), updatable=True
@@ -56,21 +23,13 @@ class Dataset(PackageProxy):
     # The spatial property
     spatial = Property(validator=GeoJSON(nullable=True), updatable=True)
 
+    # Resources are dataset-specific
     resources = RefList(Resource, trigger_sync=True)
-    organization = Reference(
-        "Organization",
-        entity_name="owner_org",
-        create_default="default_organization",
-        updatable=True,
-        trigger_sync=True,
-    )
 
-    groups = RefList("Group", trigger_sync=False)
-    extras = ExtrasProperty()
-    tags = TagList()
-
-    # *tags: list[str]
+    # N.B. This has been removed from the schema
+    # license_id = Property(validator=StrField(nullable=True), updatable=True)
     # profile
+
     # relationships_as_object
     # relationships_as subject
 

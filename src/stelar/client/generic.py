@@ -16,6 +16,7 @@ from .api_call import api_call
 from .proxy import (
     EntityNotFound,
     ErrorState,
+    Id,
     Proxy,
     ProxyCursor,
     ProxyList,
@@ -187,6 +188,8 @@ def generic_delete(proxy: Proxy, purge=False):
 
 
 class GenericProxy(Proxy, entity=False):
+    id = Id()
+
     def delete(self, purge=False):
         """
         Delete the entity proxied by this proxy.

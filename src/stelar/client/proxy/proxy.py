@@ -488,6 +488,7 @@ class Proxy:
                 all_fields.extend(extras.keys())
 
         index = [name for name in all_fields if report_field(name)]
+        index.sort()
 
         def simplified(val):
             match val:

@@ -8,8 +8,10 @@ Entities include Data Catalog entities, authorization entities, etc.
 from .decl import ProxyState
 from .derived import derived_property
 from .exceptions import *
+from .exceptions import __all__ as __all_exceptions__
 from .extras import ExtrasProperty, ExtrasProxy
 from .fieldvalidation import *
+from .fieldvalidation import __all__ as __all_fieldvalidation__
 from .property import Id, NameId, Property
 from .proxy import Proxy, deferred_sync
 from .proxycursor import ProxyCursor
@@ -20,20 +22,9 @@ from .registry import Registry, RegistryCatalog
 from .schema import Schema
 from .tag import TaggableProxy, TagList
 
-__all__ = []
-
-# Include all exceptions
-from .exceptions import __all__ as _a
-
-__all__ += _a
-del _a
-
-from .fieldvalidation import __all__ as _a
-
-__all__ += _a
-del _a
-
-__all__ += [
+__all__ = [
+    *__all_exceptions__,
+    *__all_fieldvalidation__,
     "Property",
     "Id",
     "NameId",
@@ -56,3 +47,6 @@ __all__ += [
     "Registry",
     "RegistryCatalog",
 ]
+
+del __all_exceptions__
+del __all_fieldvalidation__

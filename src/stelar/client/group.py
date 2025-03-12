@@ -1,20 +1,9 @@
 import builtins
 from uuid import UUID
 
-from .generic import GenericProxy, api_call
-from .proxy import (
-    BoolField,
-    DateField,
-    ExtrasProperty,
-    ExtrasProxy,
-    Id,
-    NameId,
-    Property,
-    Proxy,
-    ProxyVec,
-    StateField,
-    StrField,
-)
+from .generic import api_call
+from .named import NamedProxy
+from .proxy import BoolField, DateField, Property, Proxy, ProxyVec, StrField
 
 
 class MemberList(ProxyVec):
@@ -27,26 +16,21 @@ class MemberList(ProxyVec):
         return df.assign(capacity=self.capacities)
 
 
-class GroupBase(GenericProxy, ExtrasProxy, entity=False):
+class GroupBase(NamedProxy, entity=False):
     """
     Proxy for a STELAR Data Catalog group and organization.
     This is an abstract class. The group subclass is
     defined later.
     """
 
-    id = Id()
-    name = NameId()
     is_organization = Property(validator=BoolField)
-    type = Property(validator=StrField(nullable=False))
 
-    state = Property(validator=StateField)
     created = Property(validator=DateField)
     approval_status = Property(validator=StrField(), updatable=True)
 
     title = Property(validator=StrField, updatable=True)
     description = Property(validator=StrField, updatable=True)
     image_url = Property(validator=StrField(), updatable=True)
-    extras = ExtrasProperty()
 
     def get_members(self, proxy_type: builtins.type[Proxy], capacity: str | None = None) -> MemberList:  # type: ignore
         """Get the members of the group.

@@ -2,63 +2,24 @@ from __future__ import annotations
 
 from stelar.client.api_call import api_call
 from stelar.client.package import PackageCursor
-from stelar.client.proxy.fieldvalidation import EnumeratedField, UUIDField
+from stelar.client.proxy.fieldvalidation import EnumeratedField
 from stelar.client.proxy.property import DictProperty, ListProperty
 
 from .generic import GenericProxy
 from .package import PackageProxy
-from .proxy import (
-    DateField,
-    ExtrasProperty,
-    Id,
-    NameId,
-    Property,
-    Reference,
-    RefList,
-    StateField,
-    StrField,
-    TagList,
-)
+from .proxy import DateField, Id, Property, Reference, RefList, StrField
 from .utils import client_for
 
 
 class Workflow(PackageProxy):
-    id = Id()
-    name = NameId()
-
-    metadata_created = Property(validator=DateField)
-    metadata_modified = Property(validator=DateField)
-    state = Property(validator=StateField)
-    type = Property(validator=StrField)
-    creator = Property(validator=UUIDField, entity_name="creator_user_id")
-
     title = Property(validator=StrField, updatable=True)
-    notes = Property(validator=StrField(nullable=True), updatable=True)
-    author = Property(validator=StrField(nullable=True), updatable=True)
-    author_email = Property(validator=StrField(nullable=True), updatable=True)
-    maintainer = Property(validator=StrField(nullable=True), updatable=True)
-    maintainer_email = Property(validator=StrField(nullable=True), updatable=True)
-
-    # weird ones
-    # license_id = Property(validator=StrField(nullable=True), updatable=True)
-    repository = Property(validator=StrField(nullable=True), updatable=True)
-    executor = Property(validator=StrField(nullable=True), updatable=True)
     version = Property(
         validator=StrField(nullable=True, maximum_len=100), updatable=True
     )
 
+    repository = Property(validator=StrField(nullable=True), updatable=True)
+    executor = Property(validator=StrField(nullable=True), updatable=True)
     # resources = RefList(Resource, trigger_sync=True)
-    organization = Reference(
-        "Organization",
-        entity_name="owner_org",
-        create_default="default_organization",
-        updatable=True,
-        trigger_sync=True,
-    )
-
-    groups = RefList("Group", trigger_sync=False)
-    extras = ExtrasProperty()
-    tags = TagList()
 
 
 class Task(GenericProxy):
@@ -87,11 +48,12 @@ class ExecStateField(EnumeratedField):
 class Process(PackageProxy):
     """Proxy object for workflow processes (executions)."""
 
-    id = Id()
-    name = NameId()
+    # Currently, the STELAR API redefines the 'creator' field to return
+    # the username of the creator, rather than the user ID. This is a
+    # temporary workaround until the API is updated to return the user ID.
+    creator = Property(validator=StrField, entity_name="creator")
 
-    start_date = Property(validator=DateField)
-    end_date = Property(validator=DateField(nullable=True))
+    # These are all non-CKAN properties in the STELAR API
     workflow = Reference(
         "Workflow",
         updatable=True,
@@ -100,49 +62,21 @@ class Process(PackageProxy):
         trigger_sync=False,
     )
     tasks = RefList("Task", trigger_sync=True)
-    exec_state = Property(validator=StrField, updatable=True)
-
-    metadata_created = Property(validator=DateField)
-    metadata_modified = Property(validator=DateField)
-    state = Property(validator=StateField)
-    type = Property(validator=StrField)
-    creator = Property(validator=StrField, entity_name="creator")
-    # creator_id = Property(validator=StrField, entity_name="creator")
 
     start_date = Property(validator=DateField, updatable=False)
     end_date = Property(validator=DateField, updatable=True)
     exec_state = Property(validator=ExecStateField, updatable=False)
 
     title = Property(validator=StrField, updatable=True)
-    notes = Property(validator=StrField(nullable=True), updatable=True)
-    author = Property(validator=StrField(nullable=True), updatable=True)
-    author_email = Property(validator=StrField(nullable=True), updatable=True)
-    maintainer = Property(validator=StrField(nullable=True), updatable=True)
-    maintainer_email = Property(validator=StrField(nullable=True), updatable=True)
-
-    # weird ones
-    url = Property(validator=StrField(nullable=True), updatable=True)
     version = Property(
         validator=StrField(nullable=True, maximum_len=100), updatable=True
     )
+    url = Property(validator=StrField(nullable=True), updatable=True)
 
     # resources = RefList(Resource, trigger_sync=True)
-
     #
     # TODO
     #  tasks
-
-    organization = Reference(
-        "Organization",
-        entity_name="owner_org",
-        create_default="default_organization",
-        updatable=True,
-        trigger_sync=True,
-    )
-
-    groups = RefList("Group", trigger_sync=False)
-    extras = ExtrasProperty()
-    tags = TagList()
 
     def add_resource(self, **properties):
         """Add a new resource with the given properties.
@@ -181,21 +115,6 @@ class ProcessCursor(PackageCursor[Process]):
 
 
 class Tool(PackageProxy):
-    id = Id()
-    name = NameId()
-
-    metadata_created = Property(validator=DateField)
-    metadata_modified = Property(validator=DateField)
-    state = Property(validator=StateField)
-    type = Property(validator=StrField)
-    creator = Property(validator=UUIDField, entity_name="creator_user_id")
-
-    notes = Property(validator=StrField(nullable=True), updatable=True)
-    author = Property(validator=StrField(nullable=True), updatable=True)
-    author_email = Property(validator=StrField(nullable=True), updatable=True)
-    maintainer = Property(validator=StrField(nullable=True), updatable=True)
-    maintainer_email = Property(validator=StrField(nullable=True), updatable=True)
-
     # weird ones
     # license_id = Property(validator=StrField(nullable=True), updatable=True)
     git_repository = Property(validator=StrField(nullable=True), updatable=True)
@@ -208,20 +127,7 @@ class Tool(PackageProxy):
     outputs = DictProperty(str, str, updatable=True)
     parameters = DictProperty(str, str, updatable=True)
 
-    # resources = RefList(Resource, trigger_sync=True)
-    organization = Reference(
-        "Organization",
-        entity_name="owner_org",
-        create_default="default_organization",
-        updatable=True,
-        trigger_sync=True,
-    )
-
     # images = RefList("Image", trigger_sync=False)
-
-    groups = RefList("Group", trigger_sync=False)
-    extras = ExtrasProperty()
-    tags = TagList()
 
 
 class ToolCursor(PackageCursor[Tool]):

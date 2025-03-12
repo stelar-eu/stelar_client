@@ -16,7 +16,8 @@ class APIEndpointsV1:
     Attributes:
         TOKEN_ISSUE (string): The endpoint for issuing an OAuth2.0 token
         TOKEN_VERIFY (string): The endpoint for verifying the status of an OAuth2.0 token
-        TOKEN_REFRESH (string): The endpoint for issuing an OAuth2.0 token based on a refresh token already available.
+        TOKEN_REFRESH (string): The endpoint for issuing an OAuth2.0 token based on a refresh token
+            already available.
 
         GET_USER (string): The endpoint for fetching information about a specific user by ID.
         GET_USERS (string): The endpoint for fetching information about all users in the KLMS.
@@ -28,7 +29,7 @@ class APIEndpointsV1:
 
     # Used under different HTTP schemes (POST for ISSUE, PUT for REFRESH)
 
-    ### Authentication/Authorization Endpoints
+    # Authentication/Authorization Endpoints
     TOKEN_ISSUE = "v1/users/token"  # POST
     TOKEN_REFRESH = "v1/users/token"  # PUT
     TOKEN_VERIFY = "v1/users/token"  # GET
@@ -37,7 +38,7 @@ class APIEndpointsV1:
     GET_USER = "v1/users/"
     GET_USERS = "v1/users"
 
-    ### Policy Endpoints
+    # Policy Endpoints
     POST_POLICY = "v1/auth/policy"
     GET_POLICY_REPRESENATION = "v1/auth/policy/representation/"
     GET_POLICY_INFO = "v1/auth/policy/"

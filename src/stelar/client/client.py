@@ -166,8 +166,8 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             tls_verify (bool): Whether to verify the server TLS certificate.
 
         Returns:
-            (str, str): If the refresh was successful, a OpenID token and refresh token, as a
-            pair of str (token, refresh_token)
+            A dict containing the access token, refresh token, token expiration times and the type of token
+            (should be 'Bearer').
 
         Raises:
             RuntimeError: If authentication fails due to incorrect credentials or server issues.
@@ -194,7 +194,6 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
 
         if success and status_code in range(200, 300):
             return token_json
-
         else:
             raise RuntimeError(
                 "Could not refresh the current token", status_code, token_json
@@ -216,11 +215,11 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             tls_verify (str): Whether to verify the server TLS certificate.
 
         Raises:
-            ValueError: If either the username or password is empty.
             RuntimeError: If authentication fails due to incorrect credentials or server issues.
 
         Returns:
-            (str, str): If authentication was successful, a OpenID token and refresh token, as a pair of str (token, refresh_token)
+            A dict containing the access token, refresh token, token expiration times and the type of token
+            (should be 'Bearer').
         """
 
         auth_data = {"username": username, "password": password}

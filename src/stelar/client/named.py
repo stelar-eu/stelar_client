@@ -1,5 +1,5 @@
 from .generic import GenericProxy
-from .proxy import ExtrasProxy
+from .proxy import ExtrasProperty, ExtrasProxy, NameId, Property, StateField, StrField
 
 
 class NamedProxy(GenericProxy, ExtrasProxy, entity=False):
@@ -9,4 +9,9 @@ class NamedProxy(GenericProxy, ExtrasProxy, entity=False):
     Other entities may have a name atrribute, but it is not unique.
     """
 
-    pass
+    name = NameId()
+    state = Property(validator=StateField)
+    type = Property(validator=StrField)
+
+    # Named entities have the same 'extras' field (unlike resources)
+    extras = ExtrasProperty()

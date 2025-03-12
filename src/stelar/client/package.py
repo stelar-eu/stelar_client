@@ -12,13 +12,49 @@ from uuid import UUID
 
 from .generic import GenericCursor
 from .named import NamedProxy
-from .proxy import ProxyVec, TaggableProxy
+from .proxy import (
+    BoolField,
+    DateField,
+    Property,
+    ProxyVec,
+    Reference,
+    RefList,
+    StrField,
+    TaggableProxy,
+    TagList,
+    UUIDField,
+)
 from .proxy.decl import tag_split
 from .vocab import Tag
 
 
 class PackageProxy(NamedProxy, TaggableProxy, entity=False):
-    pass
+    # Auto-maintained fields
+    metadata_created = Property(validator=DateField)
+    metadata_modified = Property(validator=DateField)
+
+    creator = Property(validator=UUIDField, entity_name="creator_user_id")
+    private = Property(
+        validator=BoolField(nullable=False, default=False), updatable=True
+    )
+
+    organization = Reference(
+        "Organization",
+        entity_name="owner_org",
+        create_default="default_organization",
+        updatable=True,
+        trigger_sync=True,
+    )
+
+    tags = TagList()
+    groups = RefList("Group", trigger_sync=False)
+
+    # User-maintained fields
+    notes = Property(validator=StrField(nullable=True), updatable=True)
+    author = Property(validator=StrField(nullable=True), updatable=True)
+    author_email = Property(validator=StrField(nullable=True), updatable=True)
+    maintainer = Property(validator=StrField(nullable=True), updatable=True)
+    maintainer_email = Property(validator=StrField(nullable=True), updatable=True)
 
 
 PackageProxyType = TypeVar("PackageProxy", bound=PackageProxy)
