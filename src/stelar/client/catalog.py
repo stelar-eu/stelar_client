@@ -2,9 +2,9 @@ from .base import BaseAPI
 from .dataset import DatasetCursor
 from .generic import GenericCursor, api_call
 from .group import Group, Organization
-from .resource import Resource
+from .resource import ResourceCursor
 from .user import UserCursor
-from .vocab import TagCursor, Vocabulary
+from .vocab import TagCursor, VocabularyCursor
 
 
 class CatalogAPI(BaseAPI):
@@ -19,25 +19,12 @@ class CatalogAPI(BaseAPI):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Create the registries
-        """
-        for ptype in [
-            Dataset,
-            Resource,
-            Organization,
-            Group,
-            Vocabulary,
-            Tag,
-            User,
-        ]:
-            DefaultsRegistry(self, ptype)
-        """
-
+        # Create the cursors for the various catalog entities
         self.datasets = DatasetCursor(self)
-        self.resources = GenericCursor(self, Resource)
+        self.resources = ResourceCursor(self)
         self.organizations = GenericCursor(self, Organization)
         self.groups = GenericCursor(self, Group)
-        self.vocabularies = GenericCursor(self, Vocabulary)
+        self.vocabularies = VocabularyCursor(self)
         self.users = UserCursor(self)
         self.tags = TagCursor(self)
 

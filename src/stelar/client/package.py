@@ -10,13 +10,14 @@ These will be:
 from typing import Any, TypeVar
 from uuid import UUID
 
-from .generic import GenericCursor, GenericProxy
-from .proxy import ExtrasProxy, ProxyVec, TaggableProxy
+from .generic import GenericCursor
+from .named import NamedProxy
+from .proxy import ProxyVec, TaggableProxy
 from .proxy.decl import tag_split
 from .vocab import Tag
 
 
-class PackageProxy(GenericProxy, ExtrasProxy, TaggableProxy, entity=False):
+class PackageProxy(NamedProxy, TaggableProxy, entity=False):
     pass
 
 

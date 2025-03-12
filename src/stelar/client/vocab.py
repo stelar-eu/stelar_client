@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from stelar.client.proxy.decl import validate_tagname
@@ -159,23 +159,12 @@ class Tag(GenericProxy):
 class VocabularyCursor(GenericCursor[Vocabulary]):
     """Implement CKAN cursor functionalities for Vocabulary.
 
-    N.B. This class is not used any more and will eventually be
+    N.B. Currently, this class is here as a placeholder and may eventually be
     removed.
     """
 
     def __init__(self, client):
         super().__init__(client, Vocabulary)
-
-    def fetch_list(self, *, limit: int, offset: int) -> list[str]:
-        return [v.name for v in self.fetch(limit=limit, offset=offset)]
-
-    def fetch(self, *, limit: int, offset: int) -> Iterator[Vocabulary]:
-        registry = self.client.registry_for(Vocabulary)
-        ac = api_call(self)
-        result = ac.vocabulary_list()
-
-        for entity in result:
-            yield registry.fetch_proxy_for_entity(entity)
 
 
 class TagCursor(GenericCursor[Tag]):

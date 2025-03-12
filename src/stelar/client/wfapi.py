@@ -1,17 +1,15 @@
-from stelar.client.base import BaseAPI
-from stelar.client.generic import GenericCursor
-from stelar.client.workflows import ProcessCursor, Task, ToolCursor, Workflow
+from .base import BaseAPI
+from .generic import GenericCursor
+from .package import PackageCursor
+from .workflows import ProcessCursor, Task, ToolCursor, Workflow
 
 
 class WorkflowsAPI(BaseAPI):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Create the registries
-        # for ptype in [Process, Task, Workflow, Tool]:
-        #    DefaultsRegistry(self, ptype)
         self.processes = ProcessCursor(self)
         self.tasks = GenericCursor(self, Task)
-        self.workflows = GenericCursor(self, Workflow)
+        self.workflows = PackageCursor(self, Workflow)
         self.tools = ToolCursor(self)
 
 
