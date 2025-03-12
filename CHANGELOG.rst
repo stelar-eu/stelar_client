@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 0.3.5
+=============
+- Added support for the search operation, which allows the client to search for datasets
+  and other entities using the Solr facility. The search operation is available in the
+  cursor objects.
+
 Version 0.3.4
 =============
 - Added support for dataset spatial attribute, including validation. A new dependency

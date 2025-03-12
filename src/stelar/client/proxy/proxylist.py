@@ -140,8 +140,15 @@ class ProxyVec(ProxyList):
     """
 
     def __init__(
-        self, client: Client, proxy_type: Type[ProxyClass], members: list[ProxyClass]
+        self, client: Client, proxy_type: Type[ProxyClass], members: list[UUID]
     ):
+        """Initialize the vector with the client, the proxy type, and the list of IDs.
+
+        Arguments:
+            client: the client object
+            proxy_type: the type of the proxies
+            members: the list of UUIDs
+        """
         super().__init__(client, proxy_type)
         self.members = members
 

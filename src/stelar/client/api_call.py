@@ -44,6 +44,7 @@ class api_model:
 
     def __init__(self, **fields):
         self.members = []
+        self.search = None
         for name, value in fields.items():
             setattr(self, name, value)
 
@@ -58,10 +59,12 @@ api_models = {
     "Dataset": {
         "name": "dataset",
         "collection_name": "datasets",
+        "search": "solr_search",
     },
     "Resource": {
         "name": "resource",
         "collection_name": "resources",
+        "search": "resource_search",
     },
     "Organization": {
         "name": "organization",
@@ -89,6 +92,7 @@ api_models = {
         "name": "process",
         "collection_name": "processes",
         "members": ["Task"],
+        "search": "solr_search",
     },
     "Task": {
         "name": "tasks",
@@ -97,10 +101,12 @@ api_models = {
     "Workflow": {
         "name": "workflow",
         "collection_name": "workflows",
+        "search": "solr_search",
     },
     "Tool": {
         "name": "tool",
         "collection_name": "tools",
+        "search": "solr_search",
     },
 }
 for m in api_models:
@@ -109,8 +115,19 @@ for m in api_models:
     api_models[m].members = [api_models[mm] for mm in api_models[m].members]
 
 
-OPERATIONS = ["create", "show", "update", "patch", "delete", "list", "fetch", "purge"]
+OPERATIONS = [
+    "create",
+    "show",
+    "update",
+    "patch",
+    "delete",
+    "list",
+    "fetch",
+    "purge",
+    "search",
+]
 MEMBER_OPERATIONS = ["add", "remove", "list_members"]
+SEARCH_OPERATIONS = ["solr_search", "resource_search"]
 
 
 class api_call_base(api_context):
@@ -277,6 +294,31 @@ def generate_list_members(model: api_model, mm: api_model):
     return gen_list_members
 
 
+def generate_solr_search(model: api_model):
+    def gen_search(self, query_spec):
+        verb = "POST"
+        endpoint = f"v2/search/{model.collection_name}"
+        return self.request(verb, endpoint, json=query_spec)
+
+    return gen_search
+
+
+def generate_resource_search(model: api_model):
+    def gen_search(self, query_spec):
+        verb = "POST"
+        endpoint = f"v2/search/{model.collection_name}"
+        return self.request(verb, endpoint, json=query_spec)
+
+    return gen_search
+
+
+def generate_unimplemented(model: api_model, op, mm=None):
+    def gen_unimplemented(self, *args, **kwargs):
+        raise NotImplementedError(api_model.name, op, args, kwargs)
+
+    return gen_unimplemented
+
+
 # Instrumenting api_call_base with the generated methods.
 # Where there is no specialized method defined,
 # add the generated generic method to the api_call class.
@@ -301,6 +343,13 @@ for ptname in api_models:
                 gcall = generate_fetch(model)
             case "purge":
                 gcall = generate_purge(model)
+            case "search":
+                if model.search == "solr_search":
+                    gcall = generate_solr_search(model)
+                elif model.search == "resource_search":
+                    gcall = generate_resource_search(model)
+                else:
+                    gcall = generate_unimplemented(model, op)
 
         gcall.__qualname__ = f"api_call_base.{call_name}"
         gcall.__name__ = call_name
@@ -369,3 +418,7 @@ class api_call(api_call_base):
 
     def user_purge(self, id):
         raise NotImplementedError
+
+    def entity_search(self, proxy_type: str, query_spec: dict):
+        entity_type = api_models.collection_name
+        return self.request("POST", f"v2/search/{entity_type}", json=query_spec)

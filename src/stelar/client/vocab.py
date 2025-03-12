@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Iterator
 from uuid import UUID
 
 from stelar.client.proxy.decl import validate_tagname
+from stelar.client.proxy.proxylist import ProxyList
 
 from .generic import GenericCursor, GenericProxy, api_call
 from .proxy import (
@@ -141,21 +142,18 @@ class Tag(GenericProxy):
         else:
             return tname
 
-    def get_tagged_datasets(self) -> Iterator[Dataset]:
+    def get_tagged_datasets(self) -> ProxyList[Dataset]:
         """Retrieve a number of datasets tagged with this tag.
 
         Note that there is an upper limit to the number of datasets
         (currently, 1000). For a more flexible access, the dataset search
-        facility can be used.
+        facility (Client.datasets.with_tag()) can be used.
 
-        However, this call is useful for 'rare' tags.
+        However, this call is convenient for 'rare' tags.
         """
-        ac = api_call(self)
-        result = ac.tag_show(id=str(self.id), include_datasets=True)
         # Since tags are immutable, ignore own state
-        registry = self.proxy_registry.catalog.registry_for("Dataset")
-        for entity in result["packages"]:
-            yield registry.fetch_proxy_for_entity(entity)
+        c = client_for(self)
+        return c.datasets.with_tag(self.tagspec)
 
 
 class VocabularyCursor(GenericCursor):

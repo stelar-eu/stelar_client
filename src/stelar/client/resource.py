@@ -197,3 +197,43 @@ class ResourceCursor(GenericCursor):
 
     def for_object(self, s3obj):
         pass
+
+    def search(
+        self,
+        *,
+        query: list[str] | None = [],
+        order_by: str = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ):
+        """
+        Search for resources.
+
+        This is the main function for searching the data catalog for resources.
+        Other functions are implemented on top of this one.
+
+        A resource query is a conunction of query terms of the form <field>:<match>.
+        The query terms are combined with AND. The match is a string with optional wildcards.
+
+
+        Arguments:
+            query: A list of query strings. Each query string is of the form "<field>:<text>".
+            order_by: A field to order by. Only a single field is allowed and only ascending
+                     order is supported.
+            limit: The maximum number of results to return.
+            offset: The offset to start from.
+
+        Returns:
+            An answer which contains the following fields:
+            - count: The number of results found (not the number of results returned).
+            - results: A list of results.
+
+        """
+        search = self.client.api.get_call(Resource, "search")
+        query = dict(
+            query=query,
+            order_by=order_by,
+            limit=limit,
+            offset=offset,
+        )
+        return search(query)

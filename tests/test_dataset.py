@@ -1,6 +1,6 @@
 import pytest
 
-from stelar.client import *
+from stelar.client import ErrorState, ProxyState
 
 
 def test_dataset_create(testcli):
