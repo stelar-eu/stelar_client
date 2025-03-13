@@ -50,3 +50,9 @@ __all__ = [
 
 del __all_exceptions__
 del __all_fieldvalidation__
+
+import os
+
+if os.getenv("SPHINX_BUILD"):
+    # This prevents duplicate documentation by sphinx
+    del __all__

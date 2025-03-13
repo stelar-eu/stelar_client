@@ -9,17 +9,26 @@ except PackageNotFoundError:  # pragma: no cover
 finally:
     del version, PackageNotFoundError
 
-
 from .client import Client
 from .dataset import Dataset
 from .group import Group, Organization
 from .proxy import ProxyState, deferred_sync
+
+# Include all proxy exceptions
+from .proxy.exceptions import *
+from .proxy.exceptions import __all__ as __all_exceptions
 from .resource import Resource
 from .user import User
+
+# Include all utility functions
+from .utils import *
+from .utils import __all__ as __all_utils
 from .vocab import Tag, Vocabulary
 from .workflows import Process, Task, Tool, Workflow
 
 __all__ = [
+    *__all_exceptions,
+    *__all_utils,
     "Client",
     "Dataset",
     "Resource",
@@ -36,16 +45,11 @@ __all__ = [
     "deferred_sync",
 ]
 
-# Include all proxy exceptions
-from .proxy.exceptions import *
-from .proxy.exceptions import __all__ as _exceptions
+del __all_exceptions
+del __all_utils
 
-__all__ += _exceptions
-del _exceptions
+import os
 
-# Include all utility functions
-from .utils import *
-from .utils import __all__ as _utils
-
-__all__ += _utils
-del _utils
+if os.getenv("SPHINX_BUILD"):
+    # This prevents duplicate documentation by sphinx
+    del __all__

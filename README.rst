@@ -27,17 +27,32 @@
     :alt: Project generated with PyScaffold
     :target: https://pyscaffold.org/
 
-|
+.. image:: https://readthedocs.org/projects/stelar-client/badge/?version=latest
+    :alt: ReadTheDocs
+    :target: https://stelar-client.readthedocs.io/en/stable/
+
+.. image:: https://img.shields.io/pypi/v/stelar-client.svg
+    :alt: PyPI-Server
+    :target: https://pypi.org/project/stelar-client/
 
 =============
 stelar_client
 =============
 
 
-    Add a short description here!
+    A client for working with the STELAR KLMS.
 
 
-A longer description of your project goes here...
+The STELAR Knowledge Lake Management System (KLMS) is a state-of-the-art data
+management system that allows users to store, retrieve, and manage data in a
+scalable and efficient manner. The STELAR KLMS implements many of the features
+of a modern data lake, combined with strong support for metadata collection,
+advanced metadata search, data governance, and data quality assurance.
+
+The STELAR KLMS is developed by a consortium of research institutions and industry
+partners as part of the STELAR project, which is funded by the European Union's
+Horizon 2020 research and innovation programme. 
+You can find more information about the STELAR KLMS in this `link <https://stelar.eu/>`_.
 
 
 .. _pyscaffold-notes:

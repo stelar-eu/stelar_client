@@ -33,10 +33,23 @@ def tag_split(tagspec: str) -> tuple[str | None, str]:
 
     Properly, a tagspec is either <tag-name>  or <vocabulary-name>:<tag-name>,
     where
-        <tagname> is a string made only of lower-case alphanumerics, hyphen (-) and underscore (_),
+
+    <tagname>
+        is a string made only of lower-case alphanumerics, hyphen (-) and underscore (_),
         and of length in [2,100]
-        <vocabulary-name> is any string (which may contain spaces and other ascii characters) of
+    <vocabulary-name>
+        is any string (which may contain spaces and other ascii characters) of
         length [2,100].
+
+    Arguments
+    ---------
+        tagspec (str): the tag specification
+    Returns
+    -------
+        (str|None, str): a pair of (<vocabulary-name> , <tag-name>)
+    Raises
+    ------
+        ValueError: if the tagspec is not valid
     """
     m = TAGSPEC_PATTERN.fullmatch(tagspec)
     if m is None:

@@ -27,6 +27,7 @@ class Registry(Generic[ProxyClass]):
 
     Registries are crucial as they are used to maintain the following important
     invariant:
+
         'For each entity, there exists no more than one proxy (under the same client)
         at any time'.
 

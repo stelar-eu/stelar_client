@@ -65,17 +65,14 @@ class ExtrasProxy(Proxy, entity=False):
 
     There are two API variants for extra arguments in the
     CKAN data catalog:
-    - Resource entities allow additional fields in their objects.
-     ```
-     "foo": "bar"
-     ```
+    * Resource entities allow additional fields in their objects.::
 
-    - Packages, Groups and Organizations maintain a separate
-      field called extras, whose format is a list of dicts.
+        "foo": "bar"
 
-    ```
-    "extras": [{"key": "foo", "value": "bar"}]
-    ```
+    * Packages, Groups and Organizations maintain a separate
+      field called extras, whose format is a list of dicts.::
+
+        "extras": [{"key": "foo", "value": "bar"}]
 
     Our own implementation follows the resource approach, by utilizing
     dynamic attributes.

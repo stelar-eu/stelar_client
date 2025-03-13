@@ -60,47 +60,58 @@ class Proxy:
     of Registry is Client.
 
     A proxy can be in one of four states:
-      - EMPTY: there is no entity data in the proxy
-      - CLEAN: the data loaded by the last proxy_sync() operation is not changed
-      - DIRTY: the data loaded by the last proxy_sync() operation has been changed
-      - ERROR: the proxy is illegal! This state can be the result of deleting entity
+      - ``EMPTY``: there is no entity data in the proxy
+      - ``CLEAN``: the data loaded by the last proxy_sync() operation is not changed
+      - ``DIRTY``: the data loaded by the last proxy_sync() operation has been changed
+      - ``ERROR``: the proxy is illegal! This state can be the result of deleting entity
 
 
     Attributes are used to hold property values:
-    proxy_registry: The Registry instance that this proxy belongs to
-    proxy_id: The UUID of the proxies entity
+
+    proxy_registry:
+        The Registry instance that this proxy belongs to
+
+    proxy_id:
+        The UUID of the proxies entity
+
     proxy_attr:
         A dict of all loaded attributes. When None, the entity has
         not yet been loaded. The state is EMPTY
+
     proxy_changed:
         A dict of all changed attributes (loaded values of updated attributes)
-        since last upload. When None, the entity is CLEAN (or EMPTY), else the
-        entity is DIRTY.
+        since last upload. When None, the entity is ``CLEAN`` (or ``EMPTY``), else the
+        entity is ``DIRTY``.
 
     To initialize a proxy object, one must supply either an entity id or
     an entity JSON body. The proxy_id is never changed. When an entity is deleted,
-    set the proxy_id to None, to mark the proxy state as ERROR.
+    set the proxy_id to None, to mark the proxy state as ``ERROR``.
 
-    After initialization, the state of a proxy is EMPTY.
+    After initialization, the state of a proxy is ``EMPTY``.
 
-    Proxies are handlers for _entities_ of the Stelar Service API. Entities are manipulated
+    Proxies are handlers for **entities** of the Stelar Service API. Entities are manipulated
     by a CRUD-like API. Besides creation and deletion, entities are manipulated by two additional
     I/O API operations:
-    - FETCH: which returns an entity data from the API
-    - UPDATE: which accepts a spec of the updates to apply to an entity. This operation often returns
+    - fetch, which returns an entity data from the API
+    - update, which accepts a spec of the updates to apply to an entity. This operation often returns
     the updated object after updates are applied.
 
     The following operations operate on proxies:
-    proxy_sync(entity=None): Save any pending updates to make the state CLEAN. Load the proxy data
-    from the Stelar Service API, to make sure the proxy has the latest. When `entity` is not None,
-    use it to avoid a fetch.
 
-    proxy_invalidate(force=False):  Make the object EMPTY. If the proxy is DIRTY, an IvalidationError
-    is raised, unless `force` is specified as True.
+    proxy_sync(entity=None):
+        Save any pending updates to make the state CLEAN. Load the proxy data
+        from the Stelar Service API, to make sure the proxy has the latest. When `entity` is not None,
+        use it to avoid a fetch.
 
-    proxy_reset():  Make a DIRTY object to CLEAN, by restoring the property values of the last sync().
+    proxy_invalidate(force=False):
+        Make the object EMPTY. If the proxy is DIRTY, an IvalidationError
+        is raised, unless `force` is specified as True.
 
-    proxy_sync(entity=None):  Make an entity CLEAN.
+    proxy_reset():
+        Make a DIRTY object to CLEAN, by restoring the property values of the last sync().
+
+    proxy_sync(entity=None):
+        Make an entity CLEAN.
     """
 
     proxy_registry: Registry

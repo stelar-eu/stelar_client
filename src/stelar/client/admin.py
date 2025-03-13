@@ -11,26 +11,6 @@ from .policy import Policy
 class AdminAPI(BaseAPI):
     """
     Represents a class that handles administrative API actions, including policy and user management.
-
-    Methods
-    -------
-    get_user_by_id(user_id: str) -> dict
-        Returns a user entity by UUID or username. Requires admin rights.
-
-    get_users(offset: int = None, limit: int = None) -> dict
-        Returns all user entities present inside the KLMS. Requires admin rights.
-
-    create_policy(policy: Policy)
-        Creates a policy using the provided `Policy` object.
-
-    get_policy_info(filter: str)
-        Retrieves detailed information about a specific policy based on a filter.
-
-    get_policy_representation(filter: str)
-        Retrieves the YAML representation of a specific policy based on a filter.
-
-    get_policy_list()
-        Retrieves a list of all available policies and presents them as tables.
     """
 
     def get_user_by_id(self, user_id: str) -> dict:
@@ -105,9 +85,9 @@ class AdminAPI(BaseAPI):
 
         Examples
         --------
-        >>> policy = Policy(policy_content="your policy content in YAML format")
-        >>> admin.create_policy(policy)
-        >>> display(policy)
+        policy = Policy(policy_content="your policy content in YAML format")
+        admin.create_policy(policy)
+        display(policy)
 
         See Also
         --------
@@ -176,8 +156,8 @@ class AdminAPI(BaseAPI):
 
         Examples
         --------
-        >>> policy = admin.get_policy_info("policy-filter")
-        >>> display(policy)
+        policy = admin.get_policy_info("policy-filter")
+        display(policy)
         """
         if not filter:
             return None
@@ -230,7 +210,7 @@ class AdminAPI(BaseAPI):
 
         Examples
         --------
-        >>> admin.get_policy_representation("policy-filter")
+        admin.get_policy_representation("policy-filter")
         """
         if not filter:
             return None
@@ -273,7 +253,7 @@ class AdminAPI(BaseAPI):
 
         Examples
         --------
-        >>> admin.get_policy_list()
+        admin.get_policy_list()
         """
         try:
             policy_response = self.api_request("GET", APIEndpointsV1.GET_POLICY_LIST)
