@@ -1,7 +1,10 @@
-from typing import Any
+from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 from .generic import GenericCursor, GenericProxy, generic_proxy_sync
+from .mutils import is_s3url, s3spec_to_url
 from .proxy import (
     DateField,
     ExtrasProperty,
@@ -9,10 +12,14 @@ from .proxy import (
     IntField,
     Property,
     Proxy,
+    ProxyVec,
     Reference,
     StrField,
 )
 from .reprstyle import resource_to_html
+
+if TYPE_CHECKING:
+    from .mutils import S3ObjSpec
 
 
 class ExtrasResourceProperty(ExtrasProperty):
@@ -121,6 +128,37 @@ class Resource(GenericProxy):
         """
         return resource_to_html(self)
 
+    def open(self, mode="rb", **kwargs):
+        """
+        Open the resource for reading or writing.
+
+        Args:
+            mode (str): The mode in which to open the resource. This can be one of the
+                following: 'r', 'rb', 'w', 'wb', 'a', 'ab'.
+
+        Returns:
+            file-like: A file-like object that can be used to read or write data.
+        """
+        url = self.url
+        if not is_s3url(url):
+            raise ValueError("Only s3 URLs are supported for path")
+        return self.client.s3fs_open(url, mode=mode, **kwargs)
+
+    def read_dataframe(self, format=None, **kwargs):
+        """
+        Read a DataFrame from the resource.
+
+        Args:
+            format (str): The format of the file to read. If not specified, the format will be
+                inferred from the file extension.
+            kwargs (dict): Additional keyword arguments to pass to the read.
+
+        Returns:
+            pd.DataFrame: The DataFrame read from the resource.
+        """
+        format = format or self.format or None
+        return self.client.read_dataframe(self.url, format=format, **kwargs)
+
 
 class ResourceCursor(GenericCursor):
     """
@@ -136,8 +174,28 @@ class ResourceCursor(GenericCursor):
     def fetch_list(self, **kwargs):
         raise NotImplementedError("ResourceCursor does not support fetch operations.")
 
-    def for_object(self, s3obj):
-        pass
+    def search_url(self, path: str) -> ProxyVec:
+        """Return resources whose url matches the given string.
+
+        Args:
+            path (str): The partial URL to search for.
+        Returns:
+            ProxyVec: A vector of resources with matching URLs.
+        """
+        res = self.search(query=[f"url:{s3obj_url}"])
+        rl = [UUID(r["id"]) for r in res["results"]]
+        return ProxyVec(self.client, Resource, rl)
+
+    def for_object(self, s3obj_spec: S3ObjSpec) -> ProxyVec:
+        """Return resources for a given S3 object specification.
+
+        Args:
+            s3obj_spec (S3ObjSpec): The S3 object specification.
+        Returns:
+            ProxyVec: A vector of resources for the given S3 object
+        """
+        s3url = s3spec_to_url(s3obj_spec)
+        return self.search_path(s3url)
 
     def search(
         self,
@@ -165,9 +223,9 @@ class ResourceCursor(GenericCursor):
             offset: The offset to start from.
 
         Returns:
-            An answer which contains the following fields:
+            An answer dict which contains the following fields:
             - count: The number of results found (not the number of results returned).
-            - results: A list of results.
+            - results: A list of dicts, each corresponding to a resource entity.
 
         """
         search = self.client.api.get_call(Resource, "search")
@@ -177,4 +235,4 @@ class ResourceCursor(GenericCursor):
             limit=limit,
             offset=offset,
         )
-        return search(query)
+        return search({k: v for k, v in query.items() if v is not None})

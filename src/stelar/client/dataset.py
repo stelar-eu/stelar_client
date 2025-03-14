@@ -41,6 +41,18 @@ class Dataset(PackageProxy):
         """
         return client_for(self).resources.create(dataset=self, **properties)
 
+    def add_dataframe(self, df, s3path, format=None, **kwargs):
+        """Add a DataFrame as a resource to the dataset.
+
+        Args:
+            df (pd.DataFrame): The DataFrame to add.
+            s3path (str): The S3 path to save the DataFrame.
+            format (str): The format of the file. If not specified, an attempt will
+                be done to infer it.
+            **kwargs: Additional keyword arguments to pass to the write_dataframe function
+        """
+        raise NotImplementedError
+
     def _repr_html_(self):
         return dataset_to_html(self)
 

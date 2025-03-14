@@ -25,7 +25,10 @@ class S3API(BaseAPI):
             jwt_provider_func=get_jwt, sts_endpoint=self._info.s3_api
         )
         self._minio_client_provider = provider
-        self._minio_client = Minio(minio_host, secure=secure, credentials=provider)
+
+        self._minio_client = Minio(
+            minio_host, secure=secure, credentials=provider, cert_check=self._tls_verify
+        )
 
     @property
     def s3(self) -> Minio:
@@ -50,7 +53,7 @@ class S3API(BaseAPI):
         }
         return s3fs.S3FileSystem(**opts)
 
-    def open(self, path: str, mode: str = "rb", **kwargs):
+    def s3fs_open(self, path: str, mode: str = "rb", **kwargs):
         """Open a file in the data lake.
 
         This method returns a file-like object that can be used to read or
