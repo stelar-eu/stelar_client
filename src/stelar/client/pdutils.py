@@ -1,4 +1,6 @@
 """Utilities related to the Pandas library."""
+from __future__ import annotations
+
 import pathlib
 import re
 from typing import TYPE_CHECKING, Optional, Type, TypeVar
@@ -41,7 +43,7 @@ FILEEXT_MATCH = [
 ]
 
 
-def _infer_format(path: str, hint: str = None) -> Optional[str]:
+def infer_format(path: str, hint: str = None) -> Optional[str]:
     """Infer the format of a file from its extension, or a hint."""
 
     try:
@@ -55,12 +57,31 @@ def _infer_format(path: str, hint: str = None) -> Optional[str]:
         path = urlparse(path).path
         ext = pathlib.PurePath(path).suffix
         for regex, fmt in FILEEXT_MATCH:
-            if re.search(regex, ext):
-                return fmt
+            if re.search(regex, ext, re.IGNORECASE):
+                return fmt.lower()
         else:
             return None
     except Exception:
         return None
+
+
+def get_pandas_storage_options(client: Client):
+    """Get the storage options for a pandas read/write operation.
+
+    Pandas supports access to files stored in S3, but it requires the
+    credentials to be passed as a dictionary. This function returns
+    the dictionary with the credentials from the client.
+    """
+    acc = client.s3_access_data()
+    client_kwargs = {"endpoint_url": acc["endpoint"]}
+
+    sopts = {
+        "key": acc["key"],
+        "secret": acc["secret"],
+        "token": acc["token"],
+        "client_kwargs": client_kwargs,
+    }
+    return sopts
 
 
 def read_dataframe(client: Client, path: str, format=None, **kwargs) -> pd.DataFrame:
@@ -73,20 +94,54 @@ def read_dataframe(client: Client, path: str, format=None, **kwargs) -> pd.DataF
     client : Client
         The client to use to read the file.
     path : str
-        The path to the file to read."
+        The path to the file to read. This must be an "s3" URL.
     format : str, optional
         The format of the file to read. If not specified, the format will be
         inferred from the file extension.
     kwargs : dict
         Additional keyword arguments to pass to the read"
     """
+    if urlparse(path).scheme != "s3":
+        raise ValueError("Only s3 URLs are supported for path")
 
-    fmt = _infer_format(path, format)
+    fmt = infer_format(path, format)
     if fmt is None:
         raise ValueError(f"Cannot infer format for file {path}")
 
     pdreader = getattr(pd, f"read_{fmt}")
-    return pdreader(path, storage_options=client.s3_access_data(), **kwargs)
+    sopts = get_pandas_storage_options(client)
+    return pdreader(path, storage_options=sopts, **kwargs)
+
+
+def write_dataframe(client: Client, df: pd.DataFrame, path: str, format=None, **kwargs):
+    """Write a DataFrame to a file.
+
+    This function writes a DataFrame to a file.
+
+    Parameters
+    ----------
+    client : Client
+        The client to use to write the file.
+    df : pd.DataFrame
+        The DataFrame to write.
+    path : str
+        The path to the file to write.
+    format : str, optional
+        The format of the file to write. If not specified, the format will be
+        inferred from the file extension.
+    kwargs : dict
+        Additional keyword arguments to pass to the write
+    """
+    if urlparse(path).scheme != "s3":
+        raise ValueError("Only s3 URLs are supported for path")
+
+    fmt = infer_format(path, format)
+    if fmt is None:
+        raise ValueError(f"Cannot infer format for file {path}")
+
+    pdwriter = getattr(df, f"to_{fmt}")
+    sopts = get_pandas_storage_options(client)
+    return pdwriter(path, storage_options=sopts, **kwargs)
 
 
 @pd.api.extensions.register_series_accessor("stelar")
@@ -134,10 +189,4 @@ class StelarDataFrameAccessor:
         kwargs : dict
             Additional keyword arguments to pass to the write
         """
-
-        fmt = _infer_format(path, format)
-        if fmt is None:
-            raise ValueError(f"Cannot infer format for file {path}")
-
-        pdwriter = getattr(self.df, f"to_{fmt}")
-        return pdwriter(path, storage_options=client.s3_access_data(), **kwargs)
+        return write_dataframe(client, self.df, path, format, **kwargs)

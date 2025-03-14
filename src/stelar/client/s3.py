@@ -39,7 +39,16 @@ class S3API(BaseAPI):
 
         Please see <https://github.com/fsspec/s3fs/> for more information.
         """
-        return s3fs.S3FileSystem(**self.s3_access_data())
+        acc = self.s3_access_data()
+        opts = {
+            "endpoint_url": acc["endpoint"],
+            "key": acc["key"],
+            "secret": acc["secret"],
+            "token": acc["token"],
+            "use_ssl": acc["secure"],
+            "client_kwargs": {"verify": acc["verify"]},
+        }
+        return s3fs.S3FileSystem(**opts)
 
     def open(self, path: str, mode: str = "rb", **kwargs):
         """Open a file in the data lake.
@@ -69,7 +78,7 @@ class S3API(BaseAPI):
         """Return a dict with options for accessing the S3 API."""
 
         u = urlparse(self.klms_info.s3_api)
-        # minio_host = u.netloc
+        minio_host = u.netloc
         use_ssl = u.scheme == "https"
 
         acc = self._minio_client_provider.retrieve()
@@ -77,13 +86,12 @@ class S3API(BaseAPI):
             "key": acc.access_key,
             "secret": acc.secret_key,
             "token": acc.session_token,
-            "client_kwargs": {
-                "endpoint_url": self.klms_info.s3_api,
-                "secure": use_ssl,
-                "verify": self._tls_verify,
-                # "region": "us-east-1",
-                # "signature_version": "s3v4",
-            },
+            "endpoint": self.klms_info.s3_api,
+            "minio_host": minio_host,
+            "secure": use_ssl,
+            "verify": self._tls_verify,
+            "signature_version": "s3v4",
+            "region": "us-east-1",  # This is not needed for MinIO, but if needed this is the default
         }
 
     def _boto3_client(self):
