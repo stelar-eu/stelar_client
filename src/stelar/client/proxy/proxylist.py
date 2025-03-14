@@ -179,26 +179,3 @@ class ProxySublist(ProxyList):
     @property
     def coll(self):
         return self.property.get(self.owner)
-
-
-@pd.api.extensions.register_series_accessor("stelar")
-class StelarSeriesAccessor:
-    def __init__(self, ds: pd.Series):
-        self.ds = ds
-
-    def to_proxy_vec(self, client: Client, proxy_type: Type[ProxyClass]) -> ProxyList:
-        """Convert a series of UUIDs to a proxy vector.
-
-        All items in the series are expected to be UUIDs. In particular,
-        None, NA and missing values are not allowed.
-        """
-        if not self.ds.map(lambda x: isinstance(x, UUID)).all():
-            raise ValueError("The series must contain only UUIDs")
-        return ProxyVec(client, proxy_type, self.ds.to_list())
-
-    def getattr(self, name, default=pd.NA):
-        """Retrieve an attribute from all objects in a series.
-
-        This is particularly useful when the series contains proxy objects.
-        """
-        return self.ds.map(lambda x: getattr(x, name, default))

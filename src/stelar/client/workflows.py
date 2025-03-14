@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from stelar.client.api_call import api_call
-from stelar.client.package import PackageCursor
-from stelar.client.proxy.fieldvalidation import EnumeratedField
-from stelar.client.proxy.property import DictProperty, ListProperty
-
+from .api_call import api_call
 from .generic import GenericProxy
-from .package import PackageProxy
+from .package import PackageCursor, PackageProxy
 from .proxy import DateField, Id, Property, Reference, RefList, StrField
+from .proxy.fieldvalidation import EnumeratedField
+from .proxy.property import DictProperty, ListProperty
 from .utils import client_for
 
 

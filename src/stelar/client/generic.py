@@ -9,10 +9,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterator, Type, TypeVar
 from uuid import UUID
 
-from stelar.client.base import DefaultsRegistry
-
 # from .api_call import api_call_DC as api_call
 from .api_call import api_call
+from .base import DefaultsRegistry
 from .proxy import (
     EntityNotFound,
     ErrorState,

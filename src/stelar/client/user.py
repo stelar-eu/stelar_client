@@ -2,10 +2,17 @@ from __future__ import annotations
 
 from typing import Iterator
 
-from stelar.client.proxy.derived import derived_property
-
 from .generic import GenericCursor, GenericProxy, api_call
-from .proxy import BoolField, DateField, Id, NameId, Property, StateField, StrField
+from .proxy import (
+    BoolField,
+    DateField,
+    Id,
+    NameId,
+    Property,
+    StateField,
+    StrField,
+    derived_property,
+)
 
 
 class User(GenericProxy):
