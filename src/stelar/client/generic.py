@@ -11,7 +11,6 @@ from uuid import UUID
 
 # from .api_call import api_call_DC as api_call
 from .api_call import api_call
-from .base import DefaultsRegistry
 from .proxy import (
     EntityNotFound,
     ErrorState,
@@ -21,6 +20,7 @@ from .proxy import (
     ProxyList,
     ProxyState,
     ProxySynclist,
+    Registry,
 )
 
 if TYPE_CHECKING:
@@ -228,7 +228,7 @@ class GenericProxyList(ProxyList):
         return generic_get(self.client, self.proxy_type, item)
 
 
-class GenericCursor(ProxyCursor[ProxyClass], DefaultsRegistry[ProxyClass]):
+class GenericCursor(ProxyCursor[ProxyClass], Registry[ProxyClass]):
     def create(self, **prop) -> ProxyClass:
         return self.proxy_type.new(self.client, **prop)
 

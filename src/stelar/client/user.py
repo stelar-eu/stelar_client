@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import cached_property
 from typing import Iterator
 
 from .generic import GenericCursor, GenericProxy, api_call
@@ -66,6 +67,16 @@ class OldUser(GenericProxy):
 class UserCursor(GenericCursor[User]):
     def __init__(self, client):
         super().__init__(client, User)
+
+    @cached_property
+    def current_user(self) -> User:
+        """
+        The current user of the client.
+
+        Returns:
+            dict: A dictionary containing the user's information.
+        """
+        return self.get(self.client._username)
 
     def fetch_list(self, *, limit: int, offset: int) -> list[str]:
         ac = api_call(self.client)

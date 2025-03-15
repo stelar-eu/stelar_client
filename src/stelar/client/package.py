@@ -7,6 +7,7 @@ These will be:
 - tools
 """
 
+from functools import cached_property
 from typing import Any, TypeVar
 from uuid import UUID
 
@@ -24,7 +25,7 @@ from .proxy import (
     TagList,
     UUIDField,
 )
-from .utils import tag_split
+from .utils import client_for, tag_split
 from .vocab import Tag
 
 
@@ -61,8 +62,23 @@ PackageProxyType = TypeVar("PackageProxy", bound=PackageProxy)
 
 
 class PackageCursor(GenericCursor[PackageProxyType]):
+    """A cursor for package-based entities (datasets, tools, workflows etc).
+
+    This cursor provides package-specific methods for searching and filtering
+    the entities, based on CKAN's Solr backend.
+    """
+
     def __init__(self, client, proxy_type):
         super().__init__(client, proxy_type)
+
+    @cached_property
+    def default_organization(self):
+        """Return the default organization.
+
+        This is a cached property, used in the initialization
+        of the `organization` field at `PackageProxy` creation.
+        """
+        return client_for(self).organizations["stelar-klms"]
 
     def search(
         self,

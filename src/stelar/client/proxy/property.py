@@ -56,7 +56,7 @@ class Property:
             create_default (Any): If provided, it specifies an attribute on the entity's registry
                 (typically implemented as a 'functools.cached_property') that is used to initialize
                 new entities, when the user does not provide a value for this property.
-                Note: this is an entity value!
+                Note: this is a *proxy_attr value* that must be convertible to an entity value.
             short (bool|None): Denotes whether this property is included in "short presentations"
                 of the entity. If None, a heuristic based on the name and type is used.
         """

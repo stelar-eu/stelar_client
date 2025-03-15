@@ -1,3 +1,11 @@
+import pathlib
+
+import pandas as pd
+
+from stelar.client import pdutils
+from stelar.client.mutils import is_s3url, s3spec_to_pair
+from stelar.client.pdutils import infer_format
+
 from .package import PackageCursor, PackageProxy
 from .proxy import Property, RefList, StrField
 from .reprstyle import dataset_to_html
@@ -41,7 +49,9 @@ class Dataset(PackageProxy):
         """
         return client_for(self).resources.create(dataset=self, **properties)
 
-    def add_dataframe(self, df, s3path, format=None, **kwargs):
+    def add_dataframe(
+        self, df: pd.DataFrame, s3path: str, format: str = None, **kwargs
+    ) -> Resource:
         """Add a DataFrame as a resource to the dataset.
 
         Args:
@@ -51,7 +61,55 @@ class Dataset(PackageProxy):
                 be done to infer it.
             **kwargs: Additional keyword arguments to pass to the write_dataframe function
         """
-        raise NotImplementedError
+
+        # Infer the format of the file to save
+        fmt = infer_format(s3path, format)
+        if fmt is None:
+            raise ValueError("Could not infer the format of the file to save.")
+
+        # Collect properties of the new resource
+        if not is_s3url(s3path):
+            raise ValueError("The path must be an S3 URL.")
+        bucket, path = s3spec_to_pair(s3path)
+        stem = pathlib.PurePosixPath(path).stem
+
+        rsrc = self.add_resource(
+            name=stem,
+            url=s3path,
+            format=fmt,
+            mimetype=f"application/{fmt}",
+            description=df.describe().to_json(),
+            columns=df.columns.tolist(),
+            rows=len(df),
+            size=df.memory_usage().sum(),
+        )
+
+        try:
+            pdutils.write_dataframe(df, s3path, format=fmt, **kwargs)
+        except Exception as e:
+            rsrc.delete()
+            raise e
+
+        return rsrc
+
+    def read_dataframe(self, format: str | None = None, **kwargs):
+        """Read the dataset as a DataFrame.
+
+        Args:
+            format (str): The format of the file to read. If not specified, the format will be
+                inferred from the file extension.
+            kwargs (dict): Additional keyword arguments to pass to the read.
+
+        Returns:
+            pd.DataFrame: The DataFrame read from the dataset.
+        """
+
+        if (not format) and hasattr(self, "format"):
+            format = self.format
+
+        return pdutils.read_dataframe(
+            client_for(self), self.url, format=format, **kwargs
+        )
 
     def _repr_html_(self):
         return dataset_to_html(self)
@@ -69,3 +127,68 @@ class Dataset(PackageProxy):
 class DatasetCursor(PackageCursor[Dataset]):
     def __init__(self, client):
         super().__init__(client, Dataset)
+
+    def publish_dataframe(
+        self,
+        df: pd.DataFrame,
+        s3path: str,
+        format: str = None,
+        *,
+        write={},
+        **properties,
+    ):
+        """Publish a DataFrame as a new dataset.
+
+        The dataframe will be stored at the given path in the format specified
+        by the 'format' argument. If the format is not specified, an attempt will
+        be done to infer it from the file extension of the s3path.
+
+        Additional arguments to the pandas write method (DataFrame.to_{format})
+        can be passed using the 'write' argument.
+
+        Args:
+            df (pd.DataFrame): The DataFrame to publish.
+            s3path (str): The S3 path to save the DataFrame.
+            format (str): The format of the file. If not specified, an attempt will
+                be done to infer it.
+            write (dict): Keyword arguments to pass to the write_dataframe function
+            **properties: Properties of the new dataset.
+        """
+
+        # Infer the format of the file to save
+        fmt = infer_format(s3path, format)
+        if fmt is None:
+            raise ValueError("Could not infer the format of the file to save.")
+
+        # Collect properties of the new resource
+        if not is_s3url(s3path):
+            raise ValueError("The path must be an S3 URL.")
+        bucket, path = s3spec_to_pair(s3path)
+        stem = pathlib.PurePosixPath(path).stem
+
+        if "name" not in properties:
+            properties["name"] = stem
+        if "title" not in properties:
+            properties["title"] = stem
+        if "author" not in properties:
+            properties["author"] = self.client.users.current_user.fullname
+            properties["author_email"] = self.client.users.current_user.email
+        if "maintainer" not in properties:
+            properties["maintainer"] = self.client.users.current_user.fullname
+            properties["maintainer_email"] = self.client.users.current_user.email
+
+        properties["url"] = s3path
+        properties["columns"] = df.columns.tolist()
+        properties["rows"] = len(df)
+        properties["size"] = df.memory_usage().sum()
+        properties["format"] = fmt
+        properties["mimetype"] = f"application/{fmt}"
+        properties["description"] = df.describe().to_json()
+
+        dataset = self.create(**properties)
+        try:
+            pdutils.write_dataframe(self.client, df, s3path, format=fmt, **write)
+        except Exception as e:
+            dataset.delete(purge=True)
+            raise e
+        return dataset

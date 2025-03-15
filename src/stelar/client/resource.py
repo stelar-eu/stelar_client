@@ -182,7 +182,7 @@ class ResourceCursor(GenericCursor):
         Returns:
             ProxyVec: A vector of resources with matching URLs.
         """
-        res = self.search(query=[f"url:{s3obj_url}"])
+        res = self.search(query=[f"url:{path}"])
         rl = [UUID(r["id"]) for r in res["results"]]
         return ProxyVec(self.client, Resource, rl)
 
