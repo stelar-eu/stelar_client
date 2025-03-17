@@ -82,10 +82,11 @@ class Dataset(PackageProxy):
             columns=df.columns.tolist(),
             rows=len(df),
             size=df.memory_usage().sum(),
+            relation="owned",
         )
 
         try:
-            pdutils.write_dataframe(df, s3path, format=fmt, **kwargs)
+            pdutils.write_dataframe(client_for(self), df, s3path, format=fmt, **kwargs)
         except Exception as e:
             rsrc.delete()
             raise e
@@ -94,6 +95,8 @@ class Dataset(PackageProxy):
 
     def read_dataframe(self, format: str | None = None, **kwargs):
         """Read the dataset as a DataFrame.
+
+        Note: the dataframe need not be stored in
 
         Args:
             format (str): The format of the file to read. If not specified, the format will be
@@ -104,12 +107,17 @@ class Dataset(PackageProxy):
             pd.DataFrame: The DataFrame read from the dataset.
         """
 
+        if not self.url:
+            raise ValueError("The dataset URL is nil.")
+
         if (not format) and hasattr(self, "format"):
             format = self.format
 
-        return pdutils.read_dataframe(
-            client_for(self), self.url, format=format, **kwargs
-        )
+        fmt = infer_format(self.url, format)
+        if fmt is None:
+            raise ValueError("Could not infer the format of the file to save.")
+
+        return pdutils.read_dataframe(client_for(self), self.url, format=fmt, **kwargs)
 
     def _repr_html_(self):
         return dataset_to_html(self)
@@ -128,15 +136,42 @@ class DatasetCursor(PackageCursor[Dataset]):
     def __init__(self, client):
         super().__init__(client, Dataset)
 
+    def publish_file(
+        self,
+        s3file: str,
+        format: str | None = None,
+        *,
+        resource: dict | None = {},
+        **dataset_properties,
+    ) -> Dataset:
+        """Publish a new dataset in the catalog for a single file in Storage.
+
+        The main input to this call is a single file in Storage, identified by its S3 URL.
+        By default, this call will create a new dataset in the catalog and a new resource,
+        which will be initialized by provided properties and also by infering properties
+        by analyzing the given S3 URL.
+
+        If the :code:`resource` parameter is set explicitly to None, no resource will be created;
+        instead, the dataset will be assigned the given S3 URL as its URL.
+
+        Args:
+            s3path (str): The S3 path to the file.
+            format (str): The format of the file. If not specified, an attempt will
+                be done to infer it.
+            resource_properties (dict): Properties of the new resource. If this is set explicitly
+                to None, no resource will be created; instead, the dataset
+            **dataset_properties: Properties of the new dataset.
+        """
+
     def publish_dataframe(
         self,
         df: pd.DataFrame,
         s3path: str,
-        format: str = None,
+        format: str | None = None,
         *,
         write={},
         **properties,
-    ):
+    ) -> Dataset:
         """Publish a DataFrame as a new dataset.
 
         The dataframe will be stored at the given path in the format specified

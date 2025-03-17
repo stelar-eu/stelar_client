@@ -193,9 +193,85 @@ the KLMS. This particular resource is a CSV file that contains the 1-year
 historical stock data for the company AAPL. The `url` field contains the
 location of the file in the KLMS.
 
-Items:
-  * download the file via pandas
-  * edit the data frame
-  * create a new dataset
-  * publish some limited dataframe under the new dataset
 
+Working with data
+-----------------
+
+The last line of the previous example shows the location of the file in the KLMS.
+Also, we note that the format attribute indicates that the file is in CSV format.
+We can download this file and load it into a **pandas DataFrame** as follows:
+
+.. code-block:: pycon
+
+    In [1]: df = r.read_dataframe()
+    In [2]: df.head()
+    Out[7]:                                                                                
+                            Date Ticker        Open  ...    Volume  Dividends  Stock Splits
+    0  2024-02-12 00:00:00-05:00   AAPL  187.534482  ...  41781900        0.0           0.0
+    1  2024-02-13 00:00:00-05:00   AAPL  184.896960  ...  56529500        0.0           0.0
+    2  2024-02-14 00:00:00-05:00   AAPL  184.449076  ...  54630500        0.0           0.0
+    3  2024-02-15 00:00:00-05:00   AAPL  182.687400  ...  65434500        0.0           0.0
+    4  2024-02-16 00:00:00-05:00   AAPL  182.557985  ...  49701400        0.0           0.0
+                                                                                        
+    [5 rows x 9 columns]                                                                   
+
+Let us compute some simple statistics on this trivial dataset and then publsh the result.
+First, let us compude a dataset with some averages:
+
+.. code-block:: pycon
+
+    In [1]: outdf = df.groupby(pd.to_datetime(df.Date,utc=True).dt.year).Open.agg(['mean','min','max'])
+    Out[1]: outdf
+                mean         min         max
+    Date                                    
+    2024  208.790457  164.572913  257.906429
+    2025  233.446786  219.548596  248.656607
+
+We can now publish this limited dataframe under the same dataset.
+
+.. code-block:: pycon
+
+    In [2]: newrsrc = nyse_stock_dataset.add_dataframe(outdf, "s3://klms-bucket/stock_averages.parquet")
+    In [3]: newrsrc.sxl
+    Out[3]: 
+    cache_last_updated                                                 None
+    cache_url                                                          None
+    columns                                          ['mean', 'min', 'max']
+    created                                      2025-03-17 23:34:09.448511
+    dataset                                              nyse_stock_dataset
+    datastore_active                                                  False
+    description           {"mean":{"count":2.0,"mean":221.1186218583,"st...
+    format                                                          parquet
+    hash                                                                   
+    id                                 40182a61-4e49-415f-980c-946fa7831380
+    last_modified                                                      None
+    metadata_modified                            2025-03-17 23:34:09.417234
+    mimetype                                            application/parquet
+    mimetype_inner                                                     None
+    name                                                     stock_averages
+    position                                                              3
+    relation                                                          owned
+    resource_type                                                      None
+    rows                                                                  2
+    size                                                                 56
+    state                                                            active
+    url                             s3://klms-bucket/stock_averages.parquet
+    url_type                                                           None
+    Name: Resource (CLEAN), dtype: object
+
+The simple dataframe was added as a new resource under the same dataset. The resource is a parquet file
+stored in the KLMS. The `add_dataframe` method is a convenience method that allows you to add a pandas
+DataFrame to the KLMS as a new resource. The method takes the DataFrame, and an S3 URL where the file
+will be stored in the KLMS.
+
+Let us clean up our new resource and dataset:
+
+.. code-block:: pycon
+
+    In [4]: newrsrc.delete()
+    In [5]: client.s3fs().rm("s3://klms-bucket/stock_averages.parquet")
+
+
+There are many more capabilities and features to explore in the STELAR client.
+You can refer to the rest of the documentation for more information on how to use the client,
+both interactively and programmatically.

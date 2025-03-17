@@ -5,6 +5,7 @@ from uuid import UUID
 
 from .generic import GenericCursor, GenericProxy, generic_proxy_sync
 from .mutils import is_s3url, s3spec_to_url
+from .pdutils import read_dataframe
 from .proxy import (
     DateField,
     ExtrasProperty,
@@ -17,6 +18,7 @@ from .proxy import (
     StrField,
 )
 from .reprstyle import resource_to_html
+from .utils import client_for
 
 if TYPE_CHECKING:
     from .mutils import S3ObjSpec
@@ -139,10 +141,11 @@ class Resource(GenericProxy):
         Returns:
             file-like: A file-like object that can be used to read or write data.
         """
+        client = client_for(self)
         url = self.url
         if not is_s3url(url):
             raise ValueError("Only s3 URLs are supported for path")
-        return self.client.s3fs_open(url, mode=mode, **kwargs)
+        return client.s3fs_open(url, mode=mode, **kwargs)
 
     def read_dataframe(self, format=None, **kwargs):
         """
@@ -156,8 +159,9 @@ class Resource(GenericProxy):
         Returns:
             pd.DataFrame: The DataFrame read from the resource.
         """
+        client = client_for(self)
         format = format or self.format or None
-        return self.client.read_dataframe(self.url, format=format, **kwargs)
+        return read_dataframe(client, self.url, format=format, **kwargs)
 
 
 class ResourceCursor(GenericCursor):
