@@ -10,3 +10,4 @@ PyYAML
 pandas
 geojson
 shapely
+s3fs

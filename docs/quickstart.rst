@@ -35,7 +35,7 @@ system, the configuration file will be `~/.stelar`.
 
 Here is an example of a configuration file:
 
-.. code-block:: config
+.. code-block:: ini
 
     [default]
     url = https://stelar.example.com

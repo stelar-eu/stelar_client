@@ -11,3 +11,5 @@ ipython
 ipykernel
 PyYaml
 geojson
+s3fs
+shapely
