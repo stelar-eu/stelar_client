@@ -96,7 +96,7 @@ class Dataset(PackageProxy):
     def read_dataframe(self, format: str | None = None, **kwargs):
         """Read the dataset as a DataFrame.
 
-        Note: the dataframe need not be stored in
+        Note: the dataframe need not be stored in S3 Storage.
 
         Args:
             format (str): The format of the file to read. If not specified, the format will be
