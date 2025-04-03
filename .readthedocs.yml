@@ -21,6 +21,10 @@ build:
   tools:
     python: "3.11"
 
+  apt_packages:
+    - graphviz
+    - plantuml
+
 python:
   install:
     - requirements: docs/requirements.txt

@@ -1,0 +1,127 @@
+@startuml
+
+    package "related to datasets" {
+        entity Dataset  <<Package>> {
+            + url: string
+            + version: string
+            + spatial: GeoJSON
+            + resources: list
+        }
+
+        entity Resource  <<Entity>> {
+            + dataset: UUID
+            + position: int
+            + state: string
+            + metadata_modified: datetime
+            + created: datetime
+            + last_modified: datetime
+            + url: string
+            + name: string
+            + format: string
+            + relation: string
+            + desciption: string
+            + resource_type: string
+            + size: int
+            + hash: string
+            + mimetype: string
+            + mimetype_inner: string
+            + cache_url: string
+            + cache_last_updated: datetime
+        }
+    }
+
+    package "related to execution" {
+
+        entity Process  <<Package>> {
+            + creator: UUID
+            + workflow: string
+            + tasks: list
+            + start_date: datetime
+            + end_date: datetime
+            + exec_state: string
+            + title: string
+            + version: string
+            + url: string
+        }
+
+        entity Task  <<Entity>> {
+            + start_date: datetime
+            + end_date: datetime
+            + state: string
+            + creator: UUID
+            + workflow_exec_id: UUID
+            + messages: list
+            + metrics: dict
+            + output: dict
+            + tool_name: string
+            + tool_image: string
+            + tags: list
+        }
+
+        entity Workflow  <<Package>> {
+            + title: string
+            + version: string
+            + repository: string
+            + executor: string
+        }
+
+        entity Tool  <<Package>> {
+            + git_repository: string
+            + programming_language: string
+            + version: string
+            + inputs: dict
+            + outputs: dict
+            + parameters: dict
+        }
+
+        enum ExecState {
+            running
+            succeeded
+            failed
+        }
+
+    }
+
+    package "grouping other entities" {
+        entity Organization  <<HasMembers>> 
+
+        entity Group  <<HasMembers>> 
+    }
+
+    entity User  <<Entity>> {
+        + username: string
+        + email: string
+        + fullname: string
+        + firstname: string
+        + lastname: strings
+        + roles: list
+        + active: boolean
+        + joined_date: datetime
+    }
+
+    package "search related" {
+ 
+        entity Vocabulary  <<Entity>> {
+            + name: string
+            + tags: list
+        }
+
+        entity Tag <<Entity>> {
+            + name: string
+            + vocabulary_id: UUID
+        }
+
+    }
+
+    Tag o-- Vocabulary : vocabulary_id
+
+    Dataset "1" --* "*" Resource : resources
+
+    Process "1" --* "*" Task : tasks
+
+    Workflow "1" --o "*" Process : workflow_exec_id
+
+    Tool <-- Task  : tool_name
+
+
+@enduml

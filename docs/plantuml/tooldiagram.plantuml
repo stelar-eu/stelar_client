@@ -1,0 +1,22 @@
+// Title: Tool Diagram
+// Description: This diagram illustrates the Tool entity and its relationships with other entities.
+
+@startuml tooldiagram
+
+
+node "Tool" as Tool
+
+file "input files" as InFiles
+rectangle "parameters" as Params
+
+file  "output files" as OutFiles
+rectangle "metrics" as Metrics
+
+InFiles --> Tool 
+Params --> Tool 
+
+Tool --> OutFiles
+Tool --> Metrics
+
+@enduml
+

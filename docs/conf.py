@@ -83,10 +83,15 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinx_rtd_theme",
+    "sphinxcontrib.plantuml",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
+
+# The path to plantuml
+plantuml = "plantuml -v"
+# plantuml = "/home/vsam/work/puml"
 
 # The suffix of source filenames.
 source_suffix = ".rst"
@@ -172,10 +177,7 @@ html_logo = "logo.png"
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    "sidebar_width": "300px",
-    "page_width": "1200px",
     "logo_only": True,
-    "display_version": False,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

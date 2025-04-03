@@ -3,6 +3,7 @@
 # under `install_requires` in `setup.cfg` is also listed here!
 sphinx>=3.2.1
 sphinx_rtd_theme
+sphinxcontrib-plantuml
 importlib-metadata; python_version<"3.8"
 requests>=2.2,<3.0
 minio

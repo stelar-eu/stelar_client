@@ -99,7 +99,10 @@ The entities in the STELAR KLMS can be categorized into the following groups:
   - **Tools**, which represent the data analysis tools available in the STELAR KLMS.
 
 
-All of these entities are stored in a Knowledge Graph (KG) and can be searched using SPARQL queries.
+All of these entities are stored in a *Knowledge Graph (KG)* and can be searched using SPARQL queries.
+
+Entity fields
+^^^^^^^^^^^^^^^^^^
 
 Entities can be thought as JSON objects, and each has a number of fields, depending on its type.
 Some fields are common to all entities, while others are specific to the type of entity.
@@ -121,6 +124,56 @@ id (system)
 type (system)
     The type of the entity. This is a string that indicates the type of the entity, such as "dataset", 
     "resource", "user", etc.
+
+
+Entity stereotypes
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Several entities have common parts and characteristics. We can represent these common parts as 
+*stereotypes*. The stereotypes are represented as a "class hierarchy" in a UML class diagram,
+where the subclasses *inherit* the fields of their superclasses. 
+
+For example, the ``Package`` stereotype is a sub-class of the ``EntityWithExtras`` stereotype, meaning
+that those entities which are Packages, all have an "extras" field, inherited from ``EntityWithExtras``.
+
+.. image:: ./plantuml/stereotypeents.png
+
+
+Entities
+^^^^^^^^^^^^^^^^^^^^^^
+
+The entities of STELAR are shown below. They are labeled by their most specific stereotype. The attributes shown
+in the diagram below are attributes *in addition* to those inherited from the entity stereotype.
+
+.. image:: ./plantuml/entitiescls.png
+
+The entities can be classified according to their use:
+
+- Entities related to datasets:
+  
+  - Dataset
+  - Resource
+  
+- Entities related to search:
+  
+  - Tag
+  - Vocabulary 
+
+- Entities related to grouping:
+
+  - Organization
+  - Group
+
+- Entities related to execution:
+
+  - Task
+  - Process
+  - Workflow
+  - Tool
+
+- Entities related to the system:
+
+  - User
 
 
 Datasets
@@ -201,6 +254,10 @@ spatial
 resources (system)
     The list of resources that are part of the dataset. Resources are described in the next section.
 
+extras
+    This attribute takes as its value a JSON object that contains user-defined fields. 
+    The name of a user-defined field should be a valid python name (although this is not enforced). 
+    The value of a user-defined field can be any JSON object.
 
 Resources
 ----------
@@ -285,9 +342,13 @@ Organizations and groups
 ----------------------------
 
 Organizations and groups are used to organize other types of entities in the STELAR KLMS.
+They both follow the ``<<HasMembers>>`` stereotype, which means that they can have as members
+any entity of the ``<<MemberEntity>>`` stereotype.
+
 These two types of entities are very similar, as they support the same attributes. The 
 only difference is that organizations are "top-level" entities that *partition* datasets 
 (and some other types of entitites). 
+
 
 Organizations are meant to represent collections of datasets, processes and workflows that
 are somehow semantically related. Also, organization membership can be used provide
@@ -313,8 +374,8 @@ data to be shared only for certain purposes.
 Groups can also be used to implement **dataset cataloging**, where datasets organized in the same group can be related as to
 their contents, or some application-specific criteria.
 
-Members of organizations and groups
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+MemberEntity: Members of organizations and groups
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The entities associated with an organization or group are called its **members**. The following entities can be members of an organization or group:
 
@@ -322,29 +383,222 @@ The entities associated with an organization or group are called its **members**
 - processes
 - workflows
 - tools
-- users (users can belong to multiple organizations and groups)
-- groups (groups that are members of a group are called its **subgroups**)
+- users  (users can belong to multiple organizations and groups)
+- groups (groups can be members of other groups)
+- organizations (organizations are rarely members of a group or organization, but they can be)
 
 Each member of a group has joined the group under a specific **capacity**. Capacities are strings whose semantics are user-defined.
 The STELAR KLMS will add members to a group or organization with a specific capacity, but it will not enforce any semantics on the capacity.
 
+
+Packages
+------------------
+
+The ``<<Package>>`` stereotype is used to represent a collection of entities that have some important common characteristics.
+
+Searchability
+    All packages can be searched in a very flexible manner. STELAR supports the Apache Solr search engine, which allows for
+    full-text search, faceted search, and spatial search. The search engine is used to index the entities in the STELAR KLMS and
+    provide a unified search interface for all entities. 
+
+They support tags
+    Tags are labels assigned to packages, that allow for easy classification and labeling. They can be used as search targets
+
 Owner organization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Every dataset, process, workflow, tool and user in the STELAR KLMS is owned by an organization.
-The owner organization is the organization that created the entity, and it is used to control access to the entity.
-The owner organization is set when the entity is created, but it can be changed later.
-
+    Every package in the STELAR KLMS is **owned** by an organization, as defined the attribute ``owner_org``.
+    The owner organization is typically used to control access to the entity.
+    The owner organization is set when the entity is created, but it can be changed later 
+    (although this should be rare).
 
 
 
+Entities related to execution
+---------------------------------
 
+One of the important features in the STELAR KLMS is the ability to execute data analysis tools on datasets,
+and record the metadata about the execution. The execution and metadata mechanism is implemented by four entities.
+
+Tools and Tasks 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+The smallest unit of execution is a **task**, which is the execution of a **tool** on one or more datasets. 
+A **tool** can be thought of as a data analysis program which takes as input data files and **parameters** and
+produces as output data files and **metrics**.
+
+.. image:: ./plantuml/tooldiagram.png
+
+When a new task is created the user must provide the following information:
+
+- The tool to be executed.
+- The files to be used as input. These can be datasets or resources, or plain files stored in the STELAR data lake.
+- The parameters to be used in the execution. These are the parameters that are passed to the tool when it is executed.
+- The datasets or resources that will be created or updated, to hold the output files generated by the tool.
+
+All of the above metadata is available via the task entity, after the task it is created. Once the task is
+created, it is scheduled to be executed by the STELAR KLMS and its execution state is ``running``. 
+The execution may be delayed because the task is queued for execution.
+Also, the task may take a long time to terminate. However, the task will 
+eventually succeed or fail, or be cancelled.
+
+If the task succeeds, the output files are created and the task state is marked as `succeeded`.
+Also, the task records a set of **metrics**, which are small-size results of the execution encoded
+as a JSON object. Depending on the tool's nature, metrics can refer to the quality of the processing, the
+size of the output result, or other relevant information about the execution.
+At this point, the output files generated by the execution (and stored in the data lake) 
+are published in the STELAR data catalog as was specified in the task creation.
+
+If the task fails, the output files are not created and the task state is marked as `failed`.
+
+Processes and Workflows
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Every task is part of a **process**, which is the execution of a **workflow**.
+
+.. note::
+    The terms **process** and **workflow** are often used interchangeably. 
+    However, in the STELAR KLMS, a process is the execution of a workflow, 
+    while a workflow is a metadata entity that describes a collection of related
+    processes.
+
+
+Processes in STELAR are purely metadata entities that relate tasks together, and are not in 
+any way affecting execution. This allows the STELAR KLMS to record the execution of
+"multi-step jobs" consisting of several
+sequential or parallel tasks, regardless of the orchestration engine that is used to
+sequence and/or parallelize these steps. As long as this orchestrator provides
+the process id for each task it creates, the STELAR KLMS can record the metadata
+correctly. 
+
+Another role for processes is to assist in the management of tasks, by holding in the 
+catalog intermediate results as ``resources``. While these resources may later be 
+deleted from the STELAR KLMS, the lineage of data will be preserved as metadata in the
+STELAR KLMS.
+
+
+External tasks 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When creating a new task, it is possible to avoid to specify a tool to be executed.
+In this case, the task is an **external task**, which is a task that is executed 
+by the user outside of the STELAR KLMS. There are several use cases for this feature:
+
+1. The user wants to execute a tool that is not available in the STELAR KLMS, but is available in the user's environment.
+2. The user wants to execute a tool that is available in the STELAR KLMS, but does not want to use the STELAR KLMS to execute it, for example because the tool is not compatible with the STELAR KLMS execution environment (e.g., lack of GPU support).
+3. The user has already executed her work outside the KLMS at a prior time and now wants to record the metadata of this execution in the KLMS.
+
+After creating an external task, the user is responsible for performing an additional step, which is to
+invoke the STELAR API and provide the metadata of the execution output. This metadata includes the following:
+
+- The terminal state of the task (`succeeded`` or `failed``).
+- If `succedded`, 
+  - The set of output files generated by the execution (and stored in the data lake).
+  - The set of metrics generated by the execution (if any).
+
+
+Process termination
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As STELAR does not manage the execution/orchestration of processes, it cannot know when a process is terminated.
+However, the user can invoke the STELAR API to mark the process as terminated and provide the final execution state
+for the whole process, either as `succeeded` or as `failed`. 
+
+A precondition for marking a process as terminated is that all tasks in the process must be in a terminal state, i.e., either `succeeded` or `failed`. Once a process is terminated there is no way to change its state, nor can any new tasks be added to it.
 
 
 Architecture of the STELAR KLMS
 ========================================
 
-blah
+The STELAR KLMS is built on a microservices architecture, which allows for flexibility and scalability.
+The platform on which STELAR runs is a Kubernetes cluster, which is a container orchestration platform that allows for the deployment and management of microservices.
+The STELAR KLMS is composed of several microservices, each of which is responsible for a specific function.
+
+.. image:: ./architecture.png
+   :align: center
+   :alt: Architecture of the STELAR KLMS
+
+Some important points in the architecture are:
+
+The clients of STELAR (shown in white)
+    The STELAR klms is designed to be used by several types of clients, which can be interactive (like a Jupyter notebook),
+    batch-oriented (like a workflow engine or ML pipeline manager), or even on the background (the STELAR KLMS is used as 
+    back-end for a decision-support software).
+
+The STELAR API service (shown in purple)
+    This is a service providing endpoints for all the STELAR KLMS functions. It is a ReSTful API that is implemented over http.
+    The STELAR API service is the main entry point for all client applications that want to access the STELAR KLMS,
+    regardless of whether the clients perform data ingestion, data analysis, metadata search, etc. 
+
+The S3 data storage (STELAR data lake, shown in green)
+    This is a distributed file system that is used to store the data and metadata in the STELAR KLMS.
+    The STELAR data lake is built on top of the Minio object storage system, which is an open-source implementation of the Amazon S3 API.
+    For performance, access is directly to the Minio object storage system, and not via the S3 API.
+    However, this may lead to some inconsistencies in the metadata, if for example the user deletes an object in the Minio system
+    without notifying the STELAR KLMS. The STELAR KLMS will not be able to detect this inconsistency immediately.
+
+The KLMS services (shown in brown)
+    These are the microservices that implement the functions of the STELAR KLMS. 
+    They are not normally visible to the user, therefore we only discuss them briefly. The main components are:
+    - The metadata database which is implemented by a PostgreSQL database with GIS extensions.
+    - The Data Catalog service, which is implemented by the CKAN system. CKAN is an open-source data catalog system that provides a unified interface for managing and accessing data.
+    - The Knowledge Graph service, which is implemented by the OnTop service.
+    - The user management and authentication service, which is implemented by the Keycloak system. Keycloak is an open-source identity and access management system that provides a unified interface for managing users and authentication.
+  
+The STELAR tools (shown in gray)
+    These tools are advanced data analysis tools that are available in the STELAR KLMS.
+    They are mainly responsible for data profiling, data annotation, data interlinking and data transformation and analysis.
+    Each of these tools is quite sophisticated and has its own documentation.
+
+The Kubernetes cluster (shown in blue)
+    Although not normally visible to the user, access to the Kubernetes cluster is often important in order to 
+    administrer the STELAR KLMS. Since tasks are executed as Kubernetes Jobs, the cluster is also somewhat relevant
+    to tool implementors, especially if they have advanced requirements for the execution environment of their tools.
+
+
+Acessing the STELAR KLMS
+------------------------------
+
+The STELAR KLMS provides several APIs and GUIs for accessing its functions. These include:
+
+  - The STELAR API, which is a ReSTful API that provides access to the STELAR KLMS and its functions.
+    The STELAR API can be invoked either directly (via http) or via the STELAR client.
+  - The STELAR web interface, which is a web-based GUI suitable for inspection and some basic operations.
+  - The Minio-based S3 API, which provides access to the STELAR data lake and its contents.
+    The S3 API can be invoked either directly (via http) or via the STELAR client. There are
+    numerour S3 SDKs available for different programming languages, which can be used to access the STELAR data lake.
+  - The Minio console interface, which is a web-based GUI suitable for inspection and some basic operations on the
+    STELAR data lake.
+  - For user management and Single Sign-On, the STELAR KLMS uses the Keycloak identity and access management system.
+    Keycloak provides a web-based GUI for user management and Single Sign-On, and it is integrated with the STELAR KLMS.
+  - For deployment, upgrade, and under-the-hood management of the STELAR KLMS, administrators and highly-trusted users
+    can access the Kubernetes cluster via the Kubernetes API (or other relevant clients).
+    
+
+When a deployment of the STELAR KLMS is made, several DNS domain names are used in order to access the main parts of the
+system. All these names belong to the same *base* DNS domain. This is known as the **DNS base** of the deployment.
+In the following, we assume that the DNS base ``stelar.example.com``.
+
+===============================================  ====================================================
+URL                                              Component
+===============================================  ====================================================
+https://klms.stelar.example.com/stelar           The STELAR API service ``base_url``
+-----------------------------------------------  ----------------------------------------------------  
+https://klms.stelar.example.com/stelar/help      Returns a JSON object with hyperlinks.
+-----------------------------------------------  ----------------------------------------------------  
+https://klms.stelar.example.com/stelar/api       The STELAR API url
+-----------------------------------------------  ----------------------------------------------------  
+https://klms.stelar.example.com/stelar/docs      The STELAR API documentation
+-----------------------------------------------  ----------------------------------------------------  
+https://klms.stelar.example.com/stelar/console   The STELAR web interface
+-----------------------------------------------  ----------------------------------------------------  
+https://klms.stelar.example.com/s3               The Minio web console
+-----------------------------------------------  ----------------------------------------------------  
+https://minio.stelar.example.com/                The S3 minio API
+-----------------------------------------------  ----------------------------------------------------  
+https://kc.stelar.example.com/                   The Keycloak web interface
+===============================================  ====================================================
+
+
 
 
 The STELAR KLMS authorization scheme

@@ -1,0 +1,64 @@
+@startuml
+
+    stereotype Entity {
+        + id: UUID
+        + type: string
+    }
+
+    enum State {
+        active
+        deleted
+    }
+
+    note left of State 
+        The state of the entity.
+        active: It can be used.
+        deleted: has been soft-deleted.
+    end note
+
+    stereotype MemberEntity {
+        + name: string
+        + state: string
+    }
+    Entity <|-- MemberEntity
+    
+    stereotype EntityWithExtras  {
+        + extras: JSON
+    }
+
+    MemberEntity <|-- EntityWithExtras
+
+    stereotype Package  {
+        + metadata_created: datetime
+        + metadata_modified: datetime
+        + creator: UUID
+        + private: boolean
+        + owner_org: UUID
+        ----
+        + groups: list
+        + author: string
+        + author_email: string
+        + maintainer: string
+        + maintainer_email: string
+        + notes: string
+    }
+
+    stereotype HasMembers {
+        + created: datetime
+        + title: string
+        + desciption: string
+        + image_url: string
+        + approval_status: string
+    }
+    EntityWithExtras <|-- Package
+    EntityWithExtras <|-- HasMembers
+
+    stereotype Taggable {
+        + tags: list
+    }
+    Taggable <|-- Package
+
+    MemberEntity o-- HasMembers : members
+
+@enduml
+
