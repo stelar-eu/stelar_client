@@ -21,21 +21,30 @@ class Workflow(PackageProxy):
 
 
 class Task(GenericProxy):
-    id = Id(entity_name="task_exec_id")
+    id = Id(entity_name="id")
     start_date = Property(validator=DateField)
     end_date = Property(validator=DateField(nullable=True))
 
-    state = Property(validator=StrField)
+    exec_state = Property(validator=StrField)
 
     creator = Property(validator=StrField, entity_name="creator")
-    process = Reference("Process", entity_name="workflow_exec_id", trigger_sync=False)
+    process = Reference("Process", entity_name="process_id", trigger_sync=False)
 
     messages = Property(validator=StrField, updatable=False, optional=True)
-    metrics = DictProperty(str, str, updatable=False, optional=True)
-    output = ListProperty(dict, updatable=False, optional=True)
 
-    tool_name = Property(validator=StrField, optional=True)
-    tool_image = Property(validator=StrField, optional=True)
+    # TODO: parameters are dict[str, json]
+    parameters = DictProperty(str, str, updatable=False, optional=True)
+    metrics = DictProperty(str, str, updatable=False, optional=True)
+
+    inputs = DictProperty(str, list[str], updatable=False, optional=True)
+    outputs = ListProperty(dict, updatable=False, optional=True)
+
+    tool = Property(validator=StrField, optional=True)
+    image = Property(validator=StrField, optional=True)
+
+    # TODO: return the tool proxy
+    # via a method
+
     tags = DictProperty(str, str, updatable=False, optional=True)
 
 
