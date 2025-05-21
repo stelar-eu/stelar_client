@@ -95,7 +95,7 @@ api_models = {
         "search": "solr_search",
     },
     "Task": {
-        "name": "tasks",
+        "name": "task",
         "collection_name": "tasks",
     },
     "Workflow": {
