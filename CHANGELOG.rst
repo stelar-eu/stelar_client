@@ -2,6 +2,15 @@
 Changelog
 =========
 
+Version 0.3.7
+=============
+
+- Fixed several bugs in the handling of users and tasks, that were due to the
+  changes in the server API.
+- The package 'author' property is now read-only, reflecting the change in the
+  server API.
+- Updated further the documentation, 
+
 Version 0.3.6
 =============
 
