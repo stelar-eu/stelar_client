@@ -219,7 +219,7 @@ class Proxy:
 
         # Validate the given fields
         validated_fields = {
-            name: schema.properties[name].validator.validate(value)
+            name: schema.properties[name].validate(proxy, value)
             for name, value in fields.items()
             if name in schema.all_fields
         }

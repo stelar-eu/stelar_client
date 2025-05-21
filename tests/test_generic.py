@@ -1,5 +1,3 @@
-import pytest
-
 from stelar.client import Client, ProxyState
 
 
@@ -44,7 +42,6 @@ def test_generic_proxy_create(testcontext):
         name="test_dataset",
         title="Test dataset",
         notes="A very simple dataset to test",
-        author="Alan Turing",
         maintainer="Alonso Church",
         url="https://stelar.tuc.gr/data",
     )
@@ -52,7 +49,6 @@ def test_generic_proxy_create(testcontext):
     assert d.name == "test_dataset"
     assert d.title == "Test dataset"
     assert d.notes == "A very simple dataset to test"
-    assert d.author == "Alan Turing"
     assert d.maintainer == "Alonso Church"
     assert d.url == "https://stelar.tuc.gr/data"
 
