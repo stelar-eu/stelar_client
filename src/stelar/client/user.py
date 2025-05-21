@@ -4,16 +4,7 @@ from functools import cached_property
 from typing import Iterator
 
 from .generic import GenericCursor, GenericProxy, api_call
-from .proxy import (
-    BoolField,
-    DateField,
-    Id,
-    NameId,
-    Property,
-    StateField,
-    StrField,
-    derived_property,
-)
+from .proxy import BoolField, DateField, Id, Property, StrField, derived_property
 
 
 class User(GenericProxy):
@@ -26,6 +17,7 @@ class User(GenericProxy):
     last_name = Property(validator=StrField())
 
     email = Property(validator=StrField())
+    email_verified = Property(validator=BoolField())
 
     @derived_property
     def roles(self, entity):
@@ -33,35 +25,6 @@ class User(GenericProxy):
 
     joined_date = Property(validator=DateField())
     active = Property(validator=BoolField())
-
-
-class OldUser(GenericProxy):
-    id = Id()
-    name = NameId()
-
-    password = Property(
-        validator=StrField(nullable=False, minimum_len=8), updatable=True, optional=True
-    )
-    reset_key = Property(
-        validator=StrField(nullable=False, minimum_len=8), updatable=True, optional=True
-    )
-
-    fullname = Property(validator=StrField(nullable=True), updatable=True)
-    email = Property(validator=StrField(nullable=True), updatable=True)
-
-    # The following keys are not being modeled in the client!!
-    #
-    # apikey
-    # activity_streams_email_notifications
-    # plugin_extras
-
-    created = Property(validator=DateField)
-    about = Property(validator=StrField)
-    last_active = Property(validator=DateField)
-
-    sysadmin = Property(validator=BoolField(nullable=False))
-    state = Property(validator=StateField)
-    image_url = Property(validator=StrField)
 
 
 class UserCursor(GenericCursor[User]):

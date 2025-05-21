@@ -391,18 +391,16 @@ class api_call(api_call_base):
     #    raise NotImplementedError("tag_list")
 
     def user_fetch(self, limit: int = None, offset: int = None):
-        response = self.request(
+        users = self.request(
             "GET", "v1/users/", params={"limit": limit, "offset": offset}
         )
-        users = response["users"]
         return users
 
     def user_list(self, limit: int = None, offset: int = None):
         return [u["id"] for u in self.user_fetch()]
 
     def user_show(self, id: str):
-        response = self.request("GET", f"v1/users/{id}")
-        return response["user"]
+        return self.request("GET", f"v1/users/{id}")
 
     def user_delete(self, id):
         return self.request("DELETE", f"v1/users/{id}")
