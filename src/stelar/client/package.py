@@ -52,8 +52,12 @@ class PackageProxy(NamedProxy, TaggableProxy, entity=False):
 
     # User-maintained fields
     notes = Property(validator=StrField(nullable=True), updatable=True)
-    author = Property(validator=StrField(nullable=True), updatable=True)
-    author_email = Property(validator=StrField(nullable=True), updatable=True)
+
+    # author = Property(validator=StrField(nullable=True), updatable=True)
+    # author_email = Property(validator=StrField(nullable=True), updatable=True)
+    author = Property(validator=StrField(nullable=True), updatable=False)
+    author_email = Property(validator=StrField(nullable=True), updatable=False)
+
     maintainer = Property(validator=StrField(nullable=True), updatable=True)
     maintainer_email = Property(validator=StrField(nullable=True), updatable=True)
 
