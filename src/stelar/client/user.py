@@ -13,23 +13,39 @@ class User(GenericProxy):
     username = Property(validator=StrField())
 
     fullname = Property(validator=StrField())
-    first_name = Property(validator=StrField())
-    last_name = Property(validator=StrField())
+    first_name = Property(validator=StrField(), updatable=True)
+    last_name = Property(validator=StrField(), updatable=True)
 
-    email = Property(validator=StrField())
-    email_verified = Property(validator=BoolField())
+    email = Property(validator=StrField(), updatable=True)
+    email_verified = Property(validator=BoolField(), updatable=True)
 
     @derived_property
     def roles(self, entity):
         return tuple(entity.get("roles", []))
 
     joined_date = Property(validator=DateField())
-    active = Property(validator=BoolField())
+    active = Property(validator=BoolField(), updatable=True)
 
 
 class UserCursor(GenericCursor[User]):
     def __init__(self, client):
         super().__init__(client, User)
+
+    def create(self, **kwargs) -> User:
+        """
+        Create a new user.
+
+        Args:
+            **kwargs: The user attributes to set.
+
+        Returns:
+            User: The created user.
+        """
+        # The user_create method is needed to support providing
+        # the password as a keyword argument.
+        ac = api_call(self.client)
+        result = ac.user_create(**kwargs)
+        return self.fetch_proxy_for_entity(result)
 
     @cached_property
     def current_user(self) -> User:

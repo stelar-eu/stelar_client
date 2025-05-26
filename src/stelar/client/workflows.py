@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from .api_call import api_call
-from .generic import GenericProxy
 from .package import PackageCursor, PackageProxy
-from .proxy import DateField, Id, Property, Reference, RefList, StrField
+from .proxy import DateField, Property, Reference, RefList, StrField
 from .proxy.fieldvalidation import EnumeratedField
-from .proxy.property import DictProperty, ListProperty
+from .proxy.property import DictProperty
+from .tasks import Task, TaskSpec
 from .utils import client_for
 
 
@@ -18,34 +18,6 @@ class Workflow(PackageProxy):
     repository = Property(validator=StrField(nullable=True), updatable=True)
     executor = Property(validator=StrField(nullable=True), updatable=True)
     # resources = RefList(Resource, trigger_sync=True)
-
-
-class Task(GenericProxy):
-    id = Id(entity_name="id")
-    start_date = Property(validator=DateField)
-    end_date = Property(validator=DateField(nullable=True))
-
-    exec_state = Property(validator=StrField)
-
-    creator = Property(validator=StrField, entity_name="creator")
-    process = Reference("Process", entity_name="process_id", trigger_sync=False)
-
-    messages = Property(validator=StrField, updatable=False, optional=True)
-
-    # TODO: parameters are dict[str, json]
-    parameters = DictProperty(str, str, updatable=False, optional=True)
-    metrics = DictProperty(str, str, updatable=False, optional=True)
-
-    inputs = DictProperty(str, list[str], updatable=False, optional=True)
-    outputs = ListProperty(dict, updatable=False, optional=True)
-
-    tool = Property(validator=StrField, optional=True)
-    image = Property(validator=StrField, optional=True)
-
-    # TODO: return the tool proxy
-    # via a method
-
-    tags = DictProperty(str, str, updatable=False, optional=True)
 
 
 class ExecStateField(EnumeratedField):
@@ -80,7 +52,11 @@ class Process(PackageProxy):
     )
     url = Property(validator=StrField(nullable=True), updatable=True)
 
+    # Must add
+    #
     # resources = RefList(Resource, trigger_sync=True)
+    #
+    # since processes are contexts!
     #
     # TODO
     #  tasks
@@ -115,6 +91,10 @@ class Process(PackageProxy):
         # Sync the proxy with the entity
         self.proxy_sync(entity=entity)
 
+    def run(self, task_spec: TaskSpec, secrets=None) -> Task:
+        """Create a new Task in this process"""
+        return client_for(self).tasks.create(self.id, task_spec, secrets=secrets)
+
 
 class ProcessCursor(PackageCursor[Process]):
     def __init__(self, client):
@@ -135,6 +115,10 @@ class Tool(PackageProxy):
     parameters = DictProperty(str, str, updatable=True)
 
     # images = RefList("Image", trigger_sync=False)
+
+    def task_spec(self, image=None):
+        """Return a new TaskSpec initialized for this tool"""
+        return TaskSpec(tool=self, image=image)
 
 
 class ToolCursor(PackageCursor[Tool]):

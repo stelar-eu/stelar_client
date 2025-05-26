@@ -13,46 +13,6 @@ class AdminAPI(BaseAPI):
     Represents a class that handles administrative API actions, including policy and user management.
     """
 
-    def get_user_by_id(self, user_id: str) -> dict:
-        """Returns a user entity by UUID or by username. Requires admin rights.
-
-        Args:
-            user_id (str): User UUID or username.
-
-        Returns:
-            dict: The user representation in dictionary resembling JSON.
-        """
-
-        response = self.api_request("GET", f"v1/users/{user_id}")
-        if response.status_code == 200:
-            result = response.json().get("result", None)
-            if result:
-                userRepresentation = result.get("user", None)
-                return userRepresentation
-        else:
-            return response.json()
-
-    def get_users(self, offset: int = None, limit: int = None) -> dict:
-        """Returns all user entities present inside the KLMS. Requires admin rights.
-
-        Args:
-            offset (int): Optional offset parameter to apply pagination logic.
-            limit (int): Optional limit parameter to apply pagination. If not set, all
-                users will be returned.
-
-        Returns:
-            dict: The user representations in dictionary resembling JSON.
-        """
-
-        response = self.api_request("GET", APIEndpointsV1.GET_USERS)
-        if response.status_code == 200:
-            result = response.json().get("result", None)
-            if result:
-                userRepresentation = result.get("users", None)
-                return userRepresentation
-        else:
-            return response.json()
-
     def create_policy(self, policy: Policy):
         """
         Create a policy by sending its content to the specified API endpoint.

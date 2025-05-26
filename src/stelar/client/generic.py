@@ -232,7 +232,9 @@ class GenericCursor(ProxyCursor[ProxyClass], Registry[ProxyClass]):
     def create(self, **prop) -> ProxyClass:
         return self.proxy_type.new(self.client, **prop)
 
-    def get(self, name_or_id: str | UUID, default: ProxyClass = None) -> ProxyClass:
+    def get(
+        self, name_or_id: str | UUID, default: ProxyClass | None = None
+    ) -> ProxyClass:
         return generic_get(self.client, self.proxy_type, name_or_id, default=default)
 
     def fetch_list(self, *, limit: int, offset: int) -> list[str]:
@@ -251,9 +253,6 @@ class GenericCursor(ProxyCursor[ProxyClass], Registry[ProxyClass]):
             return GenericProxyList(v, self.client, self.proxy_type)
         else:
             return v
-
-    def apply(self, callable):
-        return super().apply(callable)
 
     def _ipython_key_completions_(self):
         try:

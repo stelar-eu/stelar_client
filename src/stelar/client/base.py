@@ -334,3 +334,18 @@ class BaseAPI(RegistryCatalog):
         from .api_call import api_call
 
         return api_call(self)
+
+    def listapi(self, show_verbs=True):
+        """Return a list of all available API endpoints."""
+        specs = self.GET("../specs").json()
+        paths = specs["paths"]
+
+        L = []
+        for path, methods in paths.items():
+            if show_verbs:
+                for method in methods:
+                    L.append(f"{method.upper():<8} {path}")
+            else:
+                L.append(path)
+
+        return L

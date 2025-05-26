@@ -1,8 +1,7 @@
-from typing import List, Dict
 from IPython.core.display import HTML
 from IPython.display import display
 
-    
+
 class Policy:
     """
     A class representing a STELAR policy with metadata and additional details.
@@ -11,13 +10,14 @@ class Policy:
     to manage and manipulate policy information within the client application runtime.
     """
 
-    def __init__(self, policy_familiar_name: str, policy_content: str | dict ) -> None:
+    def __init__(self, policy_familiar_name: str, policy_content: str | dict) -> None:
         """
         Initialize a Policy instance with essential fields.
 
         Args:
             familiar_name (str): The name of the policy to be applied.
-            policy_content (str | dict): The yaml file describing the roles and permissions to be applied 
+            policy_content (str | dict): The yaml file describing the
+                        roles and permissions to be applied
         """
         self._data = {
             "policy_familiar_name": policy_familiar_name,
@@ -33,7 +33,6 @@ class Policy:
 
         self.policy_content = self._parse_policy_content(policy_content)
 
-
     def _parse_policy_content(self, content: str | dict) -> str:
         """
         Return the raw YAML content (as string or file content).
@@ -45,21 +44,22 @@ class Policy:
             str: Raw YAML content as a string.
         """
         if isinstance(content, dict):
-            raise ValueError("Expected YAML content as string or file path, not a dictionary.")
+            raise ValueError(
+                "Expected YAML content as string or file path, not a dictionary."
+            )
 
         try:
             if isinstance(content, str):
                 if "\n" in content or ":" in content:  # Likely a YAML string
                     return content  # Return YAML string as is
                 else:  # Assume it's a file path
-                    with open(content, 'r') as file:
-                        return file.read() # Return raw file content as string
+                    with open(content, "r") as file:
+                        return file.read()  # Return raw file content as string
             else:
                 raise ValueError("Content must be a YAML string or a file path.")
 
         except Exception as e:
             raise ValueError(f"Invalid YAML content: {e}")
-
 
     def __getattr__(self, name):
         """Handle attribute access dynamically."""
@@ -69,7 +69,10 @@ class Policy:
 
     def __setattr__(self, name, value):
         """Handle attribute assignment dynamically."""
-        if name in {"_data", "_original_data", "_dirty_fields"} or name not in self._data:
+        if (
+            name in {"_data", "_original_data", "_dirty_fields"}
+            or name not in self._data
+        ):
             super().__setattr__(name, value)
         else:
             # Only mark as dirty if the value actually changes
@@ -105,8 +108,8 @@ class Policy:
             Policy: A fully constructed Policy instance.
         """
         instance = cls(
-            policy_familiar_name = data.get('policy_familiar_name'),
-            policy_content = data.get('policy_content')
+            policy_familiar_name=data.get("policy_familiar_name"),
+            policy_content=data.get("policy_content"),
         )
         instance._populate_additional_fields(data)
         return instance
@@ -118,13 +121,12 @@ class Policy:
         Args:
             data (dict): The dictionary containing policy metadata.
         """
-        self.active = data.get('active')
-        self.created_at = data.get('created_at')
-        self.policy_uuid = data.get('policy_uuid')
-        self.user_id = data.get('user_id')
-        self.policy_content = data.get('policy_content')
-        
-        
+        self.active = data.get("active")
+        self.created_at = data.get("created_at")
+        self.policy_uuid = data.get("policy_uuid")
+        self.user_id = data.get("user_id")
+        self.policy_content = data.get("policy_content")
+
         return self
 
     def to_dict(self):
@@ -136,7 +138,7 @@ class Policy:
         """
         policy_dict = {
             "policy_familiar_name": self.policy_familiar_name,
-            "yaml_content": self.policy_content
+            "yaml_content": self.policy_content,
         }
         return policy_dict
 
@@ -147,13 +149,12 @@ class Policy:
         Args:
             data (dict): A dictionary containing new data for the Resource.
         """
-        for key in ['policy_familiar_name']:
+        for key in ["policy_familiar_name"]:
             if key in data:
                 setattr(self, key, data[key])
 
         # Update additional fields
         self._populate_additional_fields(data)
-
 
     def _repr_html_(self):
         """
@@ -231,7 +232,7 @@ class Policy:
         Display each dictionary as an individual HTML table with attributes on the left,
         values on the right, bolded attribute text, and black text for visibility.
         The values column is positioned closer to the split line.
-        
+
         Parameters:
             dicts_list (list of dict): A list of dictionaries to present.
         """
@@ -245,7 +246,7 @@ class Policy:
                     <td style="text-align: left; padding: 5px; border: 1px solid #ddd; font-weight: bold; color: black; width: 50%;">{key}:</td>
                     <td style="text-align: left; padding: 5px; border: 1px solid #ddd; color: black; width: 50%;">{value}</td>
                 </tr>
-                """ 
+                """
                 for i, (key, value) in enumerate(data.items())
             )
 
@@ -281,5 +282,3 @@ class Policy:
 
         # Render the content
         display(HTML(html_content))
-
-

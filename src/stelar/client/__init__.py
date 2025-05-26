@@ -18,13 +18,14 @@ from .proxy import ProxyState, deferred_sync
 from .proxy.exceptions import *
 from .proxy.exceptions import __all__ as __all_exceptions
 from .resource import Resource
+from .tasks import Task, TaskSpec
 from .user import User
 
 # Include all utility functions
 from .utils import *
 from .utils import __all__ as __all_utils
 from .vocab import Tag, Vocabulary
-from .workflows import Process, Task, Tool, Workflow
+from .workflows import Process, Tool, Workflow
 
 __all__ = [
     *__all_exceptions,
@@ -40,6 +41,7 @@ __all__ = [
     "User",
     "Process",
     "Task",
+    "TaskSpec",
     "Workflow",
     "Tool",
     "deferred_sync",

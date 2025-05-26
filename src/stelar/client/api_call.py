@@ -10,9 +10,11 @@ from .utils import client_for
 if TYPE_CHECKING:
     from .client import Client
 
+    APIContext = Proxy | Client | ProxyCursor | ProxyList
+
 
 class api_context:
-    def __init__(self, arg: Proxy | Client):
+    def __init__(self, arg: APIContext):
         from .client import Client
 
         if isinstance(arg, Proxy):
@@ -137,7 +139,7 @@ class api_call_base(api_context):
     for all types of entities.
     """
 
-    def __init__(self, arg: Proxy | Client):
+    def __init__(self, arg: APIContext):
         super().__init__(arg)
 
     def request(
@@ -384,7 +386,7 @@ class api_call(api_call_base):
     does the same.
     """
 
-    def __init__(self, arg: Proxy | Client):
+    def __init__(self, arg: APIContext):
         super().__init__(arg)
 
     # def tag_list(self, vocabulary_id: str = None):
@@ -406,13 +408,13 @@ class api_call(api_call_base):
         return self.request("DELETE", f"v1/users/{id}")
 
     def user_create(self, **kwargs):
-        raise NotImplementedError
+        return self.request("POST", "v1/users", json=kwargs)
 
     def user_update(self, id, **kwargs):
         raise NotImplementedError
 
     def user_patch(self, id, **kwargs):
-        raise NotImplementedError
+        return self.request("PATCH", f"v1/users/{id}", json=kwargs)
 
     def user_purge(self, id):
         raise NotImplementedError
@@ -420,3 +422,24 @@ class api_call(api_call_base):
     def entity_search(self, proxy_type: str, query_spec: dict):
         entity_type = api_models.collection_name
         return self.request("POST", f"v2/search/{entity_type}", json=query_spec)
+
+    # Handling tasks
+    def task_job_input(self, task_id: str, signature: str) -> dict:
+        """Get the input for a job in a task."""
+        return self.request("GET", f"v2/task/{task_id}/{signature}/input")
+
+    def task_post_job_output(
+        self, task_id: str, signature: str, output_spec: dict
+    ) -> dict:
+        """Get the output for a job in a task."""
+        return self.request(
+            "POST", f"v2/task/{task_id}/{signature}/output", json=output_spec
+        )
+
+    def task_show_jobs(self, task_id: str):
+        """Show the jobs associated with a task."""
+        return self.request("GET", f"v2/task/{task_id}/jobs")
+
+    def task_show_logs(self, task_id: str):
+        """Show the logs associated with a task."""
+        return self.request("GET", f"v2/task/{task_id}/logs")
