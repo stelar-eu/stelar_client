@@ -236,3 +236,10 @@ def test_task_spec_output(testcli):
 #
 # TODO: Add more tests for task execution
 #
+def test_create_task(testcli):
+    """
+    Test the creation of a task.
+    """
+
+    d = testcli.datasets["shakespeare_novels"]
+    proc = testcli.processes["word-count-tests"]

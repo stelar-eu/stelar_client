@@ -181,7 +181,7 @@ class BaseAPI(RegistryCatalog):
             default_headers.update(headers)
 
         if self.token_expired():
-            self.refresh_tokens()
+            self.reauthenticate()
 
         turn = 0
         while turn < 2:
@@ -198,7 +198,7 @@ class BaseAPI(RegistryCatalog):
             )
             if response.status_code == 401 and turn == 0:
                 # Refresh the token and try again
-                self.refresh_tokens()
+                self.reauthenticate()
                 # default_headers["Authorization"] = f"Bearer {self._token}"
                 turn += 1
             else:
@@ -228,7 +228,7 @@ class BaseAPI(RegistryCatalog):
             json = params["json"]
 
         if self.token_expired():
-            self.refresh_tokens()
+            self.reauthenticate()
 
         twice = 0
         while twice < 2:
@@ -240,7 +240,7 @@ class BaseAPI(RegistryCatalog):
                 verify=self._tls_verify,
             )
             if response.status_code == 401 and twice == 0:
-                self.refresh_tokens()
+                self.reauthenticate()
                 twice += 1
             else:
                 break

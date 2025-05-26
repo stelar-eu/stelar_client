@@ -31,9 +31,32 @@ if TYPE_CHECKING:
 class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
     """An SDK (client) for the STELAR API.
 
-    The config file contains a collection of contexts, and is encoded in the
-    INI format:
+    Operation of the STELAR client requires three pieces of information:
+    1. The base URL of the STELAR installation.
+    2. A username for the user.
+    3. Access and refresh tokens for the user. These tokens need to be refreshed periodically.
 
+    The client can be initialized in four ways:
+    1. By providing nothing. This is equivalent to specifying the context name "default".
+    2. By providing a context name, which is looked up in the config file (see below).
+    3. By providing a base URL, username, and password. The client will then authenticate
+       the user and retrieve the access and refresh tokens. Note that, the password is
+       not stored in the client or anywhere else.
+    4. By providing a base URL, username, password, and a token JSON dictionary containing
+       the access token, refresh token, and their expiration times.
+
+    When options 3. or 4. above are used, when the tokens expire, the user must call
+    either the method `reauthenticate(passwd)` providing the password, or calling method
+    `reset_tokens(token_json)` with a new token JSON dictionary. Again, these tokens will
+    eventually expire.
+
+    By contrast, when the client is initialized with a context name, the client
+    automatically reacquires the tokens when they expire, since the context config file
+    contains the password needed to re-authenticate the user.
+
+    By default the config file is located at $HOME/.stelar, but can be overridden by
+    providing the 'config_file' keyword argument. The config file contains a
+    collection of contexts, and is encoded in the INI format:
 
     | [default]
     | base_url=https://klms.example.com
@@ -45,10 +68,19 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
     | username=admin
     | password=very!secret
 
+    The token_json dictionary is expected to have the following (indicative) structure:
+
+    | {
+    |     "access_token": "your_access_token",
+    |     "refresh_token": "your_refresh_token",
+    |     "expires_in": 600,
+    |     "refresh_expires_in": 7200,
+    | }
+
 
     Args:
         context (str): load the specified context from $HOME/.stelar (or
-            the 'stelar_config' path). If this is None, the default context is used.
+            the `config_file` path). If this is None, the default context is used.
             If a config file is not found, the base_url, username and password
             can be provided as keywords.
 
@@ -58,8 +90,9 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             The user name and password are only used if the keyword arguments 'username' and
             'password' are None.
 
-        username (str): The user name to authenticate as for this client.
+        username (str): The user name to connect to for this client.
         password (str): The password to authenticate with.
+        token_json (dict): A dictionary containing the access token, refresh token, and their expiration times.
 
         tls_verify (bool):  Verify the server TLS certificate. This setting takes precedence
             if given. If none, the default is to verify.
@@ -75,10 +108,13 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         base_url: str = None,
         username=None,
         password=None,
+        token_json: dict = None,
         tls_verify=True,
         config_file: PathLike = None,
     ):
         # Validate base_url
+        if context is None and base_url is None:
+            context = "default"
         self._config_file = config_file
         self._context = context
 
@@ -87,7 +123,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
 
             urllib3.disable_warnings()
 
-        if context is not None or base_url is None:  # init via context
+        if self._context is not None:  # init via context
             base_url, username, password = self.__from_context()
             token_json = self.authenticate(
                 base_url, username=username, password=password, tls_verify=tls_verify
@@ -100,14 +136,18 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
             if not password:
                 password = upass
             base_url = self.__normalize_base_url(base_url)
-            token_json = self.authenticate(
-                base_url, username=username, password=password, tls_verify=tls_verify
-            )
+            if not token_json:
+                token_json = self.authenticate(
+                    base_url,
+                    username=username,
+                    password=password,
+                    tls_verify=tls_verify,
+                )
 
         self._username = username
         super().__init__(base_url, token_json, tls_verify)
 
-    def refresh_tokens(self, password: str = None):
+    def reauthenticate(self, password: str = None):
         """Refresh the access token for this client.
 
         This method attempts to refresh the access token using the refresh token. If the
@@ -138,7 +178,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
                 )
                 pass
 
-        if self._context or password is None:
+        if self._context:
             base_url, username, password = self.__from_context()
         else:
             username = self._username
@@ -274,7 +314,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         config_file = (
             self._config_file if self._config_file else Path.home() / ".stelar"
         )
-        context = self._context if self._context else "default"
+        context = self._context
         c = ConfigParser()
         c.read(config_file)
         if not c.has_section(context):

@@ -18,7 +18,7 @@ class S3API(BaseAPI):
 
         def get_jwt():
             if self.token_expired():
-                self.refresh_tokens()
+                self.reauthenticate()
             return {"access_token": self._token, "expires_in": self._expires_in}
 
         provider = WebIdentityProvider(

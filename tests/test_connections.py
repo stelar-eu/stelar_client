@@ -73,7 +73,7 @@ def test_context_default(mocker, config_file):
     )
 
     c = Client(config_file=config_file)
-    assert c._context is None
+    assert c._context is "default"
     assert c._base_url == "http://klms.example.org/stelar"
     Client.authenticate.assert_called_once_with(
         "http://klms.example.org/stelar",
