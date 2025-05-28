@@ -250,3 +250,5 @@ def test_create_task(testcli):
 
     task.exit_job()
     assert task.exec_state == "succeeded"
+
+    task.delete()
