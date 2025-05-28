@@ -443,3 +443,16 @@ class api_call(api_call_base):
     def task_show_logs(self, task_id: str):
         """Show the logs associated with a task."""
         return self.request("GET", f"v2/task/{task_id}/logs")
+
+    def task_signature(self, task_id: str) -> dict:
+        """Get the signature of a task."""
+        return self.request("GET", f"v2/task/{task_id}/signature")
+
+    def task_list(self, limit: int = None, offset: int = None, state: str = None):
+        """List tasks."""
+
+        p = {"limit": limit, "offset": offset, "state": state}
+
+        return self.request(
+            "GET", "v2/tasks", params={k: v for k, v in p.items() if v is not None}
+        )

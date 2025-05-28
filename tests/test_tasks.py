@@ -241,5 +241,12 @@ def test_create_task(testcli):
     Test the creation of a task.
     """
 
-    d = testcli.datasets["shakespeare_novels"]
-    proc = testcli.processes["word-count-tests"]
+    proc = testcli.processes["simple_proc"]
+    task = proc.run(TaskSpec())
+
+    assert task.exec_state == "created"
+    assert task.process is proc
+    assert task.inputs == {}
+
+    task.exit_job()
+    assert task.exec_state == "succeeded"

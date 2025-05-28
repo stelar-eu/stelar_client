@@ -8,10 +8,10 @@ from uuid import UUID
 
 from .api_call import api_call
 from .dataset import Dataset
-from .generic import GenericCursor, GenericProxy
+from .generic import GenericCursor, GenericProxy, GenericProxyList
 from .group import Organization
 from .proxy import DateField, Id, Property, Reference, StrField, derived_property
-from .proxy.property import DictProperty, ListProperty
+from .proxy.property import DictProperty
 from .resource import Resource
 from .utils import client_for
 
@@ -41,7 +41,7 @@ class Task(GenericProxy):
     metrics = DictProperty(str, str, updatable=False, optional=True)
 
     inputs = DictProperty(str, list[str], updatable=False, optional=True)
-    outputs = ListProperty(dict, updatable=False, optional=True)
+    outputs = DictProperty(str, dict, updatable=False, optional=True)
 
     tool = Property(validator=StrField, optional=True)
     image = Property(validator=StrField, optional=True)
@@ -56,10 +56,10 @@ class Task(GenericProxy):
         """Check if this task is local (i.e., not using a remote tool)."""
         return "image" not in entity
 
-    @property
+    @cached_property
     def signature(self) -> str:
         """Return a string signature for this task."""
-        return client_for(self).local_task_sigs.get(str(self.id))
+        return api_call(self).task_signature(str(self.id))["signature"]
 
     @cached_property
     def job_input(self, signature=None) -> dict:
@@ -314,8 +314,67 @@ class TaskCursor(GenericCursor):
     def fetch(self, **kwargs):
         raise NotImplementedError("TaskCursor does not support fetch operations.")
 
-    def fetch_list(self, **kwargs):
-        raise NotImplementedError("TaskCursor does not support fetch operations.")
+    def fetch_list(
+        self, *, state="created", limit: int = 100, offset: int = 0
+    ) -> list[Task]:
+        """Fetch a list of tasks in a specific state.
+
+        Args:
+            state (str): The state of the tasks to fetch. Defaults to 'running'.
+            **kwargs: Additional keyword arguments to pass to the API call.
+        Returns:
+            list[Task]: A list of Task objects in the specified state.
+        """
+        ac = api_call(self)
+        tasks = ac.task_list(state=state, limit=limit, offset=offset)
+        flat_tasks = []
+        for s in ("created", "running", "succeeded", "failed"):
+            flat_tasks.extend(tasks.get(s, []))
+        return GenericProxyList(flat_tasks, client_for(self), self.proxy_type)
+
+    def created(self, *, limit: int = 100, offset: int = 0) -> list[Task]:
+        """Fetch a list of tasks in the 'created' state.
+
+        Args:
+            limit (int): The maximum number of tasks to fetch. Defaults to 100.
+            offset (int): The offset for pagination. Defaults to 0.
+        Returns:
+            list[Task]: A list of Task objects in the 'created' state.
+        """
+        return self.fetch_list(state="created", limit=limit, offset=offset)
+
+    def running(self, *, limit: int = 100, offset: int = 0) -> list[Task]:
+        """Fetch a list of tasks in the 'running' state.
+
+        Args:
+            limit (int): The maximum number of tasks to fetch. Defaults to 100.
+            offset (int): The offset for pagination. Defaults to 0.
+        Returns:
+            list[Task]: A list of Task objects in the 'running' state.
+        """
+        return self.fetch_list(state="running", limit=limit, offset=offset)
+
+    def succeeded(self, *, limit: int = 100, offset: int = 0) -> list[Task]:
+        """Fetch a list of tasks in the 'succeeded' state.
+
+        Args:
+            limit (int): The maximum number of tasks to fetch. Defaults to 100.
+            offset (int): The offset for pagination. Defaults to 0.
+        Returns:
+            list[Task]: A list of Task objects in the 'succeeded' state.
+        """
+        return self.fetch_list(state="succeeded", limit=limit, offset=offset)
+
+    def failed(self, *, limit: int = 100, offset: int = 0) -> list[Task]:
+        """Fetch a list of tasks in the 'failed' state.
+
+        Args:
+            limit (int): The maximum number of tasks to fetch. Defaults to 100.
+            offset (int): The offset for pagination. Defaults to 0.
+        Returns:
+            list[Task]: A list of Task objects in the 'failed' state.
+        """
+        return self.fetch_list(state="failed", limit=limit, offset=offset)
 
     def create(self, process_id: UUID | str, task_spec: TaskSpec, secrets=None) -> Task:
         """Create a new Task using the provided TaskSpec.
