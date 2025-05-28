@@ -101,6 +101,15 @@ class ProcessCursor(PackageCursor[Process]):
         super().__init__(client, Process)
 
 
+class ToolCategoryField(EnumeratedField):
+    VALUES = [
+        "discovery",
+        "interlinking",
+        "annotation",
+        "other",
+    ]
+
+
 class Tool(PackageProxy):
     # weird ones
     # license_id = Property(validator=StrField(nullable=True), updatable=True)
@@ -113,6 +122,8 @@ class Tool(PackageProxy):
     inputs = DictProperty(str, str, updatable=True)
     outputs = DictProperty(str, str, updatable=True)
     parameters = DictProperty(str, str, updatable=True)
+
+    category = Property(validator=ToolCategoryField(nullable=True), updatable=True)
 
     # images = RefList("Image", trigger_sync=False)
 

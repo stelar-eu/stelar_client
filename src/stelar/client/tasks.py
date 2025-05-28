@@ -58,7 +58,12 @@ class Task(GenericProxy):
 
     @cached_property
     def signature(self) -> str:
-        """Return a string signature for this task."""
+        """Fetch the signature for this task.
+
+        The signature is a unique identifier for the task, which allows calling
+        methods `job_input()` and `exit_job()` to implement an external task,
+        even from a connection that is not authenticated.
+        """
         return api_call(self).task_signature(str(self.id))["signature"]
 
     @cached_property
@@ -99,6 +104,8 @@ class Task(GenericProxy):
             output (dict): A dictionary of outputs to post.
             message (str): A message to post with the job output.
             status (str): The status of the task, e.g., "succeeded" or "failed".
+            signature (str, optional): The signature of the task. If not provided,
+                the signature will be fetched.
         Raises:
             ValueError: If the task is not external or if the POST request fails.
 
@@ -121,6 +128,22 @@ class Task(GenericProxy):
 
         api_call(self).task_post_job_output(str(self.id), signature, output_spec)
         self.proxy_sync()
+
+    def fail(
+        self,
+        message: str,
+        *,
+        metrics={},
+        output={},
+    ):
+        """Mark this task as failed with a message.
+
+        This method sets the task's execution state to 'failed' and updates
+        the messages property with the provided message.
+        """
+        return self.exit_job(
+            metrics=metrics, output=output, message=message, status="failed"
+        )
 
     def jobs(self):
         """Return a dictionary with info about Kubernetes jobs for this task."""
@@ -328,8 +351,11 @@ class TaskCursor(GenericCursor):
         ac = api_call(self)
         tasks = ac.task_list(state=state, limit=limit, offset=offset)
         flat_tasks = []
-        for s in ("created", "running", "succeeded", "failed"):
-            flat_tasks.extend(tasks.get(s, []))
+
+        if tasks:  # Note : tasks is a dict with keys for each state, or None!!
+            for s in ("created", "running", "succeeded", "failed"):
+                flat_tasks.extend(tasks.get(s, []))
+
         return GenericProxyList(flat_tasks, client_for(self), self.proxy_type)
 
     def created(self, *, limit: int = 100, offset: int = 0) -> list[Task]:

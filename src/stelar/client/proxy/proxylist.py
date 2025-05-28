@@ -63,6 +63,15 @@ class ProxyList(Generic[ProxyClass]):
         """
         return self.registry.fetch_proxy(item)
 
+    def get_slice(self, slc: slice) -> list[UUID]:
+        """Return a list of UUIDs for the given slice.
+
+        This method is used to implement slicing operations on the
+        ProxyList. It should be overriden in subclasses depending on
+        the underlying implementation the the collection.
+        """
+        raise ValueError("Slices are not supported yet")
+
     def __iter__(self):
         for item in self.coll:
             yield self.resolve_proxy(item)
@@ -72,8 +81,9 @@ class ProxyList(Generic[ProxyClass]):
 
     def __getitem__(self, item):
         if isinstance(item, slice):
-            raise ValueError("Slices are not supported yet")
-        return self.resolve_proxy(self.coll[item])
+            return ProxyVec(self.client, self.proxy_type, self.get_slice(item))
+        else:
+            return self.resolve_proxy(self.coll[item])
 
     def __repr__(self):
         return f"{self.proxy_type.__name__}{repr(self.coll)}"
@@ -149,11 +159,14 @@ class ProxyVec(ProxyList):
             members: the list of UUIDs
         """
         super().__init__(client, proxy_type)
-        self.members = members
+        self.members: list[UUID] = members
 
     @property
     def coll(self):
         return self.members
+
+    def get_slice(self, slc: slice) -> list[UUID]:
+        return self.members[slc]
 
 
 class ProxySublist(ProxyList):
@@ -179,3 +192,6 @@ class ProxySublist(ProxyList):
     @property
     def coll(self):
         return self.property.get(self.owner)
+
+    def get_slice(self, slc: slice) -> list[UUID]:
+        return self.property.get(self.owner)[slc]

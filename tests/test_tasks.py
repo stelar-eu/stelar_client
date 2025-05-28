@@ -252,3 +252,28 @@ def test_create_task(testcli):
     assert task.exec_state == "succeeded"
 
     task.delete()
+
+
+def test_create_task_with_fail(testcli):
+    """
+    Test the creation of a task that fails.
+    """
+
+    proc = testcli.processes["simple_proc"]
+    task = proc.run(TaskSpec())
+
+    assert task.exec_state == "created"
+    assert task.process is proc
+    assert task.inputs == {}
+    assert task.parameters is None
+
+    assert not hasattr(task, "outputs")
+    assert not hasattr(task, "messages")
+
+    # Simulate a failure
+    task.fail("Simulated failure")
+
+    assert task.exec_state == "failed"
+    assert task.messages == "Simulated failure"
+
+    task.delete()

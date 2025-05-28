@@ -446,6 +446,11 @@ class Proxy:
         """
         raise NotImplementedError(self.__class__.__name__ + ".proxy_sync")
 
+    def __pos__(self):
+        """Return the proxy itself after performing proxy_sync."""
+        self.proxy_sync()
+        return self
+
     def __repr__(self) -> str:
         typename = type(self).__name__
         state = self.proxy_state.name
