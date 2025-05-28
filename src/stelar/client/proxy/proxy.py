@@ -448,7 +448,8 @@ class Proxy:
 
     def __pos__(self):
         """Return the proxy itself after performing proxy_sync."""
-        self.proxy_sync()
+        if self.proxy_state is ProxyState.CLEAN:
+            self.proxy_invalidate()
         return self
 
     def __repr__(self) -> str:

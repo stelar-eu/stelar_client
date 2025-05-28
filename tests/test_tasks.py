@@ -277,3 +277,70 @@ def test_create_task_with_fail(testcli):
     assert task.messages == "Simulated failure"
 
     task.delete()
+
+
+def test_create_task_params(testcli):
+    """
+    Test the creation of a task with parameters.
+    """
+
+    proc = testcli.processes["simple_proc"]
+    task = proc.run(
+        TaskSpec().p(
+            str_param="test",
+            int_param=42,
+            composite={"key": "value"},
+            listparam=["item1", "item2"],
+        )
+    )
+    assert task.exec_state == "created"
+    assert task.process is proc
+    assert task.inputs == {}
+    assert task.parameters == {
+        "str_param": "test",
+        "int_param": 42,
+        "composite": {"key": "value"},
+        "listparam": ["item1", "item2"],
+    }
+
+    task.exit_job()
+    task.delete()
+
+
+def test_create_task_with_inputs(testcli):
+    # Testing for different types of input declarations
+
+    c = testcli
+    proc = c.processes["simple_proc"]
+
+    shakespeare = c.datasets["shakespeare_novels"]
+    iris = c.datasets["iris"]
+    wine = c.datasets["wine"]
+
+    ts = TaskSpec()
+
+    ts.d("wine_quality", wine)
+
+    # Add from resource
+    ts.i(iris=iris.resources[0])
+
+    # Add from resource id
+    ts.i(wine=str(wine.resources[0].id))
+
+    # Add from dataset and relation
+    ts.i(shakespeare=f"{shakespeare.id}::owned")
+
+    # Add from dataset and relation with alias
+    ts.i(wine_alias="wine_quality::owned")
+
+    t = proc.run(ts)
+    assert t.exec_state == "created"
+    tin = t.job_input
+
+    assert tin["input"]["iris"] == [str(iris.resources[0].url)]
+    assert tin["input"]["wine"] == [str(wine.resources[0].url)]
+    assert tin["input"]["shakespeare"] == [str(shakespeare.resources[0].url)]
+    assert tin["input"]["wine_alias"] == [str(wine.resources[0].url)]
+
+    t.exit_job()
+    t.delete()

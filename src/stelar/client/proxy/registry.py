@@ -145,6 +145,20 @@ class Registry(Generic[ProxyClass]):
         self.registry.pop(proxy.proxy_id, None)
         proxy.proxy_id = None
 
+    def invalidate(self):
+        """Invalidate clean entries in the registry.
+
+        This method invalidates all CLEAN proxies in the registry,
+        setting them to the EMPTY state. This will cause all subsequent
+        accesses of these proxies to retrieve fresh data from the KLMS.
+
+        The method refrains from touching dirty proxies, in order to avoid
+        losing any unsaved changes.
+        """
+        for proxy in self.registry.values():
+            if proxy.proxy_state is ProxyState.CLEAN:
+                proxy.proxy_invalidate()
+
 
 class RegistryCatalog:
     """Class that implements a catalog of registries, for different entity types.
@@ -205,3 +219,13 @@ class RegistryCatalog:
         API call. :-)
         """
         raise NotImplementedError
+
+    def invalidate(self):
+        """Invalidate all registries in the catalog.
+
+        This method invalidates all CLEAN proxies in all registries,
+        setting them to the EMPTY state. This will cause all subsequent
+        accesses of these proxies to retrieve fresh data from the KLMS.
+        """
+        for registry in self.registry_catalog.values():
+            registry.invalidate()
