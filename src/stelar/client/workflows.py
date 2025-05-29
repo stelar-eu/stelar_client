@@ -58,8 +58,6 @@ class Process(PackageProxy):
     #
     # since processes are contexts!
     #
-    # TODO
-    #  tasks
 
     def add_resource(self, **properties):
         """Add a new resource with the given properties.
