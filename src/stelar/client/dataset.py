@@ -7,7 +7,7 @@ from stelar.client.mutils import is_s3url, s3spec_to_pair
 from stelar.client.pdutils import infer_format
 
 from .package import PackageCursor, PackageProxy
-from .proxy import Property, RefList, StrField
+from .proxy import Property, StrField
 from .reprstyle import dataset_to_html
 from .resource import Resource
 from .spatial import GeoJSON
@@ -28,26 +28,12 @@ class Dataset(PackageProxy):
     # The spatial property
     spatial = Property(validator=GeoJSON(nullable=True), updatable=True)
 
-    # Resources are dataset-specific
-    resources = RefList(Resource, trigger_sync=True)
-
     # N.B. This has been removed from the schema
     # license_id = Property(validator=StrField(nullable=True), updatable=True)
     # profile
 
     # relationships_as_object
     # relationships_as subject
-
-    def add_resource(self, **properties):
-        """Add a new resource with the given properties.
-
-        Example:  new_rsrc = d.add_resource(name="Profile", url="s3://datasets/a.json",
-            format="json", mimetype="application/json")
-
-        Args:
-            **properties: The arguments to pass. See 'Resource' for details.
-        """
-        return client_for(self).resources.create(dataset=self, **properties)
 
     def add_dataframe(
         self, df: pd.DataFrame, s3path: str, format: str = None, **kwargs

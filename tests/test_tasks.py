@@ -142,7 +142,7 @@ def test_task_spec_init(testcli):
     assert TaskSpec("test-tool").tool == "test-tool"
 
     tool = testcli.tools["simple_tool"]
-    assert TaskSpec(tool).tool == "simple_tool"
+    assert TaskSpec(tool).tool == str(tool.id)
     assert TaskSpec(tool.id).tool == str(tool.id)
     assert TaskSpec(tool.name).tool == tool.name
 
@@ -333,6 +333,12 @@ def test_create_task_with_inputs(testcli):
     # Add from dataset and relation with alias
     ts.i(wine_alias="wine_quality::owned")
 
+    # Add raw url
+    ts.i(raw_url="s3://klms-bucket/iris.csv")
+
+    # Add url from process context
+    ts.i(ctx_file="ctx::testing")
+
     t = proc.run(ts)
     assert t.exec_state == "created"
     tin = t.job_input
@@ -341,6 +347,184 @@ def test_create_task_with_inputs(testcli):
     assert tin["input"]["wine"] == [str(wine.resources[0].url)]
     assert tin["input"]["shakespeare"] == [str(shakespeare.resources[0].url)]
     assert tin["input"]["wine_alias"] == [str(wine.resources[0].url)]
+    assert tin["input"]["raw_url"] == ["s3://klms-bucket/iris.csv"]
+    assert tin["input"]["ctx_file"] == ["s3://klms-bucket/wordcount.csv"]
 
     t.exit_job()
+    t.delete()
+
+
+def test_create_task_with_outputs(testcli):
+    """
+    Test the creation of a task with outputs.
+    """
+
+    c = testcli
+    proc = c.processes["simple_proc"]
+    stelar_klms = c.organizations["stelar-klms"]
+
+    if "test_dataset" in c.datasets:
+        c.datasets["test_dataset"].delete(purge=True)
+    if "output_dataset" in c.datasets:
+        c.datasets["output_dataset"].delete(purge=True)
+
+    test_dataset = c.datasets.create(
+        name="test_dataset", organization=stelar_klms, title="Test Dataset"
+    )
+    test_dataset.add_resource(
+        name="Test resource0", url="s3://klms-bucket/badfile0.csv"
+    )
+    test_dataset.add_resource(
+        name="Test resource1", url="s3://klms-bucket/badfile1.csv"
+    )
+    test_dataset.add_resource(
+        name="Test resource2", url="s3://klms-bucket/badfile2.csv"
+    )
+
+    ts = TaskSpec()
+    ts.d("output_dataset", name="output_dataset", owner_org="stelar-klms")
+    ts.d("test_dataset", test_dataset)
+
+    ts.o(
+        outfile1={
+            "url": "s3://klms-bucket/output1.csv",
+            "dataset": "output_dataset",
+            "resource": {
+                "name": "Output Resource",
+                "relation": "owned",
+            },
+        },
+        outfile2={
+            "url": "s3://klms-bucket/output2.csv",
+            "dataset": "ctx",
+            "resource": {
+                "name": "Output Resource 2",
+                "relation": "temporary",
+            },
+        },
+        outfile3={
+            "url": "s3://klms-bucket/output3.csv",
+            "resource": test_dataset.resources[0],
+        },
+        outfile4={
+            "url": "s3://klms-bucket/output4.csv",
+            "resource": test_dataset.resources[1].id,
+        },
+        outfile5={
+            "url": "s3://klms-bucket/output5.csv",
+            "resource": str(test_dataset.resources[2].id),
+        },
+        outfile6={
+            "url": "s3://klms-bucket/output6.csv",
+        },
+    )
+
+    t = proc.run(ts)
+    assert t.exec_state == "created"
+    targs = t.job_input
+
+    assert targs["output"]["outfile1"] == "s3://klms-bucket/output1.csv"
+    assert targs["output"]["outfile2"] == "s3://klms-bucket/output2.csv"
+    assert targs["output"]["outfile3"] == "s3://klms-bucket/output3.csv"
+    assert targs["output"]["outfile4"] == "s3://klms-bucket/output4.csv"
+    assert targs["output"]["outfile5"] == "s3://klms-bucket/output5.csv"
+    assert targs["output"]["outfile6"] == "s3://klms-bucket/output6.csv"
+
+    # Create the data files
+    fs = c.s3fs()
+    for oname, ourl in targs["output"].items():
+        fs.pipe_file(ourl, "This is the test file for " + oname)
+
+    t.exit_job(message="Test task completed successfully", output=targs["output"])
+
+    assert t.exec_state == "succeeded"
+
+    # Check the resource for output1
+    assert "output_dataset" in c.datasets
+    output_dataset = c.datasets["output_dataset"]
+    assert len(output_dataset.resources) == 1
+    assert output_dataset.resources[0].url == "s3://klms-bucket/output1.csv"
+    assert output_dataset.resources[0].name == "Output Resource"
+    assert output_dataset.resources[0].relation == "owned"
+
+    # Check the resource for output2
+    assert len(proc.resources) == 2
+    assert proc.resources[1].url == "s3://klms-bucket/output2.csv"
+    assert proc.resources[1].name == "Output Resource 2"
+    assert proc.resources[1].relation == "temporary"
+
+    # Check the resource for output3
+    assert len(test_dataset.resources) == 3
+    assert test_dataset.resources[0].url == "s3://klms-bucket/output3.csv"
+    assert test_dataset.resources[0].name == "Test resource0"
+
+    # Check the resource for output4
+    assert test_dataset.resources[1].url == targs["output"]["outfile4"]
+    assert test_dataset.resources[1].name == "Test resource1"
+
+    # Check the resource for output5
+    assert test_dataset.resources[2].url == targs["output"]["outfile5"]
+    assert test_dataset.resources[2].name == "Test resource2"
+
+    # Delete catalog entries
+    t.delete()
+    proc.resources[1].delete()
+    output_dataset.delete(purge=True)
+    test_dataset.delete(purge=True)
+
+    # Delete the output files
+    for ourl in targs["output"].values():
+        fs.rm(ourl)
+
+
+def test_create_task_with_metrics(testcli):
+    """
+    Test the creation of a task with metrics.
+    """
+
+    c = testcli
+    proc = c.processes["simple_proc"]
+
+    ts = TaskSpec()
+    t = proc.run(ts)
+    assert t.exec_state == "created"
+
+    mymetrics = dict(
+        metric_obj={
+            "value": 42,
+            "description": "The answer to life, the universe, and everything",
+        },
+        metric_vec=[3.14, 2.71, 1.41],
+        metric_str="a string",
+        metric_num=12345,
+        metric_null=None,
+        metric_bool=True,
+    )
+
+    t.exit_job(
+        message="Test task with metrics completed successfully", metrics=mymetrics
+    )
+
+    for metric in mymetrics:
+        t.metrics[metric] == mymetrics[metric]
+    t.delete()
+
+
+def test_create_task_with_secrets(testcli):
+    """
+    Test the creation of a task with secrets.
+    """
+
+    c = testcli
+    proc = c.processes["simple_proc"]
+
+    ts = TaskSpec()
+    secrets = {"secret_key": "secret_value"}
+    t = proc.run(ts, secrets=secrets)
+    assert t.exec_state == "created"
+
+    targs = t.job_input
+    assert targs["secrets"] == secrets
+
+    t.fail("Test task with secrets failed")
     t.delete()

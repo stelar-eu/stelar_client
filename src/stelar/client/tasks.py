@@ -2,17 +2,24 @@
 """
 from __future__ import annotations
 
+from datetime import datetime
 from functools import cached_property
-from typing import TYPE_CHECKING, Generator
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from .api_call import api_call
 from .dataset import Dataset
 from .generic import GenericCursor, GenericProxy, GenericProxyList
-from .group import Organization
-from .proxy import DateField, Id, Property, Reference, StrField, derived_property
+from .proxy import (
+    DateField,
+    Id,
+    Property,
+    ProxySynclist,
+    Reference,
+    StrField,
+    derived_property,
+)
 from .proxy.property import DictProperty
-from .resource import Resource
 from .utils import client_for
 
 if TYPE_CHECKING:
@@ -32,7 +39,7 @@ class Task(GenericProxy):
     exec_state = Property(validator=StrField)
 
     creator = Property(validator=StrField, entity_name="creator")
-    process = Reference("Process", entity_name="process_id", trigger_sync=False)
+    process = Reference("Process", entity_name="process_id", trigger_sync=True)
 
     messages = Property(validator=StrField, updatable=False, optional=True)
 
@@ -55,6 +62,26 @@ class Task(GenericProxy):
     def is_external(self, entity) -> bool:
         """Check if this task is local (i.e., not using a remote tool)."""
         return "image" not in entity
+
+    @derived_property
+    def done(self, entity) -> bool:
+        """Check if this task is done (i.e., has an end date)."""
+        return entity["end_date"] is not None
+
+    @derived_property
+    def runtime(self, entity) -> float | None:
+        """Calculate the runtime of the task in seconds.
+
+        Returns:
+            float: The runtime in seconds, or None if the task is not done.
+        """
+        start_date = datetime.fromisoformat(entity["start_date"])
+        end_date = (
+            datetime.fromisoformat(entity["end_date"])
+            if entity["end_date"] is not None
+            else datetime.now()
+        )
+        return (end_date - start_date).total_seconds()
 
     @cached_property
     def signature(self) -> str:
@@ -127,7 +154,8 @@ class Task(GenericProxy):
         }
 
         api_call(self).task_post_job_output(str(self.id), signature, output_spec)
-        self.proxy_sync()
+        psl = ProxySynclist([self])
+        psl.sync()
 
     def fail(
         self,
@@ -161,171 +189,6 @@ class Task(GenericProxy):
         for job, log in self.logs().items():
             print(job, ":", file=file, flush=flush)
             print(log, file=file, flush=flush)
-
-
-class TaskSpec:
-    """A task spec is used to create tasks.
-
-    Contrary to other entities, Task creation is more complicated than simply
-    providing values for some scalar attributes. Tasks, once created are
-    not really editable; therefore, all task fields must be specified
-    at task creation time.
-
-    This class helps by collecting arguments needed to initialize a new Task.
-    """
-
-    def __init__(
-        self, tool: ToolSpec = None, *, image: ImageSpec = None, name: str = "task"
-    ):
-        from .workflows import Tool
-
-        if isinstance(tool, Tool):
-            self.tool = str(tool.name)
-        elif isinstance(tool, UUID):
-            self.tool = str(tool)
-        elif isinstance(tool, str | None):
-            self.tool = tool
-        else:
-            raise TypeError("Expected a Tool proxy or a string, or None")
-
-        if isinstance(image, str | None):
-            self.image = image
-        else:
-            raise TypeError("Expected a string as image")
-
-        if not isinstance(name, str):
-            raise TypeError("Expected a string as name")
-
-        self.name = name
-        self.datasets = {}
-        self.inputs = {}
-        self.outputs = {}
-        self.parameters = {}
-
-    def is_external(self) -> bool:
-        """Check if this task spec is local (i.e., not using a remote tool)."""
-        return self.tool is None and self.image is None
-
-    def d(
-        self, alias: str, dset: Dataset | UUID | str | None = None, **dspec
-    ) -> TaskSpec:
-        """Add a dataset alias in the task spec.
-
-        An alias stands for either an existing dataset or for the
-        spec of a future dataset.
-
-        Dataset aliases can be useful in specifying input and output arguments
-        to a task.
-
-        Args:
-            alias (str): the dataset alias name
-            dset  (Dataset|UUID|str|None): specify an existing dataset for this alias
-            dspec (dict): the spec for a future dictionary.
-        """
-
-        if dset is not None:
-            if dspec:
-                raise ValueError("Cannot provide both a dataset and a new dataset spec")
-
-            if isinstance(dset, Dataset):
-                u = str(dset.id)
-            elif isinstance(dset, str):
-                u = dset
-            elif isinstance(dset, UUID):
-                u = str(dset)
-            else:
-                raise TypeError("Unknown type to specify a Dataset")
-
-            self.datasets[alias] = u
-
-        else:
-            if "name" not in dspec:
-                raise ValueError("A dataset spec must provide a name")
-            if "owner_org" not in dspec:
-                dspec["owner_org"] = "stelar-klms"
-            if isinstance(dspec["owner_org"], Organization):
-                dspec["owner_org"] = str(dspec["owner_org"].id)
-            elif isinstance(dspec["owner_org"], UUID):
-                dspec["owner_org"] = str(dspec["owner_org"])
-            elif not isinstance(dspec["owner_org"], str):
-                raise TypeError("Bad type for organization in dataset specification")
-            self.datasets[alias] = dspec
-
-        return self
-
-    def process_inspec_entry(
-        self, inspec: str | UUID | Resource | list[str | UUID | Resource]
-    ) -> Generator[str]:
-        if isinstance(inspec, Resource):
-            yield str(inspec.id)
-        elif isinstance(inspec, str):
-            yield inspec
-        elif isinstance(inspec, UUID):
-            yield str(inspec)
-        elif isinstance(inspec, list | tuple):
-            for i in inspec:
-                yield from self.process_inspec_entry(i)
-        else:
-            raise TypeError("Unknown type for input spec")
-
-    def process_inspec(self, inspec) -> list[str]:
-        return list(self.process_inspec_entry(inspec))
-
-    def i(self, **input_specs):
-        for name, inspec in input_specs.items():
-            self.inputs[name] = self.process_inspec(inspec)
-        return self
-
-    def process_outspec(self, outspec: str | dict):
-        # Output is either an S3 URI (str)
-        # or a dict. No processing here (yet!)
-        if isinstance(outspec, str):
-            return {"url": outspec}
-        elif isinstance(outspec, dict):
-            match outspec:
-                case {
-                    "url": url,
-                    "resource": dict(),
-                    "dataset": str(),
-                }:
-                    return outspec
-                case {"url": url, "resource": Resource() as res}:
-                    return {"url": url, "resource": str(res.id)}
-                case {"url": url, "resource": UUID() as res}:
-                    return {"url": url, "resource": str(res)}
-                case {"url": url, "resource": str() as res}:
-                    return {"url": url, "resource": res}
-                case {"url": url}:
-                    return outspec
-                case _:
-                    raise ValueError("Bad format for output spec")
-        else:
-            raise TypeError("Bad type for output spec, expected string or dict")
-
-    def o(self, **ospec) -> TaskSpec:
-        for name, osp in ospec.items():
-            self.outputs[name] = self.process_outspec(osp)
-        return self
-
-    def p(self, **params) -> TaskSpec:
-        self.parameters |= params
-        return self
-
-    def spec(self) -> dict:
-        s = {}
-
-        if self.tool is not None:
-            s["tool"] = self.tool
-
-        if self.image is not None:
-            s["image"] = self.image
-
-        s["datasets"] = self.datasets.copy()
-        s["inputs"] = self.inputs.copy()
-        s["outputs"] = self.outputs.copy()
-        s["parameters"] = self.parameters.copy()
-        s["name"] = self.name
-        return s
 
 
 class TaskCursor(GenericCursor):
@@ -419,8 +282,4 @@ class TaskCursor(GenericCursor):
         ac = api_call(self)
         resp = ac.task_create(**json_spec)
         task_id = resp["id"]
-        if resp["job_id"] == "__external__":
-            # This is a local task, so we need to handle it differently
-            signature = resp["signature"]
-            client_for(self).commit_local_task_sig(task_id, signature)
         return self.fetch_proxy(UUID(task_id))

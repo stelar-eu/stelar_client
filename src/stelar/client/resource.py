@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import cached_property
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -17,6 +18,7 @@ from .proxy import (
     Reference,
     StrField,
 )
+from .proxy.refs import RefField
 from .reprstyle import resource_to_html
 from .utils import client_for
 
@@ -50,13 +52,64 @@ class ExtrasResourceProperty(ExtrasProperty):
         entity_props |= entity_extras
 
 
+class PackageField(RefField):
+    """A field validator for package references."""
+
+    @property
+    def proxy_type(self):
+        """Return the proxy type for the package reference."""
+        return self.ref_property.proxy_types
+
+
+class PackageRef(Reference):
+    """A polymprphic reference to a package entity, used in Resource."""
+
+    VALIDATOR_CLASS = PackageField
+
+    # All entities with resources
+    ENTITIES = ("Dataset", "Process", "Tool", "Workflow")
+
+    def __init__(self):
+        super().__init__(
+            proxy_type="Dataset",
+            nullable=False,
+            trigger_sync=True,
+            entity_name="package_id",
+            updatable=False,
+        )
+
+    @cached_property
+    def proxy_types(self):
+        """Return the proxy types that this reference can point to."""
+        from .proxy.schema import Schema
+
+        return tuple(Schema.for_entity(t).cls for t in self.ENTITIES)
+
+    def registry_for(self, obj) -> Any:
+        """Return the registry for the package reference, given owner."""
+        # Use the package_type attribute to determine the type of package.
+        if (
+            obj.proxy_attr
+            and "_extras" in obj.proxy_attr
+            and "package_type" in obj.proxy_attr["_extras"]
+        ):
+            package_type = obj.proxy_attr["_extras"].get("package_type", "dataset")
+        else:
+            package_type = "dataset"
+
+        return obj.proxy_registry.catalog.registry_for(package_type.capitalize())
+
+
 class Resource(GenericProxy):
     """
     A proxy for a STELAR resource with metadata and additional details.
     """
 
     id = Id()
-    dataset = Reference("Dataset", entity_name="package_id", trigger_sync=True)
+
+    # dataset = Reference("Dataset", entity_name="package_id", trigger_sync=True)
+    dataset = PackageRef()
+
     position = Property(validator=IntField)
     state = Property(validator=StrField)
     metadata_modified = Property(validator=DateField)

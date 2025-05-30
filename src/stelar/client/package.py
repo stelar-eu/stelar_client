@@ -25,6 +25,7 @@ from .proxy import (
     TagList,
     UUIDField,
 )
+from .resource import Resource
 from .utils import client_for, tag_split
 from .vocab import Tag
 
@@ -60,6 +61,20 @@ class PackageProxy(NamedProxy, TaggableProxy, entity=False):
 
     maintainer = Property(validator=StrField(nullable=True), updatable=True)
     maintainer_email = Property(validator=StrField(nullable=True), updatable=True)
+
+    # Resources are NOT dataset-specific
+    resources = RefList(Resource, trigger_sync=True)
+
+    def add_resource(self, **properties):
+        """Add a new resource with the given properties.
+
+        Example:  new_rsrc = d.add_resource(name="Profile", url="s3://datasets/a.json",
+            format="json", mimetype="application/json")
+
+        Args:
+            **properties: The arguments to pass. See 'Resource' for details.
+        """
+        return client_for(self).resources.create(dataset=self, **properties)
 
 
 PackageProxyType = TypeVar("PackageProxy", bound=PackageProxy)

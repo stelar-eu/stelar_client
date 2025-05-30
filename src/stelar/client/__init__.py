@@ -12,20 +12,22 @@ finally:
 from .client import Client
 from .dataset import Dataset
 from .group import Group, Organization
+from .process import Process
 from .proxy import ProxyState, deferred_sync
 
 # Include all proxy exceptions
 from .proxy.exceptions import *
 from .proxy.exceptions import __all__ as __all_exceptions
 from .resource import Resource
-from .tasks import Task, TaskSpec
+from .task_spec import TaskSpec
+from .tasks import Task
 from .user import User
 
 # Include all utility functions
 from .utils import *
 from .utils import __all__ as __all_utils
 from .vocab import Tag, Vocabulary
-from .workflows import Process, Tool, Workflow
+from .workflows import Tool, Workflow
 
 __all__ = [
     *__all_exceptions,

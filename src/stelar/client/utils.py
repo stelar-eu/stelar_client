@@ -3,7 +3,8 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Type
+from uuid import UUID
 
 from .proxy import Proxy, ProxyCursor, ProxyList, Registry
 
@@ -47,3 +48,22 @@ def client_for(obj: Any) -> Client:
             raise RuntimeError(
                 f"Cannot resolve client for type {obj.__class__.__qualname__}", obj
             )
+
+
+def convert_proxy_id_to_str(
+    value: Proxy | UUID | str, proxy_type: Type = Proxy, *, nullable: bool = True
+) -> str | None:
+    """Convert a UUID or Proxy to a string representation."""
+    if nullable:
+        if value is None:
+            return None
+    if isinstance(value, proxy_type):
+        if value.proxy_id is None:
+            raise ValueError("Proxy has no ID")
+        return str(value.proxy_id)
+    elif isinstance(value, UUID):
+        return str(value)
+    elif isinstance(value, str):
+        return value
+    else:
+        raise TypeError(f"Cannot convert proxy {value} of type {type(value)} to string")
