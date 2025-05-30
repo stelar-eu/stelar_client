@@ -31,7 +31,7 @@ class TaskSpec:
     """
 
     def __init__(
-        self, tool: ToolSpec = None, *, image: ImageSpec = None, name: str = "task"
+        self, tool: ToolSpec = None, *, image: ImageSpec = None, name: str = None
     ):
         from .workflows import Tool
 
@@ -41,7 +41,7 @@ class TaskSpec:
         else:
             raise TypeError("Expected a string as image")
 
-        if not isinstance(name, str):
+        if not isinstance(name, str | None):
             raise TypeError("Expected a string as name")
 
         self.name = name
@@ -163,6 +163,11 @@ class TaskSpec:
         return self
 
     def spec(self) -> dict:
+        """Return the task spec as a dictionary.
+
+        Returns:
+            dict: the task spec as a dictionary.
+        """
         s = {}
 
         if self.tool is not None:
@@ -175,5 +180,5 @@ class TaskSpec:
         s["inputs"] = self.inputs.copy()
         s["outputs"] = self.outputs.copy()
         s["parameters"] = self.parameters.copy()
-        s["name"] = self.name
+        s["name"] = self.name if self.name is not None else "unnamed"
         return s

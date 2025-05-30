@@ -118,7 +118,7 @@ def test_task_spec_empty():
     t = TaskSpec()
     spec = t.spec()
     target = {
-        "name": "task",
+        "name": "unnamed",
         "datasets": {},
         "inputs": {},
         "outputs": {},
@@ -136,7 +136,7 @@ def test_task_spec_init(testcli):
     """
 
     assert TaskSpec().tool is None
-    assert TaskSpec().name == "task"
+    assert TaskSpec().name is None
     assert TaskSpec().image is None
 
     assert TaskSpec("test-tool").tool == "test-tool"
