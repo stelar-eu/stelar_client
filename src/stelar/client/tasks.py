@@ -153,8 +153,9 @@ class Task(GenericProxy):
             "status": status,
         }
 
-        api_call(self).task_post_job_output(str(self.id), signature, output_spec)
         psl = ProxySynclist([self])
+        api_call(self).task_post_job_output(str(self.id), signature, output_spec)
+        psl.on_update_all(self)
         psl.sync()
 
     def fail(
@@ -164,7 +165,7 @@ class Task(GenericProxy):
         metrics={},
         output={},
     ):
-        """Mark this task as failed with a message.
+        """Mark this external task as failed with a message.
 
         This method sets the task's execution state to 'failed' and updates
         the messages property with the provided message.
@@ -172,6 +173,25 @@ class Task(GenericProxy):
         return self.exit_job(
             metrics=metrics, output=output, message=message, status="failed"
         )
+
+    def abort(self, message: str = None):
+        """Abort this task.
+
+        This method sets the task's execution state to 'failed' and updates
+        the messages property with the provided message.
+        """
+        if message is None:
+            c = client_for(self)
+            message = f"Task was aborted by user {c.users.current_user.username} at {datetime.now().isoformat()}"
+
+        output_spec = {
+            "message": message,
+            "status": "failed",
+        }
+
+        psl = ProxySynclist([self])
+        api_call(self).task_post_job_output(str(self.id), self.signature, output_spec)
+        psl.sync()
 
     def jobs(self):
         """Return a dictionary with info about Kubernetes jobs for this task."""
@@ -282,4 +302,9 @@ class TaskCursor(GenericCursor):
         ac = api_call(self)
         resp = ac.task_create(**json_spec)
         task_id = resp["id"]
-        return self.fetch_proxy(UUID(task_id))
+        task = self.fetch_proxy(UUID(task_id))
+
+        psl = ProxySynclist()
+        psl.on_create_proxy(task)
+        psl.sync()
+        return task

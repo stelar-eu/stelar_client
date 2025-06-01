@@ -61,6 +61,10 @@ class ProxySynclist:
             self.add(oldref)
             self.add(newref)
 
+    def on_update_all(self, proxy: ProxyClass):
+        for p in self.trigger_properties(proxy.proxy_schema):
+            self.add(p.get(proxy))
+
     def sync(self):
         for prx in self.tosync:
             prx.proxy_sync()

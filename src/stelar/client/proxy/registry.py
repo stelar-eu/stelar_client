@@ -7,6 +7,7 @@ from weakref import WeakValueDictionary
 from .decl import ProxyState
 from .exceptions import ConflictError
 from .proxy import Proxy
+from .schema import Schema
 
 if TYPE_CHECKING:
     pass
@@ -198,6 +199,20 @@ class RegistryCatalog:
             return self.name_catalog[cls]
         else:
             return self.registry_catalog[cls]
+
+    def registry_for_type(self, type_name: str) -> Registry[ProxyClass]:
+        """Return the registry for the given type name.
+
+        Entities with type name include packages, groups/organizations, resource parents.
+
+        Args:
+            type_name: The name of the type for which to return the registry.
+        Returns:
+            The registry for the given type name.
+        """
+        proxy_type_name = type_name.capitalize()
+        proxy_type = Schema.for_entity(proxy_type_name).cls
+        return self.registry_for(proxy_type)
 
     def registry_stats(self):
         """Return a Series with the number of proxies held for each entity type."""

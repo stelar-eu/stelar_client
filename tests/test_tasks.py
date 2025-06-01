@@ -419,6 +419,7 @@ def test_create_task_with_outputs(testcli):
         },
     )
 
+    proc_numres = len(proc.resources)
     t = proc.run(ts)
     assert t.exec_state == "created"
     targs = t.job_input
@@ -448,7 +449,7 @@ def test_create_task_with_outputs(testcli):
     assert output_dataset.resources[0].relation == "owned"
 
     # Check the resource for output2
-    assert len(proc.resources) == 2
+    assert len(proc.resources) == (proc_numres + 1)
     assert proc.resources[1].url == "s3://klms-bucket/output2.csv"
     assert proc.resources[1].name == "Output Resource 2"
     assert proc.resources[1].relation == "temporary"
