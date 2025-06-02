@@ -1,4 +1,4 @@
-
+.. _quickstart-guide:
 ===================================
 Quick start with the STELAR client
 ===================================
@@ -38,7 +38,7 @@ Here is an example of a configuration file:
 .. code-block:: ini
 
     [default]
-    url = https://stelar.example.com
+    url = https://klms.stelar.gr
     username = myuser
     password = mypassword
 
