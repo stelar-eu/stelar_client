@@ -1,7 +1,8 @@
-"""Basic support for tasks in the client.
-"""
+"""Basic support for tasks in the client."""
+
 from __future__ import annotations
 
+import time
 from datetime import datetime
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -67,6 +68,23 @@ class Task(GenericProxy):
     def done(self, entity) -> bool:
         """Check if this task is done (i.e., has an end date)."""
         return entity["end_date"] is not None
+
+    def sync_state(self):
+        self.proxy_sync()
+        """Check if this task is done (i.e., has an end date)."""
+        return self.exec_state
+
+    def wait(self, timeout: float = 5.0, polling_interval: float = 1.0):
+        """Wait for the task to finish.
+
+        Args:
+            timeout (float): The maximum time to wait in seconds. Defaults to 5.0.
+            polling_interval (float): The interval between checks in seconds. Defaults to 1.0.
+        """
+        while self.sync_state() not in ("succeeded", "failed") and timeout > 0:
+            time.sleep(polling_interval)
+            timeout -= polling_interval
+        return self.exec_state in ("succeeded", "failed")
 
     @derived_property
     def runtime(self, entity) -> float | None:
