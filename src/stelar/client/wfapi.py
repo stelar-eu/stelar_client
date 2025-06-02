@@ -2,7 +2,8 @@ from .base import BaseAPI
 from .package import PackageCursor
 from .process import ProcessCursor
 from .tasks import TaskCursor
-from .workflows import ToolCursor, Workflow
+from .tool import ToolCursor
+from .workflows import Workflow
 
 
 class WorkflowsAPI(BaseAPI):
