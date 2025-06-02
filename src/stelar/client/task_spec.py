@@ -1,5 +1,5 @@
-"""Basic support for tasks in the client.
-"""
+"""Basic support for tasks in the client."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Generator
@@ -12,7 +12,7 @@ from .utils import convert_proxy_id_to_str
 
 if TYPE_CHECKING:
     # Type definitions for
-    from .workflows import Tool
+    from .tool import Tool
 
     ToolSpec = Tool | UUID | str | None
     ImageSpec = str | None
@@ -33,7 +33,7 @@ class TaskSpec:
     def __init__(
         self, tool: ToolSpec = None, *, image: ImageSpec = None, name: str = None
     ):
-        from .workflows import Tool
+        from .tool import Tool
 
         self.tool = convert_proxy_id_to_str(tool, Tool)
         if isinstance(image, str | None):
