@@ -110,6 +110,14 @@ api_models = {
         "collection_name": "tools",
         "search": "solr_search",
     },
+    "Policy": {
+        "name": "policy",
+        "collection_name": "policy",
+    },
+    "ImageRegistryToken": {
+        "name": "image_registry_token",
+        "collection_name": "image_registry_token",
+    },
 }
 for m in api_models:
     api_models[m] = api_model.from_value(api_models[m])
@@ -399,7 +407,7 @@ class api_call(api_call_base):
         return users
 
     def user_list(self, limit: int = None, offset: int = None):
-        return [u["id"] for u in self.user_fetch()]
+        return [u["username"] for u in self.user_fetch()]
 
     def user_show(self, id: str):
         return self.request("GET", f"v1/users/{id}")
@@ -419,9 +427,122 @@ class api_call(api_call_base):
     def user_purge(self, id):
         raise NotImplementedError
 
+    def roles_fetch(self, limit: int = None, offset: int = None):
+        """
+        Fetch roles.
+
+        Parameters
+        ----------
+        limit : int, optional
+            The maximum number of roles to return.
+        offset : int, optional
+            The offset for pagination.
+
+        Returns
+        -------
+        list
+            A list of dictionaries containing role information.
+        """
+        roles = self.request("GET", "v1/users/roles")
+        match (limit, offset):
+            case (None, None):
+                return roles
+            case (None, _):
+                return roles[offset:]
+            case (_, None):
+                return roles[:limit]
+            case (_, _):
+                return roles[offset : offset + limit]
+
+    def user_add_role(self, user_id: str, role: str):
+        """
+        Add a role to a user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to whom the role will be added.
+        role : str
+            The role to be added to the user.
+        Returns
+        -------
+        dict
+            A dictionary containing the current user state.
+        """
+        return self.request("POST", f"v1/users/{user_id}/roles/{role}")
+
+    def user_remove_role(self, user_id: str, role: str):
+        """
+        Remove a role from a user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user from whom the role will be removed.
+        role : str
+            The role to be removed from the user.
+        Returns
+        -------
+        dict
+            A dictionary containing the current user state.
+        """
+        return self.request("DELETE", f"v1/users/{user_id}/roles/{role}")
+
+    def user_add_roles(self, user_id: str, roles: list[str]):
+        """
+        Add multiple roles to a user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to whom the roles will be added.
+        roles : list[str]
+            A list of roles to be added to the user.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the current user state.
+        """
+        return self.request("POST", f"v1/users/{user_id}/roles", json={"roles": roles})
+
+    def user_set_roles(self, user_id: str, roles: list[str]):
+        """
+        Set roles for a user, replacing any existing roles.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user whose roles will be set.
+        roles : list[str]
+            A list of roles to be set for the user.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the current user state.
+        """
+        return self.request("PATCH", f"v1/users/{user_id}/roles", json={"roles": roles})
+
     def entity_search(self, proxy_type: str, query_spec: dict):
         entity_type = api_models.collection_name
         return self.request("POST", f"v2/search/{entity_type}", json=query_spec)
+
+    def dataset_export_zenodo(self, dataset_id: str) -> dict:
+        """
+        Export a dataset to Zenodo.
+
+        Parameters
+        ----------
+        dataset_id : str
+            The ID of the dataset to export.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the export message, ready to be sent to zenodo.
+        """
+        return self.request("GET", f"v2/export/zenodo/{dataset_id}")
 
     # Handling tasks
     def task_job_input(self, task_id: str, signature: str) -> dict:
@@ -456,3 +577,206 @@ class api_call(api_call_base):
         return self.request(
             "GET", "v2/tasks", params={k: v for k, v in p.items() if v is not None}
         )
+
+    #
+    # Policies
+    #
+
+    def policy_fetch(self, limit: int = None, offset: int = None):
+        """
+        Fetch policies.
+
+        Parameters
+        ----------
+        limit : int, optional
+            The maximum number of policies to return.
+        offset : int, optional
+            The offset for pagination.
+
+        Returns
+        -------
+        list
+            A list of dictionaries containing policy information.
+        """
+        policies = self.request("GET", "v1/auth/policy")["policies"]
+        match (limit, offset):
+            case (None, None):
+                return policies
+            case (None, _):
+                return policies[offset:]
+            case (_, None):
+                return policies[:limit]
+            case (_, _):
+                return policies[offset : offset + limit]
+
+    def policy_list(self, limit: int = None, offset: int = None):
+        """
+        List all policies.
+
+        Parameters
+        ----------
+        limit : int, optional
+            The maximum number of policies to return.
+        offset : int, optional
+            The offset for pagination.
+
+        Returns
+        -------
+        list
+            A list of dictionaries containing policy information (policy_uuid, policy_familiar_name).
+        """
+        return [e["policy_uuid"] for e in self.policy_fetch(limit, offset)]
+
+    def policy_show(self, eid: str):
+        """
+        Show a specific policy.
+
+        Parameters
+        ----------
+        policy_uuid : str
+            The UUID of the policy to show.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the policy information.
+        """
+        return self.request("GET", f"v1/auth/policy/{eid}")
+
+    def policy_create(self, policy_yaml: str | bytes):
+        """
+        Create a new policy.
+
+        Parameters
+        ----------
+        prolicy_data: str | bytes
+
+        Returns
+        -------
+        dict
+            A dictionary containing the created policy information.
+        """
+
+        # We need to use the client.request method in order to send
+        # the policy data as a string or bytes.
+        headers = {
+            "Content-Type": "application/x-yaml",
+        }
+        response = self.client.request(
+            "POST", "api/v1/auth/policy", headers=headers, data=policy_yaml
+        )
+        if response.status_code in range(200, 300):
+            return response.json()["result"]
+        else:
+            raise RuntimeError(
+                "Unexpected response trying to create policy",
+                policy_yaml,
+                response.status_code,
+                response.json(),
+            )
+
+    def policy_spec(self, policy_uuid: str) -> bytes:
+        """
+        Get the specification of a policy.
+
+        Parameters
+        ----------
+        policy_uuid : str
+            The UUID of the policy to get the specification for.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the policy specification.
+        """
+        response = self.client.GET("v1/auth/policy/representation", policy_uuid)
+        if response.status_code in range(200, 300):
+            return response.content
+        else:
+            raise RuntimeError(
+                "Unexpected response trying to get policy spec",
+                policy_uuid,
+                response.status_code,
+                response,
+            )
+
+    ##
+    # Image Registry Tokens
+    #
+
+    def image_registry_token_list(self, limit: int = None, offset: int = None):
+        """
+        List image registry tokens.
+
+        Parameters
+        ----------
+        limit : int, optional
+            The maximum number of tokens to return.
+        offset : int, optional
+            The offset for pagination.
+
+        Returns
+        """
+        result = self.request("GET", "v2/registry/credentials")
+        tokens = list(result.keys())
+        match (limit, offset):
+            case (None, None):
+                return tokens
+            case (None, _):
+                return tokens[offset:]
+            case (_, None):
+                return tokens[:limit]
+            case (_, _):
+                return tokens[offset : offset + limit]
+
+    def image_registry_token_create(self, title: str, expiration: str | None = None):
+        """
+        Create a new image registry token.
+        Parameters
+        ----------
+        title : str
+            The title of the token.
+        expiration : str | None, optional
+            The expiration date of the token in ISO format. Defaults to None.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the created token information.
+        """
+        json = {"title": title}
+        # TODO: Fix the stelarapi to accept expiration as a string
+
+        return self.request("POST", "v2/registry/credentials", json=json)
+
+    def image_registry_token_show(self, id: str):
+        """
+        Show an image registry token.
+
+        Parameters
+        ----------
+        uuid : str
+            The UUID of the token to show.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the token information.
+        """
+        return self.request("GET", f"v2/registry/credentials/{id}")
+
+    def image_registry_token_delete(self, uuid: str):
+        """
+        Delete an image registry token.
+
+        Parameters
+        ----------
+        uuid : str
+            The UUID of the token to delete.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the deletion result.
+        """
+        return self.request("DELETE", f"v2/registry/credentials/{uuid}")

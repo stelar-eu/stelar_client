@@ -105,6 +105,18 @@ class Dataset(PackageProxy):
 
         return pdutils.read_dataframe(client_for(self), self.url, format=fmt, **kwargs)
 
+    def export_zenodo(self) -> dict:
+        """Export the dataset to Zenodo.
+
+        This method will create and return a new Zenodo record for the dataset.
+        The method returns the Zenodo record as a dictionary.
+
+        Returns:
+            dict: The Zenodo record for the dataset.
+        """
+        ac = client_for(self).api_call()
+        return ac.dataset_export_zenodo(self.id)
+
     def _repr_html_(self):
         return dataset_to_html(self)
 

@@ -3,9 +3,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from .api_call import api_call
+from .generic import GenericCursor, GenericProxy
 from .package import PackageCursor, PackageProxy
-from .proxy import Property, StrField, derived_property
-from .proxy.fieldvalidation import EnumeratedField
+from .proxy import (
+    DateFmtField,
+    EnumeratedField,
+    Id,
+    Property,
+    StrField,
+    derived_property,
+)
 from .proxy.property import DictProperty
 from .task_spec import TaskSpec
 
@@ -94,3 +102,39 @@ class Tool(PackageProxy):
 class ToolCursor(PackageCursor[Tool]):
     def __init__(self, client):
         super().__init__(client, Tool)
+
+
+class ImageRegistryToken(GenericProxy):
+    """A token representing an image used by a tool."""
+
+    DATEFORMAT = "%a, %d %b %Y %H:%M:%S %z"
+
+    id = Id(entity_name="uuid")
+    created = Property(validator=DateFmtField(DATEFORMAT), updatable=False)
+    expiration = Property(
+        validator=DateFmtField(DATEFORMAT, nullable=True), updatable=False
+    )
+    last_accessed = Property(
+        validator=DateFmtField(DATEFORMAT, nullable=True), updatable=False
+    )
+
+    title = Property(validator=StrField(nullable=False), updatable=False)
+
+    token = Property(
+        validator=StrField(nullable=False), updatable=False, entity_name="token_code"
+    )
+
+
+class ImageRegistryTokenCursor(GenericCursor[ImageRegistryToken]):
+    """A cursor for iterating over image registry tokens."""
+
+    def __init__(self, client):
+        super().__init__(client, ImageRegistryToken)
+
+    def create(
+        self, title: str, expiration: datetime | None = None
+    ) -> ImageRegistryToken:
+        """Create a new image registry token."""
+        ac = api_call(self)
+        result = ac.image_registry_token_create(title=title, expiration=expiration)
+        return self.fetch_proxy_for_entity(result)

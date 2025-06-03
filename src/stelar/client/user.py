@@ -26,6 +26,50 @@ class User(GenericProxy):
     joined_date = Property(validator=DateField())
     active = Property(validator=BoolField(), updatable=True)
 
+    def add_role(self, role: str):
+        """
+        Add a role to the user.
+
+        Args:
+            role (str): The role to add.
+        """
+        ac = api_call(self)
+        entity = ac.user_add_role(self.proxy_id, role)
+        self.proxy_sync(entity)
+
+    def remove_role(self, role: str):
+        """
+        Remove a role from the user.
+
+        Args:
+            role (str): The role to remove.
+        """
+        ac = api_call(self)
+        entity = ac.user_remove_role(self.proxy_id, role)
+        self.proxy_sync(entity)
+
+    def append_roles(self, roles: list[str]):
+        """
+        Append multiple roles to the user.
+
+        Args:
+            roles (list[str]): The roles to append.
+        """
+        ac = api_call(self)
+        entity = ac.user_append_roles(self.proxy_id, roles)
+        self.proxy_sync(entity)
+
+    def set_roles(self, roles: list[str]):
+        """
+        Set the user's roles to a new list.
+
+        Args:
+            roles (list[str]): The new list of roles.
+        """
+        ac = api_call(self)
+        entity = ac.user_set_roles(self.proxy_id, roles)
+        self.proxy_sync(entity)
+
 
 class UserCursor(GenericCursor[User]):
     def __init__(self, client):
@@ -69,3 +113,13 @@ class UserCursor(GenericCursor[User]):
 
         for entity in result:
             yield registry.fetch_proxy_for_entity(entity)
+
+    def roles(self) -> list[str]:
+        """
+        Fetch the list of roles available in the system.
+
+        Returns:
+            list[str]: A list of role names.
+        """
+        ac = api_call(self.client)
+        return [role["name"] for role in ac.roles_fetch()]

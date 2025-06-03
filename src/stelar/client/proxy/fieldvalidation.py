@@ -30,6 +30,11 @@ __all__ = [
     "IntField",
     "StrField",
     "DateField",
+    "DateFmtField",
+    "DictField",
+    "ListField",
+    "BasicField",
+    "ExecStateField",
     "UUIDField",
     "NameField",
     "TagNameField",
@@ -316,6 +321,31 @@ class DateField(FieldValidator):
 
     def convert_to_proxy(self, value: str, **kwargs) -> datetime:
         return datetime.fromisoformat(value)
+
+    def repr_type(self):
+        return "datetime"
+
+
+class DateFmtField(FieldValidator):
+    def __init__(self, datefmt, **kwargs):
+        super().__init__(**kwargs)
+        self.datefmt = datefmt
+        self.add_check(self.to_date, 5)
+
+    def to_date(self, value: Any, **kwargs) -> tuple[datetime, bool]:
+        """Validation stage for dates."""
+        if isinstance(value, str):
+            return datetime.strptime(value, self.datefmt), False
+        elif isinstance(value, datetime):
+            return value, False
+        else:
+            raise ValueError("Invalid type, expected datetime or string")
+
+    def convert_to_entity(self, value: datetime, **kwargs) -> str:
+        return value.strftime(self.datefmt)
+
+    def convert_to_proxy(self, value: str, **kwargs) -> datetime:
+        return datetime.strptime(value, self.datefmt)
 
     def repr_type(self):
         return "datetime"

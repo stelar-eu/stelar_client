@@ -120,7 +120,7 @@ def generic_get(
     ac = api_call(client)
     show = ac.get_call(proxy_type, "show")
     try:
-        entity = show(id=str(name_or_id))
+        entity = show(str(name_or_id))
     except EntityNotFound:
         return default
     return client.registry_for(proxy_type).fetch_proxy_for_entity(entity)
