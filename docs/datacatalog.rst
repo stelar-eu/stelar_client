@@ -525,9 +525,44 @@ Tags
 Tags are a way to categorize and label entities in the Data Catalog. They can be used to
 group entities by common characteristics, making it easier to search and filter them.
 
-Taggable entities include datasets, workflows, processes and tools (so-called packages).
+Tags are represented as strings, and should be made up as words or phrases.
+Taggable entities include datasets, workflows, processes 
+and tools (so-called packages). The current tags can be accessed via the `tags` attribute 
+of the proxy. Two methods, `add_tags` and `remove_tags`, can be used to add or remove tags 
+from the entity.
+
+.. code-block:: python
+
+    dset = client.datasets['my-dataset']
+    if 'important' in dset.tags:
+        print("This dataset is tagged as important.")
+        dset.add_tags('urgent', 'confidential')
+    else:
+        print("This dataset is not tagged as important.")
+        dset.remove_tags('urgent', 'confidential')
+    # Returns a list of tags associated with the dataset.
 
 
+Tag Vocabularies
+-------------------
+
+Vocabularies are named collections of tags that can be used to avoid tag name collisions
+and to better designate the meaning of tags. There are many standard vocabularies used 
+in library and information science, such as the Library of Congress Subject Headings (LCSH)
+or the Dewey Decimal Classification (DDC).
+
+In the STELAR KLMS, vocabularies are entities defined in the Data Catalog, and can be
+used to create and manage tags. Vocabularies are shared across organizations and there
+is no restriction on who can use them. Because of their shared nature, vocabularies are 
+typically created and managed by the STELAR administrators, and not by regular users.
+
+Tags that do not belong to a vocabulary are called *free tags*. By contrast, tags that
+belong to a vocabulary are called *vocabulary tags*. To distinguish the two, vocabulary tags
+are always prefixed by the name of the vocabulary, e.g., `lcs:climate_change`, where `lcs` 
+is the name of the vocabulary.
+
+On the other hand, free tags are just strings, e.g., `global warming`. They can be used
+to label entities without the need to create a vocabulary.
 
 
 Searching for entities
