@@ -599,9 +599,4 @@ https://kc.stelar.example.com/                   The Keycloak web interface
 ===============================================  ====================================================
 
 
-
-
-The STELAR KLMS authorization scheme
-========================================
-
-blah
+.. include:: stelar-klms-auth.rst
