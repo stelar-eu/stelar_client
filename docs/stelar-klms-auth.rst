@@ -6,7 +6,7 @@ This RBAC model can be expressed using a declarative YAML-based specification la
 including the roles and their associated permissions, with a structured and human-readable format. 
 
 These custom policy documents are used as input to the STELAR KLMS Policy Management System, which is responsible to process the defined policies and
-translate them into service-specific authorization rules. The engine is also responsible to evaluate access requests against the defined policies
+translate them into service-specific authorization rules. The system is also responsible to evaluate access requests against the defined policies
 and update the the current authorization state of the system if a new policy document is applied, through a process called policy reconciliation.
 
 In this way the STELAR KLMS authorization scheme provides a flexible and extensible way to manage access control in the platform, allowing administrators
