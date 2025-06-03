@@ -2,6 +2,10 @@
 Changelog
 =========
 
+Version 0.5.3
+=============
+
+- Added new documentation, an overview of the authorization system of STELAR.
 
 Version 0.5.2
 =============
