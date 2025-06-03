@@ -550,39 +550,306 @@ Vocabularies are named collections of tags that can be used to avoid tag name co
 and to better designate the meaning of tags. There are many standard vocabularies used 
 in library and information science, such as the Library of Congress Subject Headings (LCSH)
 or the Dewey Decimal Classification (DDC).
+See the wikipedia article on 
+`controlled vocabularies <https://en.wikipedia.org/wiki/Controlled_vocabulary>`_
+for more information.
 
 In the STELAR KLMS, vocabularies are entities defined in the Data Catalog, and can be
 used to create and manage tags. Vocabularies are shared across organizations and there
 is no restriction on who can use them. Because of their shared nature, vocabularies are 
 typically created and managed by the STELAR administrators, and not by regular users.
 
+An example:
+
+.. code-block:: python
+
+    devstatus = client.vocabularies.create(name='devstatus', tags=[
+        'planning', 'pre-alpha', 'alpha', 'beta', 
+        'production', 'mature', 'inactive'])
+    # This will create a new vocabulary with the given name, title and description.
+    # The `vocab` variable will be a proxy for the newly created vocabulary.
+
+    dset.add_tags('devstatus:alpha'))
+    # Tag a dataset
+
 Tags that do not belong to a vocabulary are called *free tags*. By contrast, tags that
 belong to a vocabulary are called *vocabulary tags*. To distinguish the two, vocabulary tags
 are always prefixed by the name of the vocabulary, e.g., `lcs:climate_change`, where `lcs` 
-is the name of the vocabulary.
-
+is the name of the vocabulary. 
 On the other hand, free tags are just strings, e.g., `global warming`. They can be used
 to label entities without the need to create a vocabulary.
+
+
+Building a tag vocabulary
+------------------------------
+
+In order to support the compilation of tag vocabularies, the STELAR KLMS treats tags as
+entities in their own right. This means that tags can be searched, created and deleted.
+
+For example, to modify our `devstatus` vocabulary, we can do the following:
+
+.. code-block:: python
+
+    vocab = client.vocabularies['devstatus']
+
+    plantag = c.tags['devstatus:planning']
+    # get the proxy to the 'planning' tag in the 'devstatus' vocabulary
+
+    plantag.delete()
+    # This will remove the 'planning' tag from the vocabulary.
+
+    c.tags.create(name='plan', vocabulary=vocab)
+    # This will create a new tag in the vocabulary, with the name 'plan'.
+
+
+Working with free tags
+-------------------------
+
+Free tags are just strings that do not contain the `:` (colon) separator.
+Free tags can be added to entities without the need to create them explicitly.
+Also, removing a free tag from all entities autmatically deletes it.
+
+The client supports returning the list of free tags used by any entity in the 
+catalog, in order to assist the user in searching for entities.
+
+.. code-block:: python
+
+    free_tags = client.tags[:].coll
+    # Returns a list of free tags associated with entities in the catalog
 
 
 Searching for entities
 ============================
 
+The STELAR Client provides a powerful search functionality to find entities in the Data Catalog.
+Searchable entities include datasets, workflows, processes, tools (so-called packages) and resources.
+The search is performed using the `search` method of the cursor for the entity type.
+
+Searching for resources
+---------------------------
+
+The search for resources is much simpler than for other entities, and we examine it first.
+The search method takes 4 arguments:
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Argument
+     - Description
+   * - `query`
+     -  The search query, a list of strings.
+   * - `order_by`
+     -  A field to order by.
+   * - `offset`
+     - The offset of the first result to return. Defaults to 0.
+   * - `limit`
+     - The max. number of results to return. Defaults to 1000.
+
+The method returns a JSON object with the following fields:
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Field
+     - Description
+   * - `count`
+     - The total number of results found.
+   * - `results`
+     - A list of JSON resources, selected by `offset` and `limit`.
+
+The *query* parameter is  a list of strings, each of the form ``{field}:{term}``. 
+Within each string, ``{field}`` is a field or extra field on the Resource domain
+object.
+
+All matches are made ignoring case; and apart from the ``hash`` field,
+a term matches if it is a substring of the field's value.
+
+If ``{field}`` is ``hash``, then an attempt is made to match the
+`{term}` as a *prefix* of the ``Resource.hash`` field.
+
+If ``{field}`` is an extra field, then an attempt is made to match against
+the extra fields stored against the Resource.
+
+Finally, when specifying more than one search criteria, the criteria are
+AND-ed together.
+
+.. note:: 
+    
+    Due to a Resource's extra fields being stored as a json blob, the
+    match is made against the json string representation.  As such, false
+    positives may occur:
+
+    If the search criteria is: ::
+
+        query = "field1:term1"
+
+    Then a json blob with the string representation of: ::
+
+        {"field1": "foo", "field2": "term1"}
+
+    will match the search criteria!  This is a known short-coming of this
+    approach.
 
 
-Contents:
-    - An overview of the STELAR KLMS
-    - Working with the Data Catalog
-      - Overview of the Data Catalog
-      - Creating entities
-      - Updating entities
-      - Custom fields
-      - Tags
-      - Searching for entities
-    - Working with data in minio
-    - Execution of tasks and workflows
-    - Managing tools
-    - Accessing the STELAR API
-    - User management
-    - Authorization policies
-    - Using the Knowledge Graph
+As a convenience, the ``Resource`` cursor provides a `search_url` method, that
+returns a proxy list of resources whose URL matches the given query.
+For example, to find the dataset(s) that contain a specific file, you can do the following:
+
+.. code-block:: python
+
+    iris_datasets = {
+        r.dataset 
+        for r in client.resources.search_url('s3://klms-bucket/iris.csv')
+        if isinstance(r.dataset, Dataset)
+    }
+    # This will return a set of datasets whose resource(s) point to the given file.
+
+
+
+Searching for datasets and other packages
+--------------------------------------------
+
+The search facility for datasets and other packages is much more powerful than for resources.
+Under the hood, it uses the full-text search capabilities of the STELAR KLMS implemented
+by `Solr <https://solr.apache.org/>`_.
+
+The ``search()`` method of the cursor for the entity type takes the following arguments:
+
+.. list-table::
+    :widths: 20 80
+    :header-rows: 1
+ 
+    * - Argument
+      - Description
+    * - `q`
+      - The basic search query, a string.
+    * - `bbox`
+      - A bounding box filter on the ``spatial`` attribute.
+    * - `fq`
+      - List of filter clauses.
+    * - `fl`
+      - List of fields to return in the results. 
+    * - `sort`
+      - A field to sort the results by, e.g., ``title asc`` or ``created desc``.
+    * - `offset`
+      - The offset of the first result to return. Defaults to 0.
+    * - `limit`
+      - The max. number of results to return. Defaults to 1000.
+    * - `facet`
+      - A dictionary of facet field specs.
+
+
+The return value is a JSON object with the following fields:
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Field
+     - Description
+   * - `count`
+     - The total number of results found.
+   * - `results`
+     - A list of JSON objects representing the entities found.
+   * - `search_facets`
+     - A dictionary of facet counts for the fields specified in the `facet` argument.
+
+We will now examine the arguments in more detail.
+
+Basic search query
+-----------------------------
+
+The `q` argument is a string that contains the basic search query.
+It can contain multiple terms, which are AND-ed together.
+For example, to search for datasets that contain the term "iris" in 
+their title or description, you can do the following:
+
+.. code-block:: python
+
+    results = client.datasets.search(q='iris')
+    # This will return a list of datasets that contain the term "iris" in their title or description.
+
+The query notation used is the 
+`Solr query syntax <https://solr.apache.org/guide/solr/9_2/query-guide/query-syntax-and-parsers.html>`_.
+
+Generally, the query syntax is very flexible and allows for complex queries.
+Some examples of the query syntax are:
+
+.. code-block:: python
+
+    # Search for datasets that contain the term "iris" in their title or description
+    results = client.datasets.search(q='iris')
+
+    # Search for datasets that contain the term "iris" in their title and "flower" in their description
+    results = client.datasets.search(q='title:iris AND description:flower')
+
+    # Search for datasets that contain the term "iris" in their title or description, but not "flower"
+    results = client.datasets.search(q='tags:flower AND title:iris')
+
+
+An important feature of the query syntax is that it allows for ranked search.
+You can see the relevance score of each result in the `score` field of the result.
+
+.. code-block:: python
+
+    client.datasets.search(q='iris', fl=['name', 'score'])
+    # This will print the name and score of each dataset found in the search results.  
+
+Solr supports a wide range of query syntax features, including wildcards,
+phrase queries, altering the weight of terms in the final score, and more.
+
+
+Bounding box filter
+-----------------------------
+
+The `bbox` argument is a bounding box filter on the `spatial` attribute of the entity.
+It is a list of four numbers, representing the minimum and maximum latitude and longitude
+values of the bounding box, in the order: [min_lon, min_lat, max_lon, max_lat].
+
+Filters
+-----------------------------
+
+The `fq` argument is a list of filter clauses that can be used to filter the results.
+Filtering is different from the main query, in that it does not affect the relevance score of the results.
+For example, to filter the results to only include datasets that are in a specific organization,
+you can do the following:
+
+.. code-block:: python
+
+    results = client.datasets.search(
+        q='iris',
+        fq=['organization:my-org']
+    )
+    # This will return a list of datasets that contain the term "iris" in their title or description,
+    # and are in the organization "my-org".
+
+Field list
+-----------------------------
+The `fl` argument is a list of fields to return in the results.
+It can be used to limit the fields returned in the results,
+for example, to only return the name and title of the datasets:
+
+.. code-block:: python
+
+    results = client.datasets.search(
+        q='iris',
+        fl=['name', 'title']
+    )
+    # This will return a list of datasets that contain the term "iris" in their title or description,
+    # and only the name and title fields will be returned in the results.
+
+
+Solr schema
+--------------
+
+To truly master the search capabilities of the STELAR KLMS, you should
+familiarize yourself with the Solr schema used by the KLMS.
+The schema is available as a JSON object obtained as:
+
+.. code-block:: python
+
+    solr_schema = client.GET('v2/search/schema').json()
+    # This will return a JSON object representing the Solr schema for datasets.
+

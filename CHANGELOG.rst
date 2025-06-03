@@ -2,6 +2,42 @@
 Changelog
 =========
 
+
+Version 0.5.2
+=============
+
+- Project status was upgraded to 'Beta'. This was long overdue but somehow was neglected.
+- Added comprehensive documentation for using the client (working with Data Catalog).
+- Small enhancement to packages for working with tags.
+
+Version 0.5.1
+=============
+
+- Added the `wait()` method to allow polling a task status
+
+Version 0.5.0
+=============
+
+- Refactored the code related to tools and tasks, added several enancements.
+
+
+Version 0.4.2
+=============
+
+- Fixed automatic proxy refresh when tasks change state.
+- Implemented comprensive tests for task execution.
+
+Version 0.4.1
+=============
+
+- Enhanced the support for task execution
+
+Version 0.4.0
+=============
+
+- Added preliminary support for task execution.
+
+
 Version 0.3.7
 =============
 
