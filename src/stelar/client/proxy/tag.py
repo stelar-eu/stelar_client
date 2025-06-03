@@ -150,4 +150,22 @@ class TagList(Property):
 class TaggableProxy(Proxy, entity=False):
     """A virtual base class for all proxies to entities that are taggable."""
 
-    pass
+    tags = TagList()
+
+    def add_tags(self, *tags: str):
+        """Add multiple tags to this entity.
+
+        Args:
+            *tags (str): The tags to add, in tagspec format.
+        """
+        self.tags += tags
+
+    def remove_tags(self, *tags: str):
+        """Remove multiple tags from this entity.
+
+        Args:
+            *tags (str): The tags to remove, in tagspec format.
+        """
+        current_tags = set(self.tags)
+        tags_to_remove = set(tags)
+        self.tags = tuple(current_tags - tags_to_remove)
