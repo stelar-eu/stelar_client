@@ -480,12 +480,12 @@ This operation may fail sometimes, e.g., if the entity is linked to other entiti
 In this case, you will need to remove the links first.
 
 
-Custom fields a.k.a. Extras
-============================
+Custom fields 
+==============
 
-Custom fields are user-defined attributes that can be added to some types of
- entities in the Data Catalog. These fields are supported by the following entity
- types:
+Custom fields, also known as *extras*, are user-defined attributes that can be added 
+to some types of entities in the Data Catalog. These fields are supported by the 
+following entity types:
 
 - Datasets
 - Workflows
@@ -525,7 +525,8 @@ Tags
 Tags are a way to categorize and label entities in the Data Catalog. They can be used to
 group entities by common characteristics, making it easier to search and filter them.
 
-Taggable entities include datasets, workflows, processes and tools.
+Taggable entities include datasets, workflows, processes and tools (so-called packages).
+
 
 
 
