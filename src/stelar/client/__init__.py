@@ -18,6 +18,7 @@ from .proxy import ProxyState, deferred_sync
 # Include all proxy exceptions
 from .proxy.exceptions import *
 from .proxy.exceptions import __all__ as __all_exceptions
+from .relationship import Rel, Relationship, Relationships
 from .resource import Resource
 from .task_spec import TaskSpec
 from .tasks import Task
@@ -43,6 +44,9 @@ __all__ = [
     "Vocabulary",
     "User",
     "Process",
+    "Relationship",
+    "Rel",
+    "Relationships",
     "Task",
     "TaskSpec",
     "Workflow",
