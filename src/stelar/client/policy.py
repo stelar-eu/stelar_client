@@ -67,3 +67,7 @@ class PolicyCursor(GenericCursor):
         ac = api_call(self)
         result = ac.policy_create(policy_yaml=policy_yaml)
         return self.fetch_proxy_for_entity(result)
+
+    @property
+    def active(self):
+        return self.get("active", None)

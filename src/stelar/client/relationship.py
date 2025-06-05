@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from .client import Client
     from .package import PackageProxy
 
+    MatchExpr = PackageProxy | UUID | str | type[PackageProxy] | None
+
 
 class Rel(Enum):
     """Enum for relationship types."""
@@ -42,6 +44,39 @@ PEERS = [
     (Rel.LINKS_TO, Rel.LINKED_FROM),
 ]
 PEER_MAP = {rel1: rel2 for rel1, rel2 in PEERS} | {rel2: rel1 for rel1, rel2 in PEERS}
+
+
+def entity_data_matches(edata: Dict[str, Any], match: MatchExpr) -> bool:
+    """Check if the entity data matches the given match expression.
+
+    A match expression can be:
+    - A proxy object
+    - A UUID
+    - A string matching the name of the package entity
+    - A proxy type (Dataset, Process, etc.) matching the type
+    - None (to ignore that part of the match)
+
+    Args:
+        edata: The entity data to check against.
+        match: The match expression to check.
+
+    Returns:
+        bool: True if the entity data matches the expression, False otherwise.
+    """
+    from .package import PackageProxy
+
+    if match is None:
+        return True
+    elif isinstance(match, PackageProxy):
+        return edata.get("id") == match.proxy_id
+    elif isinstance(match, UUID):
+        return edata.get("id") == match
+    elif isinstance(match, str):
+        return edata.get("name") == match
+    elif isinstance(match, type):
+        return edata.get("type") == match.__name__.lower()
+    else:
+        return False
 
 
 class Relationship:
@@ -94,6 +129,22 @@ class Relationship:
             self.object_id
         )
 
+    def subject_data(self) -> Dict[str, Any]:
+        """Return a dictionary with the subject's data."""
+        return {
+            "id": self.subject_id,
+            "name": self.subject_name,
+            "type": self.subject_type,
+        }
+
+    def object_data(self) -> Dict[str, Any]:
+        """Return a dictionary with the object's data."""
+        return {
+            "id": self.object_id,
+            "name": self.object_name,
+            "type": self.object_type,
+        }
+
     def __repr__(self) -> str:
         return f"<Relationship {self.subject_name} {self.relationship.value} {self.object_name}>"
 
@@ -103,15 +154,16 @@ class Relationship:
     def __eq__(self, other: Relationship) -> bool:
         if not isinstance(other, Relationship):
             return False
-        elif self.relationship is other.relationship:
+
+        if self.relationship is other.relationship:
             return (
-                self.subject_id == other.subject_id
-                and self.object_id == other.object_id
+                self.subject_data() == other.subject_data()
+                and self.object_data() == other.object_data()
             )
         elif self.relationship.peer() is other.relationship:
             return (
-                self.subject_id == other.object_id
-                and self.object_id == other.subject_id
+                self.subject_data() == other.object_data()
+                and self.object_data() == other.subject_data()
             )
         else:
             return False
@@ -125,14 +177,21 @@ class Relationship:
 
     def matches(
         self,
-        subj: PackageProxy | UUID,
-        rel: Optional[Rel] = None,
-        obj: Optional[PackageProxy | UUID] = None,
+        subj: MatchExpr,
+        rel: Rel | str | None,
+        obj: MatchExpr,
     ) -> bool:
         """Check if the relationship matches the given subject, relationship type, and object.
 
         Matching is semantic, i.e., a PARENT_OF will match
         a CHILD_OF relationship if the subject and object are reversed.
+
+        A match expression can be
+        - A proxy object
+        - A UUID
+        - A string matching the name of the package entity
+        - A proxy type (Dataset, Process, etc.) matching the type
+        - None (to ignore that part of the match)
 
         Args:
             subj: The subject to match against, either a PackageProxy or UUID.
@@ -144,32 +203,14 @@ class Relationship:
                 False otherwise.
         """
 
-        def to_uuid(item: PackageProxy | UUID) -> UUID:
-            """Convert a PackageProxy or UUID to a UUID."""
-            from .package import PackageProxy
-
-            if isinstance(item, PackageProxy):
-                return item.proxy_id
-            elif isinstance(item, UUID):
-                return item
-            else:
-                raise TypeError("Expected PackageProxy or UUID")
-
-        def M(a, b) -> bool:
-            """Check if two UUIDs match."""
-            return b is None or a == b
-
-        subj = to_uuid(subj) if subj is not None else None
-        obj = to_uuid(obj) if obj is not None else None
-
         return (
-            M(self.relationship, rel)
-            and M(self.subject_id, subj)
-            and M(self.object_id, obj)
+            (rel is None or self.relationship is Rel(rel))
+            and entity_data_matches(self.subject_data(), subj)
+            and entity_data_matches(self.object_data(), obj)
         ) or (
-            M(self.relationship.peer(), rel)
-            and M(self.subject_id, obj)
-            and M(self.object_id, subj)
+            (rel is None or self.relationship.peer() is Rel(rel))
+            and entity_data_matches(self.subject_data(), obj)
+            and entity_data_matches(self.object_data(), subj)
         )
 
     def peer(self) -> Relationship:
@@ -271,9 +312,9 @@ class Relationships(set):
 
     def matching(
         self,
-        subj: Optional[PackageProxy | UUID],
-        rel: Optional[Rel],
-        obj: Optional[PackageProxy | UUID],
+        subj: MatchExpr,
+        rel: Optional[Rel | str],
+        obj: MatchExpr,
     ) -> Relationships:
         """Return the relationships matching a pattern.
 
@@ -297,7 +338,26 @@ class Relationships(set):
             {r for r in self if r.matches(subj, rel, obj)},
         )
 
-    def entities(self):
+    def objects(self, ptype: type[PackageProxy] | None = None) -> set[PackageProxy]:
+        """Return a set of the objects in the relationships.
+
+        This call is similar to `entities()`, but only returns the objects
+        of the relationships, optionally filtered by type. Note that the
+
+        Args:
+            ptype: If specified, only return objects of this type.
+
+        Returns:
+            A set of the objects in the relationships.
+        """
+        entset = set()
+        for r in self:
+            obj = r.object
+            if ptype is None or isinstance(obj, ptype):
+                entset.add(obj)
+        return entset
+
+    def entities(self) -> set[PackageProxy]:
         """Return a set of entities in the relationships.
 
         Entities are either subjects or objects of some relationship.
@@ -316,19 +376,19 @@ class Relationships(set):
 
     def __or__(self, other: Relationships) -> Relationships:
         """Return the union of two Relationships sets."""
-        return Relationships(self.client, self | other)
+        return Relationships(self.client, self.union(other))
 
     def __and__(self, other: Relationships) -> Relationships:
         """Return the intersection of two Relationships sets."""
-        return Relationships(self.client, self & other)
+        return Relationships(self.client, self.intersection(other))
 
     def __sub__(self, other: Relationships) -> Relationships:
         """Return the difference of two Relationships sets."""
-        return Relationships(self.client, self - other)
+        return Relationships(self.client, self.difference(other))
 
     def __xor__(self, other: Relationships) -> Relationships:
         """Return the symmetric difference of two Relationships sets."""
-        return Relationships(self.client, self ^ other)
+        return Relationships(self.client, self.symmetric_difference(other))
 
 
 class RelProxy:

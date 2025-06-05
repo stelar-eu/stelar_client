@@ -334,13 +334,25 @@ class BaseAPI(RegistryCatalog):
 
         return api_call(self)
 
-    def listapi(self, show_verbs=True):
-        """Return a list of all available API endpoints."""
+    def listapi(self, search: str = None, show_verbs: bool = True) -> list[str]:
+        """
+        Return a list of all available API endpoints.
+
+        if `search` is provided, it will filter the endpoints
+        to only include those that contain the search term.
+
+        Args:
+            search (str, optional): A search term to filter the endpoints.
+            show_verbs (bool): If True, include HTTP verbs in the output.
+        """
         specs = self.GET("../specs").json()
         paths = specs["paths"]
 
         L = []
         for path, methods in paths.items():
+            if search and search not in path:
+                continue
+
             if show_verbs:
                 for method in methods:
                     L.append(f"{method.upper():<8} {path}")

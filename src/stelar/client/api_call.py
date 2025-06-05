@@ -834,8 +834,7 @@ class api_call(api_call_base):
         r = self.relationships_fetch(subject_id, rel, object_id)
         if not r:
             raise EntityNotFound(
-                "Relationship not found",
-                "relationships",
+                "Relationship",
                 (subject_id, rel, object_id),
                 "fetch",
             )
