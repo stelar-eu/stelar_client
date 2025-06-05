@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional
 from uuid import UUID
 
 from .api_call import api_call
+from .proxy import EntityNotFound
+from .utils import client_for
 
 if TYPE_CHECKING:
     from .client import Client
@@ -43,6 +45,28 @@ PEER_MAP = {rel1: rel2 for rel1, rel2 in PEERS} | {rel2: rel1 for rel1, rel2 in 
 
 
 class Relationship:
+    @classmethod
+    def from_triple(
+        cls,
+        subject: PackageProxy,
+        rel: Rel,
+        object: PackageProxy,
+        comment: Optional[str] = None,
+    ) -> Relationship:
+        client = client_for(subject)
+        rel = Rel(rel).value
+        reldata = {
+            "subject": str(subject.proxy_id),
+            "subject_name": subject.name,
+            "subject_type": subject.type,
+            "object": str(object.proxy_id),
+            "object_name": object.name,
+            "object_type": object.type,
+            "relationship": rel,
+            "comment": comment,
+        }
+        return cls(client, reldata)
+
     def __init__(self, client: Client, reldata: Dict[str, Any]) -> None:
         self.client: Client = client
         self.subject_id: UUID = UUID(reldata["subject"])
@@ -212,6 +236,21 @@ class Relationship:
         ac.relationship_delete(
             str(self.subject_id), self.relationship.value, str(self.object_id)
         )
+
+    def exists(self) -> bool:
+        """Check if the relationship exists in the database."""
+        ac = api_call(self.client)
+        try:
+            ac.relationship_show(
+                str(self.subject_id), self.relationship.value, str(self.object_id)
+            )
+            return True
+        except EntityNotFound:
+            return False
+
+    def __bool__(self) -> bool:
+        """Return True if the relationship exists, False otherwise."""
+        return self.exists()
 
 
 class Relationships(set):
