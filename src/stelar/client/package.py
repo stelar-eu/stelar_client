@@ -22,7 +22,6 @@ from .proxy import (
     RefList,
     StrField,
     TaggableProxy,
-    TagList,
     UUIDField,
 )
 from .resource import Resource
@@ -48,7 +47,6 @@ class PackageProxy(NamedProxy, TaggableProxy, entity=False):
         trigger_sync=True,
     )
 
-    tags = TagList()
     groups = RefList("Group", trigger_sync=False)
 
     # User-maintained fields

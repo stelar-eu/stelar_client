@@ -12,10 +12,23 @@ This document provides an overview of the STELAR KLMS and describes how to use t
 
 
 .. include:: ../docs/stelaroverview.rst
+.. include:: ../docs/datacatalog.rst
+
+..
+  .. include:: ../docs/minio.rst
+  .. include:: ../docs/tasks.rst
+  .. include:: ../docs/tools.rst
+  .. include:: ../docs/api.rst
+  .. include:: ../docs/usermanagement.rst
+  .. include:: ../docs/authorization.rst
+  .. include:: ../docs/knowledgegraph.rst
+
+
+
 
 
 **********************************
-Working with the Data Catalog
+Working with data in Storage
 **********************************
 
 

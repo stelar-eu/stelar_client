@@ -4,6 +4,7 @@ The Client class is the main STELAR API client object.
 The Client class primarily holds the API URL and user credentials needed to
 access the API.
 """
+
 from __future__ import annotations
 
 from configparser import ConfigParser
@@ -32,18 +33,18 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
     """An SDK (client) for the STELAR API.
 
     Operation of the STELAR client requires three pieces of information:
-    1. The base URL of the STELAR installation.
-    2. A username for the user.
-    3. Access and refresh tokens for the user. These tokens need to be refreshed periodically.
+        1. The base URL of the STELAR installation.
+        2. A username for the user.
+        3. Access and refresh tokens for the user. These tokens need to be refreshed periodically.
 
     The client can be initialized in four ways:
-    1. By providing nothing. This is equivalent to specifying the context name "default".
-    2. By providing a context name, which is looked up in the config file (see below).
-    3. By providing a base URL, username, and password. The client will then authenticate
-       the user and retrieve the access and refresh tokens. Note that, the password is
-       not stored in the client or anywhere else.
-    4. By providing a base URL, username, password, and a token JSON dictionary containing
-       the access token, refresh token, and their expiration times.
+        1. By providing nothing. This is equivalent to specifying the context name "default".
+        2. By providing a context name, which is looked up in the config file (see below).
+        3. By providing a base URL, username, and password. The client will then authenticate
+           the user and retrieve the access and refresh tokens. Note that, the password is
+           not stored in the client or anywhere else.
+        4. By providing a base URL, username, password, and a token JSON dictionary containing
+           the access token, refresh token, and their expiration times.
 
     When options 3. or 4. above are used, when the tokens expire, the user must call
     either the method `reauthenticate(passwd)` providing the password, or calling method

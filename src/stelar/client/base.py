@@ -204,8 +204,7 @@ class BaseAPI(RegistryCatalog):
             else:
                 break
 
-        # Raise an exception for HTTP errors (4xx, 5xx responses)
-        # response.raise_for_status()
+        # Return the response
         return response
 
     def api_request(self, method, endpoint, *, params=None, json=None):

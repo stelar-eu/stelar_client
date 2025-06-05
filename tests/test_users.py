@@ -53,3 +53,33 @@ def test_read_only_username(testcli):
     du = c.users["dummy_user2"]
 
     assert du.username == "dummy_user2"
+
+
+def test_read_roles(testcli):
+    c = testcli
+    roles = c.users.roles()
+
+    assert all(r in roles for r in ["admin", "pushers", "pullers"])
+
+
+def test_read_user_roles(testcli):
+    c = testcli
+    du = c.users["dummy_user2"]
+
+    du.set_roles([])
+    assert du.roles == ()
+    assert len(du.roles) == 0
+
+    du.add_role("pushers")
+
+    assert du.roles == ("pushers",)
+    assert len(du.roles) == 1
+
+    du.set_roles(["pullers", "pushers"])
+
+    assert set(du.roles) == set(("pullers", "pushers"))
+    assert len(du.roles) == 2
+
+    du.remove_role("pushers")
+    assert du.roles == ("pullers",)
+    assert len(du.roles) == 1
