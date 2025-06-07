@@ -2,6 +2,14 @@
 Changelog
 =========
 
+Version 0.6.0
+=============
+
+- Added support for relationships.
+- Added better support for two new entity types:
+  - Policy  represents authorization poplicy specs
+  - ImageRegistryToken  represents tokens for accessing the image registry
+  
 Version 0.5.3
 =============
 
