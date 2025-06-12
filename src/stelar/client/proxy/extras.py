@@ -27,11 +27,25 @@ This field should not be accessed directly, instead its contents
 are available as normal attributes.
 """
 
-    def get(self, obj):
+    def get(self, obj: Proxy):
         """Low-level getter"""
         if obj.proxy_attr is None:
             obj.proxy_sync()
         return obj.proxy_attr[self.name]
+
+    def touch(self, obj: Proxy) -> bool:
+        """Mark the extras as changed.
+
+        This overloads the default touch, because after the touch, the
+        extras dict needs to be copied (else, changing the 'proxy_attr' instance
+        will change the 'proxy_changed' instance, which is not what we want).
+        """
+        if super().touch(obj):
+            # Copy the extras dict to ensure that changes to the proxy_attr
+            # do not affect the proxy_changed.
+            obj.proxy_changed[self.name] = self.get(obj).copy()
+            return True
+        return False
 
     def __get__(self, obj, obj_type=None):
         return self.get(obj).copy()
@@ -109,8 +123,8 @@ class ExtrasProxy(Proxy, entity=False):
         extras = extras_property.get(self)
         if attr in extras:
             extras_property.touch(self)
-            del extras[attr]
-            if self.proxy_autosync:
-                self.proxy_sync()
+            # del extras[attr]
+            del extras_property.get(self)[attr]
+            self.proxy_autocommit()
         else:
             raise AttributeError(attr)
