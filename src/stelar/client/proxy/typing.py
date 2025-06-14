@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 if TYPE_CHECKING:
     from .proxy import Proxy
 
-TagSpecList = tuple[str, ...]
+TagSpecList = list[str]
 TagDictList = list[dict[str, Any]]
 ProxyClass = TypeVar("ProxyClass", bound="Proxy")
 Entity = dict[str, Any]

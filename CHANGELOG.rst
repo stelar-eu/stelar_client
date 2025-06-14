@@ -2,6 +2,14 @@
 Changelog
 =========
 
+Version 0.6.0
+=============
+
+- Added support for relationships.
+- Added better support for two new entity types:
+  - Policy  represents authorization poplicy specs
+  - ImageRegistryToken  represents tokens for accessing the image registry
+  
 Version 0.5.3
 =============
 
@@ -49,15 +57,16 @@ Version 0.3.7
   changes in the server API.
 - The package 'author' property is now read-only, reflecting the change in the
   server API.
-- Updated further the documentation, 
+- Updated further the documentation.
 
 Version 0.3.6
 =============
 
 - The start of a more complete documemtation, including a new section on A
   Quick Start Guide.
-- Added support for the 'Dataset.add_dataframe()' and Resource.read_dataframe() operations, 
-  which allows the client to access or store a dataset with the Storage server.
+- Added support for the ``Dataset.add_dataframe()`` and
+  ``Resource.read_dataframe()`` operations, which allows the
+  client to access or store a dataset with the Storage server.
 
 Version 0.3.5
 =============

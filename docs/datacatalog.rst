@@ -569,7 +569,7 @@ An example:
     # This will create a new vocabulary with the given name, title and description.
     # The `vocab` variable will be a proxy for the newly created vocabulary.
 
-    dset.add_tags('devstatus:alpha'))
+    dset.add_tags('devstatus:alpha')
     # Tag a dataset
 
 Tags that do not belong to a vocabulary are called *free tags*. By contrast, tags that

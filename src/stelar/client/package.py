@@ -6,11 +6,13 @@ These will be:
 - workflow processes
 - tools
 """
+from __future__ import annotations
 
 from functools import cached_property
-from typing import Any, TypeVar
+from typing import Any, Optional, TypeVar
 from uuid import UUID
 
+from .api_call import api_call
 from .generic import GenericCursor
 from .named import NamedProxy
 from .proxy import (
@@ -23,7 +25,9 @@ from .proxy import (
     StrField,
     TaggableProxy,
     UUIDField,
+    derived_property,
 )
+from .relationship import Rel, Relationship, RelProxy
 from .resource import Resource
 from .utils import client_for, tag_split
 from .vocab import Tag
@@ -52,8 +56,6 @@ class PackageProxy(NamedProxy, TaggableProxy, entity=False):
     # User-maintained fields
     notes = Property(validator=StrField(nullable=True), updatable=True)
 
-    # author = Property(validator=StrField(nullable=True), updatable=True)
-    # author_email = Property(validator=StrField(nullable=True), updatable=True)
     author = Property(validator=StrField(nullable=True), updatable=False)
     author_email = Property(validator=StrField(nullable=True), updatable=False)
 
@@ -73,6 +75,38 @@ class PackageProxy(NamedProxy, TaggableProxy, entity=False):
             **properties: The arguments to pass. See 'Resource' for details.
         """
         return client_for(self).resources.create(dataset=self, **properties)
+
+    @derived_property
+    def relationships(self, entity) -> RelProxy:
+        """Return a Relationships for this package.
+
+        This is a set of relationships that this package has with other packages.
+        """
+        return RelProxy(self)
+
+    def add_relationship(
+        self, rel: Rel | str, obj: PackageProxy | UUID, comment: Optional[str] = None
+    ):
+        """Add a relationship with this package as subject.
+
+        Args:
+            rel: The relationship type to add.
+            obj: The object to relate to, either a PackageProxy or UUID.
+            comment: An optional comment for the relationship.
+
+        Returns:
+        """
+        if isinstance(obj, PackageProxy):
+            obj = str(obj.id)
+        elif isinstance(obj, UUID):
+            obj = str(obj)
+
+        if isinstance(rel, Rel):
+            rel = rel.value
+
+        ac = api_call(self)
+        reldata = ac.relationship_create(str(self.id), rel, obj, comment)
+        return Relationship(ac.client, reldata)
 
 
 PackageProxyType = TypeVar("PackageProxy", bound=PackageProxy)

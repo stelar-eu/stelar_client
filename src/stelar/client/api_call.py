@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """Classes used to access the STELAR API.
 """
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from .proxy import EntityNotFound, Proxy, ProxyCursor, ProxyList, ProxyOperationError
 from .utils import client_for
@@ -544,7 +544,12 @@ class api_call(api_call_base):
         """
         return self.request("GET", f"v2/export/zenodo/{dataset_id}")
 
+    #
+    #
     # Handling tasks
+    #
+    #
+
     def task_job_input(self, task_id: str, signature: str) -> dict:
         """Get the input for a job in a task."""
         return self.request("GET", f"v2/task/{task_id}/{signature}/input")
@@ -701,6 +706,7 @@ class api_call(api_call_base):
             )
 
     ##
+    #
     # Image Registry Tokens
     #
 
@@ -780,3 +786,135 @@ class api_call(api_call_base):
             A dictionary containing the deletion result.
         """
         return self.request("DELETE", f"v2/registry/credentials/{uuid}")
+
+    #
+    #
+    # Relationships
+    #
+    #
+
+    def relationships_fetch(
+        self,
+        subject_id: str,
+        rel: Optional[str] = None,
+        object_id: Optional[str] = None,
+        /,
+    ):
+        """
+        Show relationships for a subject.
+
+        """
+        p = [str(subject_id)]
+        if rel is not None:
+            p.append(str(rel))
+            if object_id is not None:
+                p.append(str(object_id))
+
+        endpoint = f"v2/relationships/{'/'.join(p)}"
+        return self.request("GET", endpoint)
+
+    def relationship_show(self, subject_id: str, rel: str, object_id: str):
+        """
+        Show a specific relationship.
+
+        Parameters
+        ----------
+        subject_id : str
+            The ID of the subject of the relationship.
+        rel : str
+            The type of the relationship.
+        object_id : str
+            The ID of the object of the relationship.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the relationship information.
+        """
+        r = self.relationships_fetch(subject_id, rel, object_id)
+        if not r:
+            raise EntityNotFound(
+                "Relationship",
+                (subject_id, rel, object_id),
+                "fetch",
+            )
+        return r[0]
+
+    def relationship_create(
+        self,
+        subject_id: str,
+        rel: str,
+        object_id: str,
+        comment: Optional[str] = None,
+    ):
+        """
+        Create a new relationship.
+
+        Parameters
+        ----------
+        subject_id : str
+            The ID of the subject of the relationship.
+        rel : str
+            The type of the relationship.
+        object_id : str
+            The ID of the object of the relationship.
+        comment : str, optional
+            A comment for the relationship.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the created relationship information.
+        """
+        return self.request(
+            "POST",
+            f"v2/relationship/{subject_id}/{rel}/{object_id}",
+            json=dict(comment=comment),
+        )
+
+    def relationship_update(
+        self,
+        subject_id: str,
+        rel: str,
+        object_id: str,
+        comment: Optional[str] = None,
+    ):
+        """
+        Update the comment of a relationship.
+
+        Parameters
+        ----------
+        subject_id : str
+            The ID of the subject of the relationship.
+        rel : str
+            The type of the relationship.
+        object_id : str
+            The ID of the object of the relationship.
+        comment : str, optional
+            A comment for the relationship.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the created relationship information.
+        """
+        return self.request(
+            "PUT",
+            f"v2/relationship/{subject_id}/{rel}/{object_id}",
+            json=dict(comment=comment),
+        )
+
+    def relationship_delete(self, subject_id: str, rel: str, object_id: str):
+        """
+        Delete a relationship.
+
+        Parameters
+        ----------
+        subject_id : str
+            The ID of the subject of the relationship.
+        rel : str
+            The type of the relationship.
+        object_id : str
+            The ID of the object of the relationship.
+        """
+        self.request("DELETE", f"v2/relationship/{subject_id}/{rel}/{object_id}")

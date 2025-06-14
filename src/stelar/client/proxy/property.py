@@ -157,7 +157,7 @@ class Property:
             obj.proxy_sync()
         return obj.proxy_attr[self.name]
 
-    def touch(self, obj):
+    def touch(self, obj: Proxy) -> bool:
         """Transition the initial value of a clean proxy to the
         'proxy_changed' dictionary.
 
@@ -367,6 +367,16 @@ class ProxyProperty(Property):
             return None
         else:
             return self.property_proxy_class(obj, self)
+
+    def touch(self, obj: Proxy) -> bool:
+        """Mark the property as changed."""
+        if super().touch(obj):
+            # If the property is touched, we need to ensure that the
+            # proxy_changed dictionary has a different object than the
+            # proxy_attr dictionary.
+            obj.proxy_changed[self.name] = copy.copy(obj.proxy_changed[self.name])
+            return True
+        return False
 
 
 class DictProxy(PropertyProxy, MutableMapping):
