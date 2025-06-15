@@ -34,7 +34,7 @@ class User(GenericProxy):
             role (str): The role to add.
         """
         ac = api_call(self)
-        entity = ac.user_add_role(self.proxy_id, role)
+        entity = ac.user_add_role(str(self.proxy_id), role)
         self.proxy_sync(entity)
 
     def remove_role(self, role: str):
@@ -45,7 +45,7 @@ class User(GenericProxy):
             role (str): The role to remove.
         """
         ac = api_call(self)
-        entity = ac.user_remove_role(self.proxy_id, role)
+        entity = ac.user_remove_role(str(self.proxy_id), role)
         self.proxy_sync(entity)
 
     def append_roles(self, roles: list[str]):
@@ -56,7 +56,7 @@ class User(GenericProxy):
             roles (list[str]): The roles to append.
         """
         ac = api_call(self)
-        entity = ac.user_append_roles(self.proxy_id, roles)
+        entity = ac.user_add_roles(str(self.proxy_id), roles)
         self.proxy_sync(entity)
 
     def set_roles(self, roles: list[str]):
@@ -67,7 +67,7 @@ class User(GenericProxy):
             roles (list[str]): The new list of roles.
         """
         ac = api_call(self)
-        entity = ac.user_set_roles(self.proxy_id, roles)
+        entity = ac.user_set_roles(str(self.proxy_id), roles)
         self.proxy_sync(entity)
 
 
