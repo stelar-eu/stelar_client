@@ -12,6 +12,8 @@ finally:
 from .client import Client
 from .dataset import Dataset
 from .group import Group, Organization
+from .license import License
+from .policy import Policy
 from .process import Process
 from .proxy import ProxyState, deferred_sync
 
@@ -22,7 +24,7 @@ from .relationship import Rel, Relationship, Relationships
 from .resource import Resource
 from .task_spec import TaskSpec
 from .tasks import Task
-from .tool import Tool
+from .tool import Image, ImageRegistryToken, Tool
 from .user import User
 
 # Include all utility functions
@@ -41,9 +43,13 @@ __all__ = [
     "Group",
     "ProxyState",
     "Tag",
+    "License",
     "Vocabulary",
     "User",
     "Process",
+    "Policy",
+    "Image",
+    "ImageRegistryToken",
     "Relationship",
     "Rel",
     "Relationships",
