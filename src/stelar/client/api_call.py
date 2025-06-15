@@ -922,3 +922,28 @@ class api_call(api_call_base):
             The ID of the object of the relationship.
         """
         self.request("DELETE", f"v2/relationship/{subject_id}/{rel}/{object_id}")
+
+    def resource_lineage(self, resource_id: str, forward: bool) -> dict:
+        """
+        Get the backward lineage of a resource.
+
+        Parameters
+        ----------
+        resource_id : str
+            The ID of the resource to get the lineage for.
+        forward : bool
+            If True, get the forward lineage; if False, get the backward lineage.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the lineage information.
+        """
+        if forward:
+            # The API has a different endpoint for forward lineage
+            # This is a temporary workaround until the API is fixed
+            # to use the same endpoint for both forward and backward lineage.
+            direction = "cardinality"
+        else:
+            direction = "lineage"
+        return self.request("GET", f"v2/resource/{resource_id}/{direction}")

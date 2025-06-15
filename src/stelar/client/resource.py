@@ -4,7 +4,9 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
+from .api_call import api_call
 from .generic import GenericCursor, GenericProxy, generic_proxy_sync
+from .lineage import Lineage
 from .mutils import is_s3url, s3spec_to_url
 from .pdutils import read_dataframe
 from .proxy import (
@@ -215,6 +217,29 @@ class Resource(GenericProxy):
         client = client_for(self)
         format = format or self.format or None
         return read_dataframe(client, self.url, format=format, **kwargs)
+
+    def lineage(self, forward=False) -> Lineage:
+        """
+        Get the lineage of this resource.
+
+        The lineage is a directed graph of resources and tasks that are reachable from this resource.
+        Arcs in the graph correspond to resources being inputs or outputs of tasks.
+        The lineage is used to track the flow of data and tasks in the STELAR system.
+
+        The lineage can be either forward (from this resource to its descendants) or backward
+        (from this resource to its ancestors).
+
+        Args:
+            forward (bool): If True, get the forward lineage; otherwise, get the backward lineage.
+
+        Returns:
+            Lineage: A Lineage object containing the lineage information.
+        """
+        from .lineage import Lineage
+
+        linobj = api_call(self).resource_lineage(self.id, forward=forward)
+
+        return Lineage(client_for(self), self.id, linobj, forward=forward)
 
 
 class ResourceCursor(GenericCursor):

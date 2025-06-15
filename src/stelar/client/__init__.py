@@ -13,6 +13,7 @@ from .client import Client
 from .dataset import Dataset
 from .group import Group, Organization
 from .license import License
+from .lineage import Lineage
 from .policy import Policy
 from .process import Process
 from .proxy import ProxyState, deferred_sync
@@ -58,6 +59,8 @@ __all__ = [
     "Workflow",
     "Tool",
     "deferred_sync",
+    "Lineage",
+    "ProxyState",
 ]
 
 del __all_exceptions
