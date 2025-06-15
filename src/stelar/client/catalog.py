@@ -2,6 +2,7 @@ from .base import BaseAPI
 from .dataset import DatasetCursor
 from .generic import GenericCursor, api_call
 from .group import Group, Organization
+from .license import LicenseCursor
 from .resource import ResourceCursor
 from .user import UserCursor
 from .vocab import TagCursor, VocabularyCursor
@@ -27,6 +28,7 @@ class CatalogAPI(BaseAPI):
         self.vocabularies = VocabularyCursor(self)
         self.users = UserCursor(self)
         self.tags = TagCursor(self)
+        self.licenses = LicenseCursor(self)
 
     def fetch_active_vocabularies(self):
         """Return a list of dicts with the id and name of each tag vocabulary.

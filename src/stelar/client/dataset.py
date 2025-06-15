@@ -6,6 +6,7 @@ from stelar.client import pdutils
 from stelar.client.mutils import is_s3url, s3spec_to_pair
 from stelar.client.pdutils import infer_format
 
+from .license import LicensedProxy
 from .package import PackageCursor, PackageProxy
 from .proxy import Property, StrField
 from .reprstyle import dataset_to_html
@@ -14,7 +15,7 @@ from .spatial import GeoJSON
 from .utils import client_for
 
 
-class Dataset(PackageProxy):
+class Dataset(PackageProxy, LicensedProxy):
     """
     A proxy of a STELAR dataset.
     """

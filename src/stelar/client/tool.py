@@ -5,6 +5,7 @@ from datetime import datetime
 
 from .api_call import api_call
 from .generic import GenericCursor, GenericProxy
+from .license import LicensedProxy
 from .package import PackageCursor, PackageProxy
 from .proxy import (
     DateFmtField,
@@ -71,7 +72,7 @@ class Image:
         return f"Image({self.tool.name}/{self.name})"
 
 
-class Tool(PackageProxy):
+class Tool(PackageProxy, LicensedProxy):
     # weird ones
     # license_id = Property(validator=StrField(nullable=True), updatable=True)
     git_repository = Property(validator=StrField(nullable=True), updatable=True)

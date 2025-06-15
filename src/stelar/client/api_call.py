@@ -63,32 +63,27 @@ api_models = {
         "collection_name": "datasets",
         "search": "solr_search",
     },
-    "Resource": {
-        "name": "resource",
-        "collection_name": "resources",
-        "search": "resource_search",
+    "Group": {
+        "name": "group",
+        "collection_name": "groups",
+        "members": ["Dataset", "Workflow", "Tool", "Group", "User"],
+    },
+    "ImageRegistryToken": {
+        "name": "image_registry_token",
+        "collection_name": "image_registry_token",
+    },
+    "License": {
+        "name": "license",
+        "collection_name": "licenses",
     },
     "Organization": {
         "name": "organization",
         "collection_name": "organizations",
         "members": ["Dataset", "Workflow", "Tool", "Group", "User"],
     },
-    "Group": {
-        "name": "group",
-        "collection_name": "groups",
-        "members": ["Dataset", "Workflow", "Tool", "Group", "User"],
-    },
-    "Vocabulary": {
-        "name": "vocabulary",
-        "collection_name": "vocabularies",
-    },
-    "Tag": {
-        "name": "tag",
-        "collection_name": "tags",
-    },
-    "User": {
-        "name": "user",
-        "collection_name": "users",
+    "Policy": {
+        "name": "policy",
+        "collection_name": "policy",
     },
     "Process": {
         "name": "process",
@@ -96,27 +91,36 @@ api_models = {
         "members": ["Task"],
         "search": "solr_search",
     },
+    "Resource": {
+        "name": "resource",
+        "collection_name": "resources",
+        "search": "resource_search",
+    },
+    "Tag": {
+        "name": "tag",
+        "collection_name": "tags",
+    },
     "Task": {
         "name": "task",
         "collection_name": "tasks",
-    },
-    "Workflow": {
-        "name": "workflow",
-        "collection_name": "workflows",
-        "search": "solr_search",
     },
     "Tool": {
         "name": "tool",
         "collection_name": "tools",
         "search": "solr_search",
     },
-    "Policy": {
-        "name": "policy",
-        "collection_name": "policy",
+    "User": {
+        "name": "user",
+        "collection_name": "users",
     },
-    "ImageRegistryToken": {
-        "name": "image_registry_token",
-        "collection_name": "image_registry_token",
+    "Vocabulary": {
+        "name": "vocabulary",
+        "collection_name": "vocabularies",
+    },
+    "Workflow": {
+        "name": "workflow",
+        "collection_name": "workflows",
+        "search": "solr_search",
     },
 }
 for m in api_models:

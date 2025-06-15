@@ -284,6 +284,10 @@ class VocabNameField(NameField):
     NAME_PATTERN = re.compile(r".+")
 
 
+class LicenseNameField(NameField):
+    NAME_PATTERN = re.compile(r"[a-z0-9_-]+")
+
+
 class TagNameField(NameField):
     NAME_PATTERN = re.compile(r"[A-Za-z0-9 ._-]+")
 

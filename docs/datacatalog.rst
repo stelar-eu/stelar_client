@@ -137,26 +137,32 @@ The follwing table provides the proxy type and cursor atribute for each entity t
      - Proxy Type and Cursor Attribute
    * - Dataset
      - `Dataset` proxy type, accessible via `client.datasets`
+   * - Resource
+     - `Resource` proxy type, accessible via `client.resources`
    * - Process
      - `Process` proxy type, accessible via `client.processes`
+   * - Task
+     - `Task` proxy type, accessible via `client.tasks`
    * - Workflow
      - `Workflow` proxy type, accessible via `client.workflows`
    * - Tool
      - `Tool` proxy type, accessible via `client.tools`
-   * - Resource
-     - `Resource` proxy type, accessible via `client.resources`
    * - Organization
      - `Organization` proxy type, accessible via `client.organizations`
    * - Group
      - `Group` proxy type, accessible via `client.groups`
-   * - User
-     - `User` proxy type, accessible via `client.users`
-   * - Task
-     - `Task` proxy type, accessible via `client.tasks`
    * - Vocabulary
      - `Vocabulary` proxy type, accessible via `client.vocabularies`
    * - Tag
      - `Tag` proxy type, accessible via `client.tags`
+   * - License
+     - `License` proxy type, accessible via `client.licenses`
+   * - User
+     - `User` proxy type, accessible via `client.users`
+   * - ImageRegistryToken
+     - `ImageRegistryToken` proxy type, accessible via `client.image_registry_tokens`
+   * - Policy
+     - `Policy` proxy type, accessible via `client.policies`
 
 
 The state of a proxy
@@ -852,4 +858,84 @@ The schema is available as a JSON object obtained as:
 
     solr_schema = client.GET('v2/search/schema').json()
     # This will return a JSON object representing the Solr schema for datasets.
+
+
+Licenses 
+============================
+
+Licenses are entities referring to the legal terms under which a dataset,
+workflow tool can be used. The STELAR data catalog treats licenses as
+entities in their own right. They can be searched, created and deleted.
+
+The following attributes are available for licenses:
+
+.. list-table::
+  :widths: 20 80
+  :header-rows: 1
+
+  * - Attribute
+    - Description
+  * - `id`
+    - The UUID of the license.
+  * - `key`
+    - The key/name of the license.
+  * - `title`
+    - The title of the license. This attribute is compulsory.
+  * - `description`
+    - A description of the license.
+  * - `url`
+    - A URL to the full text of the license.
+  * - `image_url`
+    - A URL to an image representing the license, e.g., a logo.
+  * - `osi_approved`
+    - Indicate license approval by the Open Source Initiative (OSI).
+  * - `open_data_approved`
+    - Indicate license is approval by the Open Data Commons (ODC).
+  * - `metadata_created`
+    - The date and time when the license was created.
+  * - `metadata_modified`
+    - The date and time when the license was last updated.
+
+Each dataset, workflow or tool provides a ``license_id`` attribute, which is of
+type ``String``.  This attribute can be set to anything, including null (``None`` in Python).
+
+.. code-block:: python
+
+    dset = client.datasets['my-dataset']
+    dset.license_id = 'cc-by-4.0'
+    # This will set the license ID of the dataset to 'cc-by-4.0'.
+
+Also, the ``license`` property of the dataset, workflow or tool proxy
+is a proxy to the license entity, if it exists. 
+
+.. code-block:: python
+
+    dset = client.datasets['my-dataset']
+    dset.license = 'cc-by-4.0'
+    # This will set the license ID of the dataset to 'cc-by-4.0'.
+
+    dset.license.title if dset.license else None
+    # This will return the title of the license, if it exists
+
+    assert dset.license.osi_approved
+    # Again, access to the license proxy
+
+    # Assign one of the existing licenses to the dataset
+    dset.license = client.licenses['mit']
+    # The same as above
+    dset.license_id = 'mit'
+    # The same as above
+    dset.license = 'mit'
+    # The same as above
+    dset.license = client.licenses['mit'].id
+
+    # Check the license attribute
+    assert dset.license in client.licenses
+
+
+
+
+
+Note that the ``license_id`` field need not
+contain a valid license UUID or key.
 

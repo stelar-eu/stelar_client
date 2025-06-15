@@ -1,15 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from .fieldvalidation import AnyField, StrField
 from .property import Property
 from .proxy import Proxy
-
-if TYPE_CHECKING:
-    # from ..client import Client
-    # from .schema import Schema
-    pass
 
 
 class ExtrasProperty(Property):
@@ -92,13 +85,6 @@ class ExtrasProxy(Proxy, entity=False):
     dynamic attributes.
     """
 
-    # def __init__(self, *args, **kwargs):
-    #    for a in [
-    #        'proxy_id', 'proxy_attr', 'proxy_changed',
-    #        'proxy_purged_id', 'proxy_registry', 'proxy_autosync'
-    #    ]:
-    #        object.__setattr__(self, a, None)
-
     def __getattr__(self, attr):
         try:
             return self.proxy_schema.extras.get(self)[attr]
@@ -106,7 +92,11 @@ class ExtrasProxy(Proxy, entity=False):
             raise AttributeError(attr) from e
 
     def __setattr__(self, attr, value):
-        if attr.startswith("proxy_") or attr in self.proxy_schema.all_fields:
+        if (
+            attr.startswith("proxy_")
+            or attr in self.proxy_schema.all_fields
+            or hasattr(self.__class__, attr)
+        ):
             return object.__setattr__(self, attr, value)
 
         extras_property = self.proxy_schema.extras
@@ -116,7 +106,11 @@ class ExtrasProxy(Proxy, entity=False):
         self.proxy_autocommit()
 
     def __delattr__(self, attr):
-        if attr.startswith("proxy_") or attr in self.proxy_schema.all_fields:
+        if (
+            attr.startswith("proxy_")
+            or attr in self.proxy_schema.all_fields
+            or hasattr(self.__class__, attr)
+        ):
             return object.__delattr__(self, attr)
 
         extras_property = self.proxy_schema.extras

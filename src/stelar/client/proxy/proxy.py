@@ -460,7 +460,7 @@ class Proxy:
         elif self.proxy_state is ProxyState.EMPTY:
             nid = str(self.proxy_id)
         elif self.proxy_schema.name_id is not None:
-            nid = self.name
+            nid = self.proxy_schema.name_id.get(self)
         else:
             nid = str(self.proxy_id)
         return f"<{typename} {nid} {state}>"
