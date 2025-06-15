@@ -99,7 +99,8 @@ The above command will return the policy definition as a byte array. We can stor
         f.write(policy_spec)
 
 Creating policies
-----------------
+------------------
+
 To create a new policy, we can use the :code:`create()` method of the :code:`policies` cursor. The :code:`create()` method takes as an argument the desired policy definition . For example:
 
 .. code-block:: python

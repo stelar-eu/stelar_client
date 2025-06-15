@@ -1,4 +1,5 @@
 .. _quickstart-guide:
+
 ===================================
 Quick start with the STELAR client
 ===================================
@@ -30,8 +31,8 @@ declares a number of :dfn:`contexts`. Each context is a set of
 connection details to a specific instance of the STELAR KLMS.
 
 The default location of the configuration file is in the user's home
-directory, and by default it is called `.stelar`. So, if you are on a Unix-like
-system, the configuration file will be `~/.stelar`.
+directory, and by default it is called ``.stelar``. So, if you are on a Unix-like
+system, the configuration file will be ``~/.stelar``.
 
 Here is an example of a configuration file:
 
