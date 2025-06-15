@@ -48,6 +48,7 @@ A user can be a member of several organizations, and can have a different role i
 When working with the STELAR Client, you can specify the organization you want to work with when creating 
 or updating entities.
 
+.. _entities-and-proxies:
 
 Entities and proxies
 ============================
@@ -377,6 +378,7 @@ To create a new task in a workflow, you can do the following:
     # The `task` variable will be a proxy for the newly created task.
 
 
+.. _updating-entities:
 
 Updating entities
 ============================
@@ -428,7 +430,7 @@ This is useful when you want to update one or more entities via a User interface
 (e.g., prompting the user for input), and you want to ensure that all updates
 are applied successfully, or none at all.
 
-
+.. _deleting-entities:
 
 Deleting entities
 ============================

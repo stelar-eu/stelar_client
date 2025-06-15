@@ -1,3 +1,5 @@
+.. _authz-scheme-auth:
+
 The STELAR KLMS authorization scheme
 ========================================
 STELAR KLMS authorization scheme is based on RBAC (Role-Based Access Control). Users are assigned to roles either directly or through group
@@ -33,6 +35,8 @@ The main components of the Policy Management System are:
 - **Access Policy Controller**: The core of the system, responsible for parsing the policy document and generating the necessary configurations for the underlying systems. Additionally, this is where the policy evaluation takes place. Every time a user tries to access a resource, the controller evaluates the policy document to determine whether the access should be granted or denied.
 - **Monitor Component**: Monitor component is responsible to keep track the current applied policies for each service. This component works in conjuction with the update component to ensure that the policies are up-to-date and consistent across all services.
 - **Update Component**: This is the component that is responsible for updating the policies if a change is detected in the policy document. It ensures that the policies are always in sync with the current state of the system.
+
+.. _policy_yaml_language:
 
 YAML-based Policy Description Language
 ------------------------------------------
@@ -316,6 +320,7 @@ An example of data type permission using the action aliases is shown below:
           - action: "delete"
             resource: "my-bucket/my-object-2.txt"
 
+.. _policy-recon:
 
 Policy Reconciliation
 -------------------------------------------
