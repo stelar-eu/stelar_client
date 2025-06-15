@@ -2,6 +2,14 @@
 Changelog
 =========
 
+Version 0.7.0
+=============
+
+- Added support for License entities, which represent licenses for datasets.
+- Added support for the resource lineage operations.
+- Added the documentation for authorization, user management and policy management.
+- Augmented the documentation for the Data Catalog with a section on licenses.
+
 Version 0.6.0
 =============
 
