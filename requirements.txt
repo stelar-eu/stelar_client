@@ -11,3 +11,4 @@ pandas
 geojson
 shapely
 s3fs
+frozendict

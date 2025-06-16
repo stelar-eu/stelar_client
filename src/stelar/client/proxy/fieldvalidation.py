@@ -15,15 +15,19 @@ of the classes herein.
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import MutableSequence
 from datetime import datetime
 from typing import Any, Mapping, Optional
 from uuid import UUID
 
+from frozendict import deepfreeze
+
 __all__ = [
     "FieldValidator",
     "AnyField",
+    "FrozenField",
     "EnumeratedField",
     "StateField",
     "BoolField",
@@ -229,6 +233,29 @@ class ExecStateField(EnumeratedField):
 
     def __init__(self):
         super().__init__(nullable=False)
+
+
+class FrozenField(AnyField):
+    """A field that accepts any JSON-serializable value."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.add_check(self.check_freeze, 5)
+
+    def check_freeze(self, value, **kwargs):
+        """Validator stage for JSONField"""
+        try:
+            json.dumps(value)  # Check if value is JSON-serializable
+            value = deepfreeze(value)
+        except (TypeError, ValueError) as e:
+            raise ValueError("Value is not freezable") from e
+        return value, False
+
+    def convert_to_proxy(self, value, **kwargs):
+        return deepfreeze(value)
+
+    def repr_type(self):
+        return "frozen"
 
 
 class BasicField(AnyField):
