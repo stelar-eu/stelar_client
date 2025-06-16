@@ -1,5 +1,6 @@
 from .base import BaseAPI
 from .policy import PolicyCursor
+from .user import UserCursor
 
 
 class AdminAPI(BaseAPI):
@@ -9,4 +10,6 @@ class AdminAPI(BaseAPI):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.policies = PolicyCursor(self)
+        self.users = UserCursor(self)

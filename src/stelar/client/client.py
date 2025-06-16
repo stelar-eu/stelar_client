@@ -20,7 +20,6 @@ from .admin import AdminAPI
 from .catalog import CatalogAPI
 
 # Import subAPIs modules
-from .endpoints import APIEndpointsV1
 from .knowgraph import KnowledgeGraphAPI
 from .s3 import S3API
 from .wfapi import WorkflowsAPI
@@ -215,7 +214,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         """
 
         req_data = {"refresh_token": refresh_token}
-        req_url = urljoin(base_url, "/stelar/api/" + APIEndpointsV1.TOKEN_ISSUE)
+        req_url = urljoin(base_url, "/stelar/api/v1/users/token")
         token_response = requests.put(
             url=req_url,
             json=req_data,
@@ -264,7 +263,7 @@ class Client(WorkflowsAPI, CatalogAPI, KnowledgeGraphAPI, AdminAPI, S3API):
         """
 
         auth_data = {"username": username, "password": password}
-        req_url = urljoin(base_url, "/stelar/api/" + APIEndpointsV1.TOKEN_ISSUE)
+        req_url = urljoin(base_url, "/stelar/api/v1/users/token")
 
         token_response = requests.post(
             url=req_url,

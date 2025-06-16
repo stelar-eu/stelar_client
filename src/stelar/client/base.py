@@ -133,7 +133,7 @@ class BaseAPI(RegistryCatalog):
 
         For example:
             response = c.request("GET", "api/v2/datasets")
-            response = c.request("POST", "v2/dataset", json={"name": "my_dataset"})
+            response = c.request("POST", "api/v2/dataset", json={"name": "my_dataset"})
 
         Args:
             method (str): The HTTP method ('GET', 'POST', 'PUT', 'DELETE').
@@ -344,6 +344,9 @@ class BaseAPI(RegistryCatalog):
         Args:
             search (str, optional): A search term to filter the endpoints.
             show_verbs (bool): If True, include HTTP verbs in the output.
+
+        Returns:
+            list[str]: A list of API endpoints, optionally with HTTP verbs.
         """
         specs = self.GET("../specs").json()
         paths = specs["paths"]

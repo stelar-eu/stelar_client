@@ -10,11 +10,19 @@ executing tasks and workflows, managing tools, and accessing the STELAR API.
 In order to fully utilize the STELAR Client, users should be familiar with the concepts and terminology used in the STELAR KLMS.
 This document provides an overview of the STELAR KLMS and describes how to use the STELAR Client to interact with the KLMS.
 
+.. toctree::
+   :maxdepth: 4
 
-.. include:: ../docs/stelaroverview.rst
-.. include:: ../docs/datacatalog.rst
-.. include:: ../docs/authorization.rst
-.. include:: ../docs/usermanagement.rst
+   An Overview of the STELAR KLMS <stelaroverview>
+   Data catalog <datacatalog>
+   Authorization <authorization>
+   User Management <usermanagement>
+
+..
+  .. include:: ../docs/stelaroverview.rst
+  .. include:: ../docs/datacatalog.rst
+  .. include:: ../docs/authorization.rst
+  .. include:: ../docs/usermanagement.rst
 
 ..
   .. include:: ../docs/minio.rst

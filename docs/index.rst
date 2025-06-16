@@ -8,7 +8,8 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
+   :numbered: 4
 
    Overview <readme>
    QuickStart <quickstart>

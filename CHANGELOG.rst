@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 0.8.0
+=============
+
+- Added support for execution profiles related to tools. Also, added comprehensive tests
+  for the execution profiles and tool operations.
+
 Version 0.7.0
 =============
 

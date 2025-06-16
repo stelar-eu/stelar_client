@@ -48,7 +48,7 @@ A user can be a member of several organizations, and can have a different role i
 When working with the STELAR Client, you can specify the organization you want to work with when creating 
 or updating entities.
 
-.. _entities-and-proxies:
+.. entities-and-proxies:
 
 Entities and proxies
 ============================
