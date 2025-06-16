@@ -4,7 +4,6 @@ from .generic import GenericCursor, api_call
 from .group import Group, Organization
 from .license import LicenseCursor
 from .resource import ResourceCursor
-from .user import UserCursor
 from .vocab import TagCursor, VocabularyCursor
 
 
@@ -26,7 +25,6 @@ class CatalogAPI(BaseAPI):
         self.organizations = GenericCursor(self, Organization)
         self.groups = GenericCursor(self, Group)
         self.vocabularies = VocabularyCursor(self)
-        self.users = UserCursor(self)
         self.tags = TagCursor(self)
         self.licenses = LicenseCursor(self)
 
