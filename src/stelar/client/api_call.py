@@ -172,8 +172,17 @@ class api_call_base(api_context):
             case {"success": False, "error": error}:
                 match resp.status_code:
                     case 404:
+                        try:
+                            api_name = api_models[self.proxy_type.__name__].name
+                            entity_purged = error["detail"]["entity"] == api_name
+                        except Exception:
+                            entity_purged = False
+
                         raise EntityNotFound(
-                            self.proxy_type, self.proxy_id, f"{method} {endpoint}"
+                            self.proxy_type,
+                            self.proxy_id,
+                            f"{method} {endpoint}",
+                            purged=entity_purged,
                         )
                     case _:
                         raise ProxyOperationError(

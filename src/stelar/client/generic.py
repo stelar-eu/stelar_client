@@ -77,8 +77,9 @@ def generic_proxy_sync(proxy: Proxy, entity, update_method="patch"):
 
             try:
                 entity = update_call(id=str(proxy.proxy_id), **updates)
-            except EntityNotFound:
-                proxy.proxy_is_purged()
+            except EntityNotFound as e:
+                if e.purged:
+                    proxy.proxy_is_purged()
                 raise  # We have updates that are lost
             proxy.proxy_changed = None
 
@@ -86,8 +87,9 @@ def generic_proxy_sync(proxy: Proxy, entity, update_method="patch"):
             show = ac.get_call(proxy_type, "show")
             try:
                 entity = show(id=str(proxy.proxy_id))
-            except EntityNotFound:
-                proxy.proxy_is_purged()
+            except EntityNotFound as e:
+                if e.purged:
+                    proxy.proxy_is_purged()
                 return  # Not an error!
 
         proxy.proxy_from_entity(entity)

@@ -2,6 +2,8 @@ from uuid import UUID
 
 import pytest
 
+from stelar.client.proxy.exceptions import EntityNotFound
+
 
 @pytest.fixture(autouse=True)
 def tlicense(testcli):
@@ -126,6 +128,7 @@ def test_dataset_license_unknown(testcli):
     d = testcli.datasets["dataset1"]
 
     # Clear the license
-    d.license_id = "custom"
-    assert d.license_id == "custom"
-    assert d.license is None
+    old_license = d.license
+    with pytest.raises(EntityNotFound):
+        d.license_id = "custom"
+    assert d.license is old_license

@@ -338,7 +338,7 @@ class Proxy:
         values changed since the last sync.
         """
         if self.proxy_id is None:
-            raise ErrorState()
+            raise ErrorState(self)
         if self.proxy_changed is not None:
             for name, value in self.proxy_changed.items():
                 self.proxy_attr[name] = value

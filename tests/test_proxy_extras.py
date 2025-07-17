@@ -1,3 +1,4 @@
+import datetime
 from uuid import uuid4
 
 import pytest
@@ -125,3 +126,35 @@ def test_extras_proxy_creation():
     assert x.b is None
     assert x.hehe == "hihi"
     assert x.extras == {"hehe": "hihi"}
+
+
+def test_extras_proxy_json():
+    class Foo(ProxyTestObj, ExtrasProxy):
+        a = Property(validator=IntField(nullable=False, default=0), updatable=True)
+        b = Property(validator=StrField(nullable=True), updatable=True)
+        extras = ExtrasProperty()
+
+    c = TPCatalog()
+
+    x = Foo.new(c, a=10, hehe="hihi")
+    assert x.a == 10
+    assert x.b is None
+    assert x.hehe == "hihi"
+    assert x.extras == {"hehe": "hihi"}
+
+    x.haha = [1, 2, 3]
+    assert x.haha == [1, 2, 3]
+    assert x.extras == {"hehe": "hihi", "haha": [1, 2, 3]}
+
+    x.hoho = None
+    x.hehe = {"leugh": ["GR", "EN"]}
+
+    assert x.hehe == {"leugh": ["GR", "EN"]}
+    assert x.extras == {
+        "hehe": {"leugh": ["GR", "EN"]},
+        "haha": [1, 2, 3],
+        "hoho": None,
+    }
+
+    with pytest.raises(ValueError):
+        x.hui = datetime.datetime.now()

@@ -75,5 +75,6 @@ class ProxyOperationError(ProxyError):
 class EntityNotFound(ProxyOperationError):
     """Indicate that an entity is not found"""
 
-    def __init__(self, /, proxy_type, eid, operation):
+    def __init__(self, /, proxy_type, eid, operation, purged=False):
         super().__init__(proxy_type, eid, operation)
+        self.purged = purged

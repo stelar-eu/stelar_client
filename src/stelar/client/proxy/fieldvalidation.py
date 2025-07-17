@@ -200,6 +200,31 @@ class AnyField(FieldValidator):
         return self._repr_type
 
 
+class JSONField(AnyField):
+    """A field that accepts any JSON-serializable value."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.add_check(self.check_json, 5)
+
+    def check_json(self, value, **kwargs):
+        """Validator stage for JSONField"""
+        try:
+            json.dumps(value)  # Check if value is JSON-serializable
+        except (TypeError, ValueError) as e:
+            raise ValueError("Value is not JSON-serializable") from e
+        return value, False
+
+    def repr_type(self):
+        return "JSON"
+
+    def convert_to_proxy(self, value, **kwargs):
+        return value
+
+    def convert_to_entity(self, value, **kwargs):
+        return value
+
+
 class EnumeratedField(AnyField):
     """Fields with a fixed set of legal values.
 

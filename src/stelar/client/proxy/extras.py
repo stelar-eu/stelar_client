@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .fieldvalidation import AnyField, StrField
+from .fieldvalidation import AnyField, JSONField
 from .property import Property
 from .proxy import Proxy
 
@@ -11,7 +11,7 @@ class ExtrasProperty(Property):
             updatable=False, optional=False, validator=AnyField(default={}), **kwargs
         )
         self.isExtras = True
-        self.item_validator = StrField(nullable=False)
+        self.item_validator = JSONField(nullable=True)
 
     def autodoc(self, doc, repr_type, repr_constraints):
         return """\
