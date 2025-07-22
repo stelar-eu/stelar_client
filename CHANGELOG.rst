@@ -2,6 +2,14 @@
 Changelog
 =========
 
+
+Version 0.8.1
+=============
+
+- Fixed a bug in the encoding of ad-hoc extra attributes: they were encoded as strings
+- The package PATCH operation returns 404 when a license is not found, instead of 400.
+  This resulted in the client considering the dataset as purged, which was incorrect.
+
 Version 0.8.0
 =============
 
